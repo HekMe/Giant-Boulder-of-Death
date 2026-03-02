@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boulder Rampage</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud">
+    <div>Score: <span id="score">0</span></div>
+    <div>Distance: <span id="distance">0</span>m</div>
+    <div>Coins: <span id="coins">0</span></div>
+    <div>Gems: <span id="gems">0</span></div>
+    <div>Mult: <span id="mult">x1</span></div>
+    <div id="state">NORMAL</div>
+    <div id="meterWrap"><div id="meter"></div></div>
+  </div>
+
+  <div id="meta">
+    <button id="btnPause">Pause</button>
+    <button id="btnRestart">Restart</button>
+    <button id="btnSpin">Spin (8 gems)</button>
+    <button id="btnUpgradeJump">Upgrade Jump</button>
+    <button id="btnUpgradeSteer">Upgrade Steer</button>
+    <button id="btnUpgradeOverdrive">Upgrade Overdrive</button>
+    <button id="btnExport">Export Save</button>
+    <label class="importLabel">Import Save<input id="importSave" type="file" accept="application/json"></label>
+  </div>
+
+  <div id="gameOver" class="overlay hidden">
+    <div class="panel">
+      <h2>Run Ended</h2>
+      <div>Distance: <span id="goDistance">0</span>m</div>
+      <div>Score: <span id="goScore">0</span></div>
+      <div class="row">
+        <button id="btnContinue">Continue (12 gems)</button>
+        <button id="btnNewRun">New Run</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mobileControls">
+    <div id="stickZone"><div id="stick"></div></div>
+    <button id="jumpBtn">JUMP</button>
+  </div>
+
+  <div id="toast"></div>
+
+  <script type="module" src="src/game.js"></script>
+</body>
+</html>

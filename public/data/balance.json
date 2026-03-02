@@ -1,0 +1,29 @@
+{
+  "physics": {
+    "mass": 520,
+    "radius": 1.15,
+    "gravity": 26,
+    "slopeAccel": 18,
+    "maxForwardSpeed": 44,
+    "dragLongitudinal": 0.03,
+    "dragLateral": 0.22,
+    "sideSlipFactor": 0.28,
+    "steerTorque": 540,
+    "lateralControlStrength": 0.9,
+    "jumpImpulse": 8.8,
+    "jumpCooldown": 0.62,
+    "coyoteTime": 0.1,
+    "postOverdriveGrace": 0.4,
+    "overdriveDuration": 7
+  },
+  "scoring": {
+    "meterCapacity": 100,
+    "overdriveScoreBonus": 0.3,
+    "overflowMeterToScore": 12
+  },
+  "spawning": {
+    "early": {"destructibles": 18, "hazards": 4, "coins": 12, "gems": 0.4},
+    "mid": {"destructibles": 22, "hazards": 7, "coins": 10, "gems": 0.6},
+    "late": {"destructibles": 26, "hazards": 10, "coins": 8, "gems": 0.8}
+  }
+}

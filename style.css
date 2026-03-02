@@ -1,0 +1,19 @@
+html,body{margin:0;height:100%;overflow:hidden;font-family:Inter,system-ui,sans-serif;background:#10131b;color:#fff}
+#game{display:block;width:100vw;height:100vh}
+#hud{position:fixed;left:12px;top:12px;background:#0009;padding:10px;border-radius:10px;min-width:220px;z-index:20}
+#meterWrap{width:200px;height:14px;background:#333;border-radius:8px;overflow:hidden;margin-top:6px}
+#meter{height:100%;width:0;background:linear-gradient(90deg,#63f,#0ff)}
+#state{font-weight:700;color:#ffd95b;margin-top:4px}
+#meta{position:fixed;right:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;max-width:55vw;z-index:20}
+button,.importLabel{background:#1f2937;border:1px solid #4b5563;color:#fff;padding:8px 10px;border-radius:8px;cursor:pointer}
+.importLabel input{display:none}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#111d;padding:8px 14px;border-radius:8px;display:none;z-index:30}
+#mobileControls{position:fixed;inset:0;pointer-events:none;z-index:25}
+#stickZone{position:absolute;left:16px;bottom:16px;width:120px;height:120px;border-radius:50%;background:#ffffff22;display:none;pointer-events:auto}
+#stick{position:absolute;left:45px;top:45px;width:30px;height:30px;border-radius:50%;background:#fff7}
+#jumpBtn{position:absolute;right:18px;bottom:28px;width:96px;height:96px;border-radius:50%;font-weight:700;display:none;pointer-events:auto}
+.mobile #stickZone,.mobile #jumpBtn{display:block}
+.overlay{position:fixed;inset:0;background:#0008;display:grid;place-items:center;z-index:40}
+.hidden{display:none}
+.panel{background:#111e;padding:16px;border-radius:12px;min-width:280px}
+.row{display:flex;gap:8px;margin-top:12px}
