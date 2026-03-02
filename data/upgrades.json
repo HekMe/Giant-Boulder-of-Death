@@ -1,0 +1,5 @@
+{"upgrades":[
+{"id":"jump_height","costsCoins":[250,600,1200,2200,3800,6200],"bonusesPercent":[5,10,15,20,25,30]},
+{"id":"steering_speed","costsCoins":[250,650,1300,2400,4100,6600],"bonusesPercent":[5,10,15,20,25,30]},
+{"id":"overdrive_duration","costsCoins":[400,900,1700,3000,5000,7800],"bonusesPercent":[10,20,30,40,50,60]}
+]}

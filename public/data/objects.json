@@ -1,0 +1,12 @@
+{"objects":[
+{"id":"hut_wood_a","category":"destructible","baseScore":40,"destructionValue":8},
+{"id":"cart_market","category":"destructible","baseScore":55,"destructionValue":10},
+{"id":"totem_stone_small","category":"destructible","baseScore":70,"destructionValue":12},
+{"id":"fence_long","category":"destructible","baseScore":25,"destructionValue":5},
+{"id":"pine_cluster","category":"destructible","baseScore":35,"destructionValue":6},
+{"id":"spike_patch","category":"hazard"},
+{"id":"mine_barrel","category":"hazard"},
+{"id":"cliff_gap_small","category":"hazard"},
+{"id":"coin_pickup","category":"pickup_coin","amount":1},
+{"id":"gem_pickup","category":"pickup_gem","amount":1}
+]}

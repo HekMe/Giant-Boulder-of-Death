@@ -1,0 +1,17 @@
+{"goalTrees":[{"id":"goals_alpine_01","nodes":[
+{"id":"g01","type":"distance_total","target":500,"reward":{"coins":300},"unlocks":["g02","g03"]},
+{"id":"g02","type":"destroy_any","target":30,"reward":{"coins":350},"unlocks":["g04"]},
+{"id":"g03","type":"collect_coin","target":200,"reward":{"coins":300},"unlocks":["g05"]},
+{"id":"g04","type":"activate_overdrive","target":5,"reward":{"gems":4},"unlocks":["g06"]},
+{"id":"g05","type":"collect_gem","target":10,"reward":{"gems":5},"unlocks":["g07"]},
+{"id":"g06","type":"run_single_distance","target":1200,"reward":{"coins":600},"unlocks":["g08"]},
+{"id":"g07","type":"destroy_any","target":120,"reward":{"coins":500},"unlocks":["g08"]},
+{"id":"g08","type":"survive_hazard_gauntlet","target":3,"reward":{"gems":6},"unlocks":["g09","g10"]},
+{"id":"g09","type":"destroy_in_overdrive","target":150,"reward":{"coins":900},"unlocks":["g11"]},
+{"id":"g10","type":"no_jump_distance","target":600,"reward":{"coins":700},"unlocks":["g12"]},
+{"id":"g11","type":"pickup_charge","target":40,"reward":{"gems":7},"unlocks":["g13"]},
+{"id":"g12","type":"near_miss_hazard","target":20,"reward":{"coins":850},"unlocks":["g13"]},
+{"id":"g13","type":"run_single_score","target":90000,"reward":{"gems":10},"unlocks":["g14"]},
+{"id":"g14","type":"continue_used_wins","target":2,"reward":{"coins":1200},"unlocks":["g15"]},
+{"id":"g15","type":"theme_mastery","target":1,"reward":{"unlockTheme":"volcanic_carnival"},"unlocks":[]}
+]}]}
