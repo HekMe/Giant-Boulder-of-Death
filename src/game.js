@@ -9,12 +9,22 @@ const showToast = (txt, ms = 1700) => {
   showToast.t = setTimeout(() => (toastEl.style.display = 'none'), ms);
 };
 
+function fatalError(message, detail) {
+  const el = $('fatalError');
+  if (el) {
+    $('fatalMessage').textContent = message;
+    $('fatalDetail').textContent = detail || '';
+    el.classList.remove('hidden');
+  }
+  console.error(message, detail);
+}
+
 const isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
 if (isMobile) document.body.classList.add('mobile');
 
-const saveKey = 'boulder_rampage_babylon_v1';
+const saveKey = 'boulder_rampage_babylon_v2';
 const defaultSave = () => ({
-  version: 1,
+  version: 2,
   currencies: { coins: 500, gems: 30 },
   upgrades: { jump_height: 0, steering_speed: 0, overdrive_duration: 0 },
   completedGoals: [],
@@ -30,37 +40,77 @@ const persistSave = () => localStorage.setItem(saveKey, JSON.stringify(save));
 async function fetchJson(path) {
   const clean = path.replace(/^\/+/, '');
   const cands = [clean, `./${clean}`, `public/${clean}`, `/${clean}`];
+  let lastErr = null;
   for (const p of cands) {
     try {
       const r = await fetch(p);
       if (r.ok) return await r.json();
-    } catch {}
+    } catch (e) { lastErr = e; }
   }
-  throw new Error(`Cannot load ${path}`);
+  throw new Error(`Cannot load ${path}${lastErr ? ` (${lastErr.message})` : ''}`);
 }
 
-const [balance, objectsCfg, goalsCfg, upgradesCfg, spinnersCfg] = await Promise.all([
-  fetchJson('data/balance.json'),
-  fetchJson('data/objects.json'),
-  fetchJson('data/goals.json'),
-  fetchJson('data/upgrades.json'),
-  fetchJson('data/spinners.json')
-]);
+let balance, objectsCfg, goalsCfg, upgradesCfg, spinnersCfg;
+try {
+  [balance, objectsCfg, goalsCfg, upgradesCfg, spinnersCfg] = await Promise.all([
+    fetchJson('data/balance.json'),
+    fetchJson('data/objects.json'),
+    fetchJson('data/goals.json'),
+    fetchJson('data/upgrades.json'),
+    fetchJson('data/spinners.json')
+  ]);
+} catch (err) {
+  fatalError('Could not load game configuration.',
+    `${err.message}. Make sure the game is served over a web server (not file://) and that the data/ folder exists.`);
+  showToast('Error: configuration failed to load', 6000);
+  throw err;
+}
+
+if (typeof BABYLON === 'undefined') {
+  fatalError('Babylon.js failed to load.',
+    'Check your internet connection (CDN) or your CSP settings.');
+  throw new Error('BABYLON undefined');
+}
+
+const R = balance.physics.radius;
+
+// ---------------------------------------------------------------------------
+// TERRAIN: a continuous, winding heightfield that descends down a mountain.
+// centerX(z) is the path's centerline; terrainY(x,z) is the surface height.
+// Both builds (module + gist) share the exact same functions.
+// ---------------------------------------------------------------------------
+const SLOPE_GRADE = 0.13;                 // overall metres dropped per metre forward
+function centerX(z) {
+  return Math.sin(z * 0.0062) * 7.5 + Math.sin(z * 0.019 + 1.7) * 3.2;
+}
+function terrainY(x, z) {
+  const descent = -z * SLOPE_GRADE;                          // the hill goes down
+  const rolling = Math.sin(z * 0.017) * 2.3 + Math.sin(z * 0.0055 + 0.7) * 3.1; // big rolls
+  const offset = x - centerX(z);
+  const valley = (Math.cos(offset * 0.11) - 1) * 0.9;        // gentle banked chute
+  const ripple = Math.sin(z * 0.22 + x * 0.13) * 0.18;       // micro bumps
+  return descent + rolling + valley + ripple;
+}
 
 const canvas = $('game');
 const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
 const scene = new BABYLON.Scene(engine);
 scene.clearColor = new BABYLON.Color4(0.68, 0.84, 1, 1);
+scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
+scene.fogColor = new BABYLON.Color3(0.75, 0.85, 1);
+scene.fogStart = 120; scene.fogEnd = 320;
 
 const light = new BABYLON.HemisphericLight('h', new BABYLON.Vector3(0, 1, 0), scene);
-light.intensity = 0.9;
-const dLight = new BABYLON.DirectionalLight('d', new BABYLON.Vector3(-0.4, -1, 0.2), scene);
-dLight.position = new BABYLON.Vector3(40, 80, -20);
+light.intensity = 0.92;
+light.groundColor = new BABYLON.Color3(0.4, 0.45, 0.5);
+const dLight = new BABYLON.DirectionalLight('d', new BABYLON.Vector3(-0.4, -1, 0.3), scene);
+dLight.position = new BABYLON.Vector3(40, 120, -40);
+dLight.intensity = 0.7;
 
 const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(0, 8, -12), scene);
 camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
 
-const boulder = BABYLON.MeshBuilder.CreateSphere('boulder', { diameter: balance.physics.radius * 2, segments: 18 }, scene);
+const boulder = BABYLON.MeshBuilder.CreateSphere('boulder', { diameter: R * 2, segments: 20 }, scene);
 const boulderMat = new BABYLON.StandardMaterial('bmat', scene);
 boulderMat.diffuseColor = new BABYLON.Color3(0.56, 0.55, 0.5);
 boulderMat.specularColor = BABYLON.Color3.Black();
@@ -75,14 +125,13 @@ trail.material = tmat;
 
 const CHUNK_TYPES = ['STRAIGHT','S_CURVE','NARROW','VILLAGE_CLUSTER','FOREST_DENSE','CLIFF_BUMPY','HAZARD_GAUNTLET'];
 const chunkCfg = {
-  STRAIGHT:{w:14,hm:0.8,dm:1,turn:0}, S_CURVE:{w:12,hm:1,dm:1,turn:0.8}, NARROW:{w:8.5,hm:.9,dm:.8,turn:.3},
-  VILLAGE_CLUSTER:{w:13,hm:1.05,dm:1.4,turn:.35}, FOREST_DENSE:{w:11.2,hm:.95,dm:1.25,turn:.45},
-  CLIFF_BUMPY:{w:9.5,hm:1.15,dm:.9,turn:.6}, HAZARD_GAUNTLET:{w:10.2,hm:1.6,dm:.7,turn:.5}
+  STRAIGHT:{w:14,hm:0.8,dm:1}, S_CURVE:{w:12,hm:1,dm:1}, NARROW:{w:8.5,hm:.9,dm:.8},
+  VILLAGE_CLUSTER:{w:13,hm:1.05,dm:1.4}, FOREST_DENSE:{w:11.2,hm:.95,dm:1.25},
+  CLIFF_BUMPY:{w:9.5,hm:1.15,dm:.9}, HAZARD_GAUNTLET:{w:10.2,hm:1.6,dm:.7}
 };
 const chunkLen = 45;
 const chunks = [];
 let nextChunkZ = 0;
-let curveX = 0;
 
 const objectPool = { destructible:[], hazard:[], pickup_coin:[], pickup_gem:[], telegraph:[] };
 const rand = (a,b)=>a+Math.random()*(b-a);
@@ -108,14 +157,34 @@ function meshForCategory(cat) {
 function getObj(cat){ return objectPool[cat].pop() || meshForCategory(cat); }
 function releaseObj(o){ o.setEnabled(false); objectPool[o.metadata.category].push(o); }
 
-function createChunk(typeName){
-  const root = new BABYLON.TransformNode('chunk',scene);
+// Build a subdivided ribbon that follows centerX + terrainY across [z0, z0+len].
+function buildGroundMesh(z0, width) {
+  const zSteps = 14, xSteps = 8;
+  const paths = [];
+  for (let i = 0; i <= zSteps; i++) {
+    const z = z0 + (chunkLen * i) / zSteps;
+    const cx = centerX(z);
+    const row = [];
+    for (let j = 0; j <= xSteps; j++) {
+      const t = j / xSteps;
+      const x = cx + (t - 0.5) * width;
+      row.push(new BABYLON.Vector3(x, terrainY(x, z), z));
+    }
+    paths.push(row);
+  }
+  const mesh = BABYLON.MeshBuilder.CreateRibbon('ground', { pathArray: paths, sideOrientation: BABYLON.Mesh.DOUBLESIDE }, scene);
+  const gmat = new BABYLON.StandardMaterial('gm' + Math.random(), scene);
+  gmat.diffuseColor = new BABYLON.Color3(0.36, 0.55, 0.32);
+  gmat.specularColor = BABYLON.Color3.Black();
+  gmat.backFaceCulling = false;
+  mesh.material = gmat;
+  return mesh;
+}
+
+function createChunk(typeName, z0) {
   const cfg = chunkCfg[typeName];
-  const g = BABYLON.MeshBuilder.CreateBox('ground',{width:cfg.w,height:1,depth:chunkLen},scene);
-  const gmat = new BABYLON.StandardMaterial('gm'+Math.random(),scene);
-  gmat.diffuseColor = new BABYLON.Color3(.4,.58,.34); gmat.specularColor = BABYLON.Color3.Black();
-  g.material = gmat; g.parent = root; g.position.y = -.5;
-  return {root,typeName,width:cfg.w,objects:[],ground:g,blocked:[]};
+  const ground = buildGroundMesh(z0, cfg.w);
+  return { typeName, width: cfg.w, z0, objects: [], ground, blocked: [] };
 }
 function weightedType(distance){
   const phase = distance<800?'e':distance<2400?'m':'l';
@@ -125,20 +194,19 @@ function weightedType(distance){
   for(const k of CHUNK_TYPES){ r-=w[k]; if(r<=0) return k; }
   return 'STRAIGHT';
 }
-function fairness(x,z,speed,chunk,lane){
+function fairness(z, speed, chunk, lane){
   const minD = speed*0.65+6;
   const lookAhead = Math.max(3,Math.min(10,speed*0.22));
   if ((z-player.z) < minD-lookAhead) return false;
-  if (Math.abs(x) > chunk.width*0.5-1.1) return false;
   if (chunk.blocked.includes(lane)) return false;
   return true;
 }
-function fillChunk(chunk,dif){
+function fillChunk(chunk, dif){
   const dens = dif<.33?balance.spawning.early:dif<.66?balance.spawning.mid:balance.spawning.late;
   const cfg = chunkCfg[chunk.typeName];
-  const z0 = chunk.root.position.z - chunkLen/2;
+  const z0 = chunk.z0;
   const half = chunk.width*.5-1;
-  const laneX = [-half*.7,0,half*.7];
+  const laneFrac = [-0.7, 0, 0.7];
   chunk.blocked=[];
   const lessSpikes = player.buffs.less_spikes?.stacks?0.75:1;
   const gemMul = player.buffs.gem_frequency?.stacks?1.25:1;
@@ -148,60 +216,61 @@ function fillChunk(chunk,dif){
   const cC=Math.round((dens.coins/100)*chunkLen);
   const cG=Math.round((dens.gems/100)*chunkLen*gemMul);
 
+  const place = (m, xRel, z, yOff) => {
+    const x = centerX(z) + xRel;
+    m.position.set(x, terrainY(x, z) + yOff, z);
+  };
+
   for(let i=0;i<cD;i++){
     const id = i%3===0?'cart_market':i%2===0?'hut_wood_a':'fence_long';
     const type=pickType(id);
     const m=getObj(type.category); m.metadata={type,category:type.category}; m.setEnabled(true);
-    m.position.set(rand(-half,half),.8,z0+rand(2,chunkLen-2));
+    place(m, rand(-half,half), z0+rand(2,chunkLen-2), 0.7);
     chunk.objects.push(m);
   }
   for(let i=0;i<cH;i++){
     const lane=Math.floor(Math.random()*3)-1;
-    const x=laneX[lane+1]+rand(-.4,.4); const z=z0+rand(8,chunkLen-2);
-    if(!fairness(x,z,player.speed,chunk,lane)) continue;
+    const xRel = laneFrac[lane+1]*half + rand(-.4,.4);
+    const z = z0+rand(8,chunkLen-2);
+    if(!fairness(z,player.speed,chunk,lane)) continue;
     const isMine=Math.random()<.4;
     const type=pickType(isMine?'mine_barrel':'spike_patch');
     if (isMine && player.buffs.dud_mines?.stacks && Math.random()<0.35) continue;
     const m=getObj(type.category); m.metadata={type,category:type.category}; m.setEnabled(true);
-    m.position.set(x,.8,z); chunk.objects.push(m);
+    place(m, xRel, z, 0.65); chunk.objects.push(m);
     const tele=getObj('telegraph'); tele.metadata={category:'telegraph'}; tele.setEnabled(true);
-    tele.rotation.x=Math.PI/2; tele.position.set(x,.1,z-4.5); chunk.objects.push(tele);
+    tele.rotation.x=Math.PI/2; place(tele, xRel, z-4.5, 0.06); chunk.objects.push(tele);
     if(!chunk.blocked.includes(lane)) chunk.blocked.push(lane);
     if(chunk.blocked.length>=2 && chunk.typeName!=='HAZARD_GAUNTLET') break;
   }
   for(let i=0;i<cC;i++){
     const type=pickType('coin_pickup');
     const m=getObj(type.category); m.metadata={type,category:type.category}; m.setEnabled(true);
-    m.position.set(rand(-half,half),1.1,z0+rand(2,chunkLen-2)); chunk.objects.push(m);
+    place(m, rand(-half,half), z0+rand(2,chunkLen-2), 1.1); chunk.objects.push(m);
   }
   for(let i=0;i<cG;i++){
     const type=pickType('gem_pickup');
     const m=getObj(type.category); m.metadata={type,category:type.category}; m.setEnabled(true);
-    m.position.set(rand(-half,half),1.25,z0+rand(2,chunkLen-2)); chunk.objects.push(m);
+    place(m, rand(-half,half), z0+rand(2,chunkLen-2), 1.25); chunk.objects.push(m);
   }
 }
 function recycleChunk(chunk){
   chunk.objects.forEach(o=>releaseObj(o));
   chunk.objects=[];
-  chunk.root.setEnabled(false);
+  if (chunk.ground) { chunk.ground.material?.dispose(); chunk.ground.dispose(); chunk.ground=null; }
 }
 function ensureChunks(){
   while(chunks.length<12){
     const t=weightedType(player.distance);
-    const c=createChunk(t);
-    c.root.setEnabled(true);
-    c.root.position.z = nextChunkZ + chunkLen/2;
-    curveX += (Math.random()*2-1)*chunkCfg[t].turn;
-    curveX=Math.max(-8,Math.min(8,curveX));
-    c.root.position.x = curveX;
-    fillChunk(c,Math.min(1,player.distance/3000));
+    const c=createChunk(t, nextChunkZ);
+    fillChunk(c, Math.min(1, player.distance/3000));
     chunks.push(c); nextChunkZ += chunkLen;
   }
-  while(chunks.length && chunks[0].root.position.z < player.z-75){
-    const c=chunks.shift();
-    recycleChunk(c);
+  while(chunks.length && (chunks[0].z0 + chunkLen) < player.z-75){
+    recycleChunk(chunks.shift());
   }
 }
+function chunkAt(z){ return chunks.find(c=>z>=c.z0 && z<c.z0+chunkLen); }
 
 const input={steer:0,jump:false,gyro:false,g:0};
 window.addEventListener('keydown',e=>{ if(e.code==='KeyA'||e.code==='ArrowLeft')input.steer=-1; if(e.code==='KeyD'||e.code==='ArrowRight')input.steer=1; if(e.code==='Space')input.jump=true; });
@@ -215,7 +284,7 @@ window.addEventListener('pointerup',()=>{stickActive=false;stick.style.left='45p
 $('jumpBtn').addEventListener('pointerdown',()=>input.jump=true);
 window.addEventListener('pointerdown',e=>{ if(isMobile && e.clientX>innerWidth*0.6) input.jump=true; });
 
-const player={x:0,y:balance.physics.radius+.1,z:0,vx:0,vy:0,speed:10,grounded:true,jumpCd:0,coyote:0,state:'NORMAL',grace:0,over:0,meter:0,score:0,distance:0,mult:1,buffs:{},paused:false,dead:false,continues:0,shake:0};
+const player={x:0,y:0,z:0,vx:0,vy:0,speed:10,grounded:true,jumpCd:0,coyote:0,state:'NORMAL',grace:0,over:0,meter:0,score:0,distance:0,mult:1,buffs:{},paused:false,dead:false,continues:0,shake:0};
 
 function getUpgradePct(id){ const u=upgradesCfg.upgrades.find(x=>x.id===id); const lvl=save.upgrades[id]||0; return u.bonusesPercent[lvl-1]||0; }
 function buyUpgrade(id){ const u=upgradesCfg.upgrades.find(x=>x.id===id); const lvl=save.upgrades[id]||0; if(lvl>=u.costsCoins.length) return showToast('Max level'); const c=u.costsCoins[lvl]; if(save.currencies.coins<c) return showToast(`Need ${c} coins`); save.currencies.coins-=c; save.upgrades[id]=lvl+1; persistSave(); showToast(`${id} -> ${lvl+1}`); }
@@ -235,13 +304,14 @@ $('btnSpin').onclick=()=>{
   const pick=()=>{ let r=Math.random()*total; for(const b of all){ r-=b.weight; if(r<=0) return b; } return all[0]; };
   const rolled=[];
   for(let i=0;i<3;i++){ const b=pick(); rolled.push(b.id); player.buffs[b.id]={stacks:(player.buffs[b.id]?.stacks||0)+1}; }
-  if(rolled.includes('event_yeti_swarm')){ player.score+=3000; save.currencies.coins+=80; }
+  if(rolled.includes('event_avalanche_frenzy')){ player.score+=3000; save.currencies.coins+=80; }
   persistSave(); showToast(`Spin: ${rolled.join(', ')}`,2200);
 };
 
 function progressGoal(type,delta){ const tree=goalsCfg.goalTrees[0]; for(const n of tree.nodes){ if(save.completedGoals.includes(n.id)) continue; if(n.type!==type) continue; save.goalProgress[n.id]=(save.goalProgress[n.id]||0)+delta; if(save.goalProgress[n.id]>=n.target){ save.completedGoals.push(n.id); save.currencies.coins += n.reward.coins||0; save.currencies.gems += n.reward.gems||0; showToast(`Goal ${n.id} complete`);} } }
 
 function endRun(){
+  if(player.dead) return;
   player.dead=true; player.paused=true;
   save.currencies.coins += Math.floor(player.distance*0.06 + save.stats.totalDestructions*0.01);
   save.stats.bestDistance=Math.max(save.stats.bestDistance,Math.floor(player.distance));
@@ -256,22 +326,27 @@ $('btnContinue').onclick=()=>{
   const cost=player.continues===0?12:20;
   if(player.continues>=2) return showToast('No continues left');
   if(save.currencies.gems<cost) return showToast('Not enough gems');
-  save.currencies.gems-=cost; player.continues++; player.dead=false; player.paused=false; player.state='NORMAL'; player.grace=2.0; player.vy=2.4; $('gameOver').classList.add('hidden'); persistSave();
+  save.currencies.gems-=cost; player.continues++; player.dead=false; player.paused=false; player.state='NORMAL'; player.grace=2.0; player.vy=2.4;
+  player.x=centerX(player.z); player.y=terrainY(player.x,player.z)+R;
+  $('gameOver').classList.add('hidden'); persistSave();
 };
 $('btnNewRun').onclick=()=>resetRun();
 
 function resetRun(){
-  player.x=0;player.y=balance.physics.radius+.1;player.z=0;player.vx=0;player.vy=0;player.speed=10;player.grounded=true;player.jumpCd=0;player.coyote=0;player.state='NORMAL';player.grace=0;player.over=0;player.meter=0;player.score=0;player.distance=0;player.mult=1;player.buffs={};player.paused=false;player.dead=false;player.continues=0;player.shake=0;
-  chunks.splice(0).forEach(recycleChunk); nextChunkZ=0; curveX=0; save.stats.totalRuns++; persistSave(); $('gameOver').classList.add('hidden');
+  chunks.splice(0).forEach(recycleChunk); nextChunkZ=0;
+  Object.assign(player,{x:centerX(0),y:terrainY(0,0)+R,z:0,vx:0,vy:0,speed:10,grounded:true,jumpCd:0,coyote:0,state:'NORMAL',grace:0,over:0,meter:0,score:0,distance:0,mult:1,buffs:{},paused:false,dead:false,continues:0,shake:0});
+  save.stats.totalRuns++; persistSave(); $('gameOver').classList.add('hidden');
+  ensureChunks();
 }
 
 function collide(){
-  const rr=1.3*1.3;
+  const rr=1.35*1.35;
   for(const c of chunks){
     for(let i=c.objects.length-1;i>=0;i--){
       const o=c.objects[i]; if(!o.isEnabled()) continue;
       const dx=o.position.x-player.x, dz=o.position.z-player.z;
       if(dx*dx+dz*dz>rr) continue;
+      if(player.y - o.position.y > 1.6) continue; // jumped clear over it
       const type=o.metadata.type;
       c.objects.splice(i,1); releaseObj(o);
       if(!type) continue;
@@ -327,16 +402,24 @@ engine.runRenderLoop(()=>{
     const jumpMul = 1 + getUpgradePct('jump_height')/100;
     const overMul = 1 + getUpgradePct('overdrive_duration')/100;
 
-    player.speed += (balance.physics.slopeAccel - balance.physics.dragLongitudinal*player.speed*player.speed*0.1)*dt;
+    // Forward acceleration scales with how steep the slope is right ahead.
+    const yHere = terrainY(player.x, player.z);
+    const yAhead = terrainY(player.x, player.z + 2);
+    const grade = Math.max(0, (yHere - yAhead) / 2);          // downhill steepness
+    const slopeBoost = 0.45 + Math.min(1.4, grade * 2.2);
+    player.speed += (balance.physics.slopeAccel*slopeBoost - balance.physics.dragLongitudinal*player.speed*player.speed*0.1)*dt;
     player.speed = Math.min(balance.physics.maxForwardSpeed, player.speed);
+
     player.vx += steerIn*balance.physics.lateralControlStrength*steerMul*dt*12;
     player.vx *= (1-balance.physics.dragLateral*dt);
     player.x += player.vx*dt;
 
-    const current = chunks.find(c=>player.z>c.root.position.z-chunkLen/2 && player.z<c.root.position.z+chunkLen/2);
-    const half=(current?current.width:13)*.5; const center=current?current.root.position.x:0;
-    if(player.x<center-half || player.x>center+half) endRun();
+    // Fall off the edge of the path => run ends.
+    const cur = chunkAt(player.z);
+    const half = (cur?cur.width:13)*0.5;
+    if (Math.abs(player.x - centerX(player.z)) > half + 0.4) endRun();
 
+    // Jump + coyote time.
     player.jumpCd -= dt;
     player.coyote = player.grounded ? balance.physics.coyoteTime : player.coyote-dt;
     if(input.jump && player.jumpCd<=0 && (player.grounded || player.coyote>0)){
@@ -344,11 +427,18 @@ engine.runRenderLoop(()=>{
     }
     input.jump=false;
 
+    // Vertical physics relative to the terrain surface.
     player.vy -= balance.physics.gravity*dt;
     player.y += player.vy*dt;
-    if(player.y<=balance.physics.radius+.1){ if(!player.grounded) player.vx += (Math.random()-.5)*1.3; player.y=balance.physics.radius+.1; player.vy=0; player.grounded=true; }
-
     player.z += player.speed*dt; player.distance=player.z;
+
+    const groundLevel = terrainY(player.x, player.z) + R;
+    if(player.y <= groundLevel){
+      if(!player.grounded) player.vx += (Math.random()-.5)*1.3;
+      player.y = groundLevel; player.vy = 0; player.grounded = true;
+    } else {
+      player.grounded = false;
+    }
 
     if(player.state==='OVERDRIVE'){ player.over -= dt; if(player.over<=0){ player.state='NORMAL'; player.grace=balance.physics.postOverdriveGrace; }}
     else if(player.grace>0) player.grace -= dt;
@@ -367,20 +457,22 @@ engine.runRenderLoop(()=>{
   }
 
   boulder.position.set(player.x,player.y,player.z);
-  boulder.rotate(BABYLON.Axis.X, -(player.speed*dt)/balance.physics.radius, BABYLON.Space.LOCAL);
-  boulder.rotate(BABYLON.Axis.Z, -(player.vx*dt)/balance.physics.radius, BABYLON.Space.LOCAL);
+  boulder.rotate(BABYLON.Axis.X, -(player.speed*dt)/R, BABYLON.Space.LOCAL);
+  boulder.rotate(BABYLON.Axis.Z, -(player.vx*dt)/R, BABYLON.Space.LOCAL);
 
   trail.position.set(player.x,player.y,player.z-1.3);
   tmat.alpha += ((player.state==='OVERDRIVE' ? .42 : 0)-tmat.alpha)*.14;
   boulderMat.emissiveColor = player.state==='OVERDRIVE' ? new BABYLON.Color3(.14,.3,.4) : BABYLON.Color3.Black();
 
+  // Downhill chase camera: sits uphill-and-behind, looks down the slope ahead.
   player.shake=Math.max(0,player.shake-dt*1.8);
-  const lookAhead=Math.max(3,Math.min(10,player.speed*.22));
-  const tx=player.x + (Math.random()*2-1)*player.shake;
-  const ty=player.y+5.8 + (Math.random()*2-1)*player.shake;
-  const tz=player.z-10.5;
-  camera.position = BABYLON.Vector3.Lerp(camera.position,new BABYLON.Vector3(tx,ty,tz), player.state==='OVERDRIVE' ? .14 : .1);
-  camera.setTarget(new BABYLON.Vector3(player.x,player.y+1.1,player.z+lookAhead));
+  const back = 11;
+  const bz = player.z - back;
+  const bx = player.x*0.55 + centerX(bz)*0.45 + (Math.random()*2-1)*player.shake;
+  const by = terrainY(bx, bz) + 6.2 + (Math.random()*2-1)*player.shake;
+  camera.position = BABYLON.Vector3.Lerp(camera.position, new BABYLON.Vector3(bx,by,bz), player.state==='OVERDRIVE' ? .14 : .1);
+  const lookAhead = Math.max(4, Math.min(13, player.speed*0.28));
+  camera.setTarget(new BABYLON.Vector3(player.x, player.y - 0.4, player.z + lookAhead));
   camera.fov += ((player.state==='OVERDRIVE'?1.28:1.17)-camera.fov)*.1;
 
   ui();

@@ -4,4 +4,4 @@
 {"id":"gem_frequency","weight":16,"params":{"gemChanceBonusPercent":25}},
 {"id":"dud_mines","weight":14,"params":{"dudMineChancePercent":35}},
 {"id":"power_charge_rate","weight":18,"params":{"meterChargeBonusPercent":30}}
-],"rareEvents":[{"id":"event_yeti_swarm","weight":8,"durationSec":20}]}
+],"rareEvents":[{"id":"event_avalanche_frenzy","weight":8,"durationSec":20}]}

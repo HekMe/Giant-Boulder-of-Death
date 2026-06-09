@@ -15,5 +15,6 @@ button,.importLabel{background:#1f2937;border:1px solid #4b5563;color:#fff;paddi
 .mobile #stickZone,.mobile #jumpBtn{display:block}
 .overlay{position:fixed;inset:0;background:#0008;display:grid;place-items:center;z-index:40}
 .hidden{display:none}
-.panel{background:#111e;padding:16px;border-radius:12px;min-width:280px}
+.panel{background:#111e;padding:16px;border-radius:12px;min-width:280px;max-width:min(92vw,440px)}
 .row{display:flex;gap:8px;margin-top:12px}
+.fatalDetail{margin-top:10px;font-size:14px;line-height:1.4;color:#cbd5e1}
