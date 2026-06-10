@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ROCKFALL — endless boulder run (dev)</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="config.fallback.js" defer></script>
+<script src="game.js" defer></script>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+<div id="popups"></div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div class="hud-tl">
+    <div id="hudScore" class="hud-big">0</div>
+    <div id="hudCombo" class="hud-combo"></div>
+  </div>
+  <div class="hud-tc">
+    <div id="hudDist" class="hud-dist">0 m</div>
+    <div id="hudBiome" class="hud-biome"></div>
+  </div>
+  <div class="hud-tr">
+    <div class="hud-cur"><span class="ico coin"></span><span id="hudCoins">0</span></div>
+    <div class="hud-cur"><span class="ico gem"></span><span id="hudGems">0</span></div>
+    <button id="btnPause" class="icon-btn" aria-label="Pause">II</button>
+  </div>
+  <div class="hud-bc">
+    <div id="hudGoal" class="hud-goal"></div>
+    <div id="hudState" class="hud-state"></div>
+    <div class="meter"><div id="meterFill"></div></div>
+  </div>
+</div>
+
+<!-- mobile controls -->
+<div id="joystick" class="hidden"><div id="joyBase"><div id="joyKnob"></div></div></div>
+<button id="btnJump" class="hidden" aria-label="Jump">JUMP</button>
+
+<!-- START -->
+<div id="ovStart" class="overlay">
+  <div class="panel start-panel">
+    <div class="logo"><span class="logo-rock"></span><h1>ROCK<em>FALL</em></h1></div>
+    <p class="tag">Dropped from the sky. A mountain below. Smash everything in your path.</p>
+    <div class="cur-row"><span class="ico coin"></span><span id="menuCoins">0</span><span class="ico gem"></span><span id="menuGems">0</span></div>
+    <button id="btnPlay" class="big-btn">START RUN</button>
+    <div class="menu-grid">
+      <button id="btnUpgrades" class="menu-btn">Upgrades</button>
+      <button id="btnSpinner" class="menu-btn">Lucky Spin</button>
+      <button id="btnGoals" class="menu-btn">Goals</button>
+      <button id="btnSettings" class="menu-btn">Settings</button>
+      <button id="btnExport" class="menu-btn">Export save</button>
+      <button id="btnImport" class="menu-btn">Import save</button>
+    </div>
+    <input type="file" id="fileImport" accept="application/json" hidden>
+    <div class="skin-label">Boulder skin</div>
+    <div id="skinRow" class="skin-row"></div>
+    <div id="startStats" class="start-stats"></div>
+    <p class="controls-hint">A/D or arrows = steer · Space = jump · Esc = pause<br>On mobile: tilt your device (gyro) or use the joystick · big button = jump</p>
+  </div>
+</div>
+
+<!-- RUN ENDED -->
+<div id="ovEnd" class="overlay hidden">
+  <div class="panel">
+    <h2 id="endTitle">RUN OVER</h2>
+    <div class="end-grid">
+      <div><label>Distance</label><b id="endDist">0 m</b></div>
+      <div><label>Score</label><b id="endScore">0</b></div>
+      <div><label>Coins</label><b id="endCoins">0</b></div>
+      <div><label>Gems</label><b id="endGems">0</b></div>
+    </div>
+    <div id="endBest" class="end-best hidden">NEW RECORD!</div>
+    <div id="endGoal" class="end-goal hidden"></div>
+    <div id="hsTable" class="hs-table"></div>
+    <button id="btnContinue" class="big-btn alt">CONTINUE</button>
+    <div class="row-btns">
+      <button id="btnNewRun" class="menu-btn">New run</button>
+      <button id="btnMenu" class="menu-btn">Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAUSE -->
+<div id="ovPause" class="overlay hidden">
+  <div class="panel small">
+    <h2>PAUSED</h2>
+    <button id="btnResume" class="big-btn">Resume</button>
+    <div class="row-btns">
+      <button id="btnRestart" class="menu-btn">Restart</button>
+      <button id="btnQuitMenu" class="menu-btn">Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPGRADES -->
+<div id="ovUpgrades" class="overlay hidden">
+  <div class="panel">
+    <h2>UPGRADES</h2>
+    <div class="cur-row"><span class="ico coin"></span><span id="upCoins">0</span></div>
+    <div id="upList" class="list"></div>
+    <button id="btnUpBack" class="menu-btn">Back</button>
+  </div>
+</div>
+
+<!-- SPINNER -->
+<div id="ovSpinner" class="overlay hidden">
+  <div class="panel">
+    <h2>LUCKY SPIN</h2>
+    <div class="cur-row"><span class="ico gem"></span><span id="spGems">0</span></div>
+    <div id="spinWheel" class="spin-wheel"><div id="spinDisc"></div><div class="spin-pointer"></div></div>
+    <div id="spinResult" class="spin-result"></div>
+    <button id="btnSpin" class="big-btn alt">Spin (<span id="spCost">2</span> 💎)</button>
+    <button id="btnSpBack" class="menu-btn">Back</button>
+  </div>
+</div>
+
+<!-- GOALS -->
+<div id="ovGoals" class="overlay hidden">
+  <div class="panel">
+    <h2>GOALS</h2>
+    <div id="goalList" class="list"></div>
+    <button id="btnGoalBack" class="menu-btn">Back</button>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="ovSettings" class="overlay hidden">
+  <div class="panel">
+    <h2>SETTINGS</h2>
+    <div class="set-row"><label>Steering sensitivity</label><input type="range" id="setSens" min="0.5" max="2" step="0.1"></div>
+    <div class="set-row"><label>Volume</label><input type="range" id="setVol" min="0" max="1" step="0.05"></div>
+    <div class="set-row"><label>Music / ambient</label><input type="checkbox" id="setMusic"></div>
+    <div class="set-row"><label>Graphics quality</label>
+      <select id="setQuality"><option value="high">High</option><option value="low">Low</option></select></div>
+    <div class="set-row"><label>Gyroscope (mobile)</label><input type="checkbox" id="setGyro"></div>
+    <div class="set-row"><label>Reduced camera motion</label><input type="checkbox" id="setMotion"></div>
+    <button id="btnSetBack" class="menu-btn">Back</button>
+  </div>
+</div>
+
+<!-- FATAL -->
+<div id="ovFatal" class="overlay hidden">
+  <div class="panel small fatal">
+    <h2>ERROR</h2>
+    <p id="fatalMsg">Something went wrong.</p>
+    <button onclick="location.reload()" class="menu-btn">Reload page</button>
+  </div>
+</div>
+</body>
+</html>

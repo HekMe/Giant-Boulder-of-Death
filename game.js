@@ -154,21 +154,44 @@ const AudioFX = {
   overdrive() { this.tone("sawtooth", 160, 760, 0.7, 0.3); this.noise(0.5, 0.2, 300, 3200); },
   nearmiss() { this.tone("sine", 950, 1500, 0.12, 0.12); },
   death() { this.noise(0.9, 0.6, 700, 50); this.tone("sawtooth", 200, 28, 0.9, 0.3); },
+  musicTimer: null, musicStep: 0,
   startMusic() {
-    if (!this.ctx || !SAVE.settings.music || this.musicNodes.length) return;
-    this.musicGain = this.ctx.createGain(); this.musicGain.gain.value = 0.05;
+    if (!this.ctx || !SAVE.settings.music || this.musicTimer) return;
+    this.musicGain = this.ctx.createGain(); this.musicGain.gain.value = 0.14;
     this.musicGain.connect(this.master);
-    const lp = this.ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 320; lp.connect(this.musicGain);
-    [55, 55.4, 82.5].forEach((f, i) => {
-      const o = this.ctx.createOscillator(); o.type = i === 2 ? "sine" : "sawtooth"; o.frequency.value = f;
-      const lfo = this.ctx.createOscillator(), lg = this.ctx.createGain();
-      lfo.frequency.value = 0.07 + i * 0.03; lg.gain.value = 2.2;
-      lfo.connect(lg); lg.connect(o.frequency);
-      o.connect(lp); o.start(); lfo.start();
-      this.musicNodes.push(o, lfo);
+    // soft low pad: two slightly detuned sines through a dark lowpass
+    const padLp = this.ctx.createBiquadFilter(); padLp.type = "lowpass"; padLp.frequency.value = 260;
+    const padG = this.ctx.createGain(); padG.gain.value = 0.3;
+    padLp.connect(padG); padG.connect(this.musicGain);
+    [110, 110.6].forEach((f) => {
+      const o = this.ctx.createOscillator(); o.type = "sine"; o.frequency.value = f;
+      o.connect(padLp); o.start();
+      this.musicNodes.push(o);
     });
+    // gentle A-minor pentatonic arpeggio, occasional rests, drops a fourth every phrase
+    const scale = [220, 261.63, 293.66, 329.63, 392, 440, 523.25];
+    const pattern = [0, 2, 4, 6, 4, 2, 3, 5];
+    this.musicStep = 0;
+    this.musicTimer = setInterval(() => {
+      if (!this.ctx || this.ctx.state !== "running" || !SAVE.settings.music) return;
+      const i = this.musicStep++ % pattern.length;
+      if (hash01(this.musicStep * 11) < 0.22) return; // rests keep it airy
+      const f = scale[pattern[i]] * (this.musicStep % 32 < 16 ? 1 : 0.749);
+      const t = this.ctx.currentTime;
+      const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      o.type = "triangle"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.16, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+      o.connect(g); g.connect(this.musicGain);
+      o.start(t); o.stop(t + 0.6);
+    }, 290);
   },
-  stopMusic() { this.musicNodes.forEach((n) => { try { n.stop(); } catch (e) {} }); this.musicNodes = []; }
+  stopMusic() {
+    if (this.musicTimer) { clearInterval(this.musicTimer); this.musicTimer = null; }
+    this.musicNodes.forEach((n) => { try { n.stop(); } catch (e) {} });
+    this.musicNodes = [];
+  }
 };
 
 /* ---------- terrain mathematics (shared by mesh + physics + spawning) ---------- */
@@ -185,9 +208,14 @@ function baseProfile(z) {
     T.hillAmp2 * Math.sin(z * T.hillFreq2 * Math.PI * 2 + 2.1);
 }
 function terrainY(x, z) {
-  const dx = (x - centerX(z)) / T.halfWidth;
-  return baseProfile(z) + T.chuteDepth * dx * dx +
+  const dxn = (x - centerX(z)) / T.halfWidth;
+  let y = baseProfile(z) + T.chuteDepth * dxn * dxn +
     T.rippleAmp * Math.sin(x * T.rippleFreqX) * Math.sin(z * T.rippleFreqZ);
+  // canyon walls: the ground itself climbs steeply beyond the track edge,
+  // plateauing at wallHeight — the wall is real geometry, not just decoration
+  const over = Math.abs(dxn) - 1;
+  if (over > 0) y += T.wallHeight * (1 - Math.exp(-T.wallSharpness * over * over));
+  return y;
 }
 /* downhill slope (positive = descending) along the centreline */
 function slopeAt(z) {
@@ -753,7 +781,7 @@ function buildGroundMesh(ci) {
     const eg = lerpC(env0.ground, env1.ground, j / nz);
     const eg2 = lerpC(env0.ground2, env1.ground2, j / nz);
     for (let i = 0; i <= nx; i++) {
-      const xo = (i / nx - 0.5) * 2 * (T.halfWidth + 4);
+      const xo = (i / nx - 0.5) * 2 * (T.halfWidth + T.meshExtra);
       const x = centerX(z) + xo;
       positions.push(x, terrainY(x, z), z);
       // mottled two-tone ground via deterministic noise
@@ -804,16 +832,17 @@ function spawnChunk(ci) {
   const biome = env.t > 0.5 ? env.nxt : env.cur;
   const rockMat = MATS["rock_" + biome.id];
 
-  // canyon walls on both edges
+  // canyon walls on both edges — two staggered rows hugging the physics boundary
   for (let z = z0; z < z1; z += T.wallSpacing) {
     for (const side of [-1, 1]) {
+      const inner = (Math.floor(z / T.wallSpacing) % 2) === 0;
       const node = pooled("rock", rockFactory);
       setRockMaterial(node, rockMat);
-      const x = centerX(z) + side * (T.halfWidth + T.wallOffset + rand(0, 2.5));
-      node.position.set(x, terrainY(x, z) - 0.6, z + rand(-2, 2));
+      const x = centerX(z) + side * (T.halfWidth + T.wallOffset + (inner ? rand(0, 0.8) : rand(1.6, 3.0)));
+      node.position.set(x, terrainY(x, z) - 1.0, z + rand(-1.4, 1.4));
       node.rotation.y = rand(0, Math.PI * 2);
-      const s = rand(0.8, 1.7);
-      node.scaling.set(s, s * rand(0.9, 1.9), s);
+      const s = rand(1.1, 2.0);
+      node.scaling.set(s, s * rand(1.1, 2.1), s);
       rec.items.push({ kind: "rock", node });
     }
   }
@@ -1272,7 +1301,7 @@ function updateRun(dt) {
   /* canyon walls */
   const dx = run.x - centerX(run.z);
   const limit = T.halfWidth - r * 0.4;
-  if (Math.abs(dx) > limit + 6) { endRun("Left the track"); return; }
+  if (Math.abs(dx) > limit + 4) { endRun("Left the track"); return; }
   if (Math.abs(dx) > limit) {
     if (run.airborne && run.y > terrainY(run.x, run.z) + 7) { endRun("Flew over the canyon wall"); return; }
     const sgn = Math.sign(dx);
