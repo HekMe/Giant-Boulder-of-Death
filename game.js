@@ -348,17 +348,22 @@ function root(name) { const r = new BABYLON.TransformNode(name, scene); return r
    ========================================================================= */
 function buildBoulder() {
   const r = CFG.balance.physics.boulderRadius;
-  boulder = BABYLON.MeshBuilder.CreatePolyhedron("boulder", { type: 3, size: r * 0.62 }, scene);
-  // lumpy displacement for a rock silhouette
+  boulder = BABYLON.MeshBuilder.CreateIcoSphere("boulder", { radius: r * 0.94, subdivisions: 3 }, scene);
+  // coherent multi-octave lumps — reads as weathered rock, not random spikes
   const pos = boulder.getVerticesData(BABYLON.VertexBuffer.PositionKind);
   for (let i = 0; i < pos.length; i += 3) {
-    const k = 1 + (hash01(i) - 0.5) * 0.3;
-    pos[i] *= k; pos[i + 1] *= k; pos[i + 2] *= k;
+    const x = pos[i], y = pos[i + 1], z = pos[i + 2];
+    const k = 1
+      + 0.14 * Math.sin(x * 3.1 + y * 2.3 + 1.7)
+      + 0.09 * Math.sin(y * 5.7 + z * 4.1 + 0.6)
+      + 0.05 * Math.sin(z * 9.3 + x * 7.7 + 2.9);
+    pos[i] = x * k; pos[i + 1] = y * k; pos[i + 2] = z * k;
   }
   boulder.setVerticesData(BABYLON.VertexBuffer.PositionKind, pos);
-  boulder.createNormals(true);
+  boulder.convertToFlatShadedMesh(); // faceted, chiselled look
   boulderMat = new BABYLON.StandardMaterial("boulderMat", scene);
-  boulderMat.specularColor = new BABYLON.Color3(0.12, 0.12, 0.12);
+  boulderMat.specularColor = new BABYLON.Color3(0.2, 0.19, 0.17);
+  boulderMat.specularPower = 24;
   boulder.material = boulderMat;
   applySkin();
   if (shadowGen) shadowGen.addShadowCaster(boulder);
@@ -535,6 +540,56 @@ const destructibleBuilders = {
     const halo = cyl("halo", 0.06, 1.5, 1.5, mat("goldH", "#ffe9a0", { emissive: "#8a6c1a" }), n, 18);
     halo.position.y = 1.6;
     return n;
+  },
+  snowman(d) {
+    const n = root("snowman"); const w = mat("snowM", "#eef4fa");
+    sph("b1", 1.5, w, n).position.y = 0.7;
+    sph("b2", 1.1, w, n).position.y = 1.7;
+    sph("b3", 0.8, w, n).position.y = 2.5;
+    const nose = cyl("no", 0.4, 0.02, 0.12, mat("carrot", "#e07a2a", { emissive: "#5a2a08" }), n, 6);
+    nose.rotation.x = Math.PI / 2; nose.position.set(0, 2.5, 0.45);
+    return n;
+  },
+  iceblock(d) {
+    const n = root("iceblock");
+    const b = box("i", 1.6, 1.6, 1.6, mat("iceBl", "#bfe2ff", { emissive: "#16314a", alpha: 0.85 }), n);
+    b.position.y = 0.8; b.rotation.y = 0.5;
+    return n;
+  },
+  brazier(d) {
+    const n = root("brazier");
+    cyl("bowl", 0.7, 1.4, 0.9, mat("iron", "#3c3c40"), n, 10).position.y = 0.9;
+    cyl("leg", 0.7, 0.14, 0.2, mat("iron", "#3c3c40"), n, 6).position.y = 0.3;
+    sph("fire", 0.9, mat("fireM", "#ff8a2a", { emissive: "#e0540a" }), n, 7).position.y = 1.45;
+    return n;
+  },
+  well(d) {
+    const n = root("well"); const s = mat("stone", "#8d8d96");
+    cyl("ring", 1.0, 2.0, 2.1, s, n, 12).position.y = 0.5;
+    const wood = mat("woodD", "#6e5436");
+    box("p1", 0.16, 1.6, 0.16, wood, n).position.set(-0.85, 1.6, 0);
+    box("p2", 0.16, 1.6, 0.16, wood, n).position.set(0.85, 1.6, 0);
+    const roof = cyl("r", 2.3, 1.9, 1.9, mat("hutR", "#4a3320"), n, 3);
+    roof.rotation.z = Math.PI / 2; roof.rotation.y = Math.PI / 2; roof.position.y = 2.5; roof.scaling.x = 0.7;
+    return n;
+  },
+  stall(d) {
+    const n = root("stall"); const wood = mat("crate", "#a07a4a");
+    box("counter", 2.4, 1.0, 1.2, wood, n).position.y = 0.5;
+    for (const sx of [-1, 1]) for (const sz of [-1, 1])
+      box("p", 0.12, 2.2, 0.12, mat("woodD", "#6e5436"), n).position.set(sx * 1.1, 1.1, sz * 0.55);
+    const canopy = box("c", 2.8, 0.12, 1.7, mat("canvasM", "#c9573f", { emissive: "#3a0f08" }), n);
+    canopy.position.y = 2.25; canopy.rotation.x = 0.12;
+    return n;
+  },
+  statue(d) {
+    const n = root("statue"); const s = mat("stone2", "#73737c"), s2 = mat("stoneEye", "#b9b9c4");
+    box("ped", 1.5, 0.7, 1.5, s, n).position.y = 0.35;
+    cyl("body", 1.7, 0.5, 0.8, s2, n, 9).position.y = 1.55;
+    sph("head", 0.7, s2, n).position.y = 2.65;
+    const arm = cyl("arm", 1.1, 0.16, 0.2, s2, n, 7);
+    arm.position.set(0.55, 2.0, 0.2); arm.rotation.z = -1.1;
+    return n;
   }
 };
 
@@ -597,16 +652,52 @@ const hazardBuilders = {
     const band = cyl("b", 0.2, 2.66, 2.66, mat("rollB", "#3e3a34"), n, 12);
     band.rotation.z = Math.PI / 2; band.position.y = 1.3;
     return n;
+  },
+  lava() {
+    const n = root("lava");
+    const pool = cyl("pool", 0.12, 4.6, 4.6, mat("lavaM", "#ff5a14", { emissive: "#e03a00" }), n, 18);
+    pool.position.y = 0.06;
+    const core = cyl("core", 0.16, 2.4, 2.4, mat("lavaC", "#ffd23a", { emissive: "#ff8a14" }), n, 14);
+    core.position.y = 0.1;
+    for (let i = 0; i < 4; i++) {
+      const b = sph("bub", rand(0.3, 0.55), mat("lavaC", "#ffd23a", { emissive: "#ff8a14" }), n, 5);
+      const a = rand(0, Math.PI * 2), rr = rand(0.4, 1.7);
+      b.position.set(Math.cos(a) * rr, 0.2, Math.sin(a) * rr);
+    }
+    return n;
+  },
+  chaser() {
+    const n = root("chaser");
+    const body = sph("b", 1.7, mat("chaserM", "#4a2030", { emissive: "#5a0a1a" }), n, 8);
+    body.position.y = 0.9;
+    const spike = mat("mineS", "#2c2c30");
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const s = cyl("sp", 0.6, 0.02, 0.18, spike, n, 5);
+      s.position.set(Math.cos(a) * 0.85, 0.9, Math.sin(a) * 0.85);
+      s.rotation.z = -Math.cos(a) * 1.45; s.rotation.x = Math.sin(a) * 1.45;
+    }
+    const eye = sph("eye", 0.34, mat("chaserE", "#ff3a3a", { emissive: "#ff1a1a" }), n, 6);
+    eye.position.set(0, 1.1, 0.75);
+    return n;
   }
 };
 function hazardFactory(type) {
   const n = hazardBuilders[type]();
   // pulsing red danger ring on the ground — instantly readable "do not touch"
-  const ringD = type === "roller" ? 6.0 : type === "mine" ? 5.6 : 5.2;
-  const ring = cyl("warnring", 0.07, ringD, ringD,
-    mat("dangerRing", "#ff2a2a", { emissive: "#d11414", alpha: 0.5 }), n, 22);
-  ring.position.y = 0.08;
-  n.metadata = { kind: "hazard", type, radius: type === "roller" ? 2.0 : type === "mine" ? CFG.balance.hazards.mineRadius : CFG.balance.hazards.spikeRadius, dir: 1, passed: false, dead: false, ring };
+  let ring = null;
+  if (type !== "lava") {
+    const ringD = type === "roller" ? 6.0 : type === "mine" ? 5.6 : type === "chaser" ? 5.0 : 5.2;
+    ring = cyl("warnring", 0.07, ringD, ringD,
+      mat("dangerRing", "#ff2a2a", { emissive: "#d11414", alpha: 0.5 }), n, 22);
+    ring.position.y = 0.08;
+  }
+  const radius = type === "roller" ? 2.0
+    : type === "mine" ? CFG.balance.hazards.mineRadius
+    : type === "lava" ? 2.2
+    : type === "chaser" ? 1.9
+    : CFG.balance.hazards.spikeRadius;
+  n.metadata = { kind: "hazard", type, radius, dir: 1, passed: false, dead: false, ring };
   return n;
 }
 
@@ -920,11 +1011,15 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
       } else {
         // block 1–2 of 3 lanes, always leave at least one safe
         const lanes = [0, 1, 2];
-        const blockedCount = (dist > 1200 && Math.random() < 0.5) ? 2 : 1;
+        const blockedCount = (dist > H.twoLaneAfter && Math.random() < (dist > 3000 ? 0.62 : 0.45)) ? 2 : 1;
+        // enemy variety grows with distance
+        const pool = ["spikes", "mine"];
+        if (dist > H.chaserAfter) pool.push("chaser");
+        if (dist > H.lavaAfter) pool.push("lava", "lava");
         for (let k = 0; k < blockedCount; k++) {
           const li = randi(0, lanes.length - 1);
           const lane = lanes.splice(li, 1)[0];
-          const type = Math.random() < 0.5 ? "spikes" : "mine";
+          const type = pool[randi(0, pool.length - 1)];
           const node = pooled("hazard_" + type, () => hazardFactory(type));
           node.getChildMeshes().forEach((m) => m.setEnabled(true));
           node.metadata.type = type; node.metadata.dead = false; node.metadata.passed = false;
@@ -1038,7 +1133,7 @@ const run = {
   startZ: 0, dist: 0, score: 0,
   coins: 0, gems: 0, meter: 0,
   combo: 0, comboT: 0, maxCombo: 0,
-  overdrive: 0, grace: 0, jumpCd: 0, coyote: 0, airborne: false,
+  overdrive: 0, grace: 0, jumpCd: 0, coyote: 0, airborne: false, jumping: false,
   smashed: 0, gapsCleared: 0, nearMisses: 0, overdrives: 0,
   shake: 0, rollAngle: 0,
   continuesUsed: 0,
@@ -1049,7 +1144,7 @@ const run = {
   paused: false,
   deathReason: ""
 };
-let input = { left: false, right: false, jump: false, axis: 0, joyActive: false };
+let input = { left: false, right: false, jump: false, brake: false, axis: 0, joyActive: false };
 
 function startRun(continueRun) {
   AudioFX.ensure(); AudioFX.resume(); AudioFX.startMusic();
@@ -1164,6 +1259,7 @@ function smashObject(node) {
   run.maxCombo = Math.max(run.maxCombo, run.combo);
   run.smashed++;
   addScore(def.score, node.position, "", def.score >= 150 ? "big" : "");
+  if (run.overdrive <= 0) run.speed = Math.max(CFG.balance.physics.minSpeed, run.speed - (def.slow || 1));
   chargeMeter(def.meter);
   burstDebris(node.position.add(new BABYLON.Vector3(0, 1, 0)), hex3(def.color), 6 + Math.floor(def.size * 5), 7 + def.size * 3);
   AudioFX.smash(def.size);
@@ -1258,6 +1354,7 @@ function updateRun(dt) {
   /* forward speed from slope */
   const s = slopeAt(run.z);
   run.speed += (P.slopeAccel * s - P.drag * run.speed * run.speed * 0.018 - 0.4) * dt;
+  if (input.brake) run.speed -= P.brakeDecel * dt; // gentle brake for control
   // speed cap ramps up with distance — the start stays calm and readable
   const speedCap = lerp(P.speedCapStart, P.maxSpeed, clamp(run.dist / P.speedCapRampDist, 0, 1));
   run.speed = clamp(run.speed, P.minSpeed, speedCap);
@@ -1289,6 +1386,10 @@ function updateRun(dt) {
       AudioFX.nearmiss();
     }
     run.y = gy; run.vy = 0;
+    run.airborne = false; run.jumping = false; run.coyote = P.coyoteTime;
+  } else if (!gap && !run.jumping && run.vy <= 3 && run.y - gy < P.groundStick) {
+    // terrain suction: small crests no longer launch the boulder into hops
+    run.y = gy; run.vy = 0;
     run.airborne = false; run.coyote = P.coyoteTime;
   } else {
     run.coyote = Math.max(0, run.coyote - dt);
@@ -1304,7 +1405,7 @@ function updateRun(dt) {
     input.jump = false;
     if ((!run.airborne || run.coyote > 0) && run.jumpCd <= 0) {
       run.vy = P.jumpPower * (1 + upBonus("jump"));
-      run.jumpCd = P.jumpCooldown; run.coyote = 0; run.airborne = true;
+      run.jumpCd = P.jumpCooldown; run.coyote = 0; run.airborne = true; run.jumping = true;
       AudioFX.jump();
     }
   }
@@ -1373,6 +1474,22 @@ function collide(dt, env) {
       const lamp = h.getChildMeshes().find((m) => m.name === "l");
       if (lamp) lamp.scaling.setAll(1 + 0.55 * Math.sin(performance.now() * 0.012));
     }
+    if (md.type === "chaser") {
+      // drifts toward the boulder's lane while it approaches
+      const ahead = h.position.z - bp.z;
+      if (ahead > 0 && ahead < 70) {
+        const dxh = bp.x - h.position.x;
+        h.position.x += clamp(dxh, -1, 1) * CFG.balance.hazards.chaserSpeed * dt;
+        const rel = h.position.x - centerX(h.position.z);
+        h.position.x = centerX(h.position.z) + clamp(rel, -T.halfWidth * 0.9, T.halfWidth * 0.9);
+        h.position.y = terrainY(h.position.x, h.position.z);
+        h.getChildMeshes()[0].rotation.y += dt * 4;
+      }
+    }
+    if (md.type === "lava") {
+      const core = h.getChildMeshes().find((m) => m.name === "core");
+      if (core) { const pl = 1 + 0.18 * Math.sin(performance.now() * 0.006 + h.position.z); core.scaling.set(pl, 1, pl); }
+    }
     const dz = h.position.z - bp.z;
     if (dz < -8) {
       if (!md.passed) {
@@ -1389,7 +1506,7 @@ function collide(dt, env) {
     if (dz > 8) continue;
     const dx = h.position.x - bp.x;
     const hitR = r + md.radius * 0.8;
-    const overTop = bp.y - terrainY(bp.x, bp.z) - r > (md.type === "roller" ? 3.4 : 2.0);
+    const overTop = bp.y - terrainY(bp.x, bp.z) - r > (md.type === "roller" ? 3.4 : md.type === "lava" ? 1.3 : 2.0);
     if (dx * dx + dz * dz < hitR * hitR && !overTop) {
       if (run.overdrive > 0) { smashHazard(h); continue; }
       if (run.grace > 0) continue;
@@ -1400,7 +1517,7 @@ function collide(dt, env) {
         continue;
       }
       if (md.type === "mine") { AudioFX.explosion(); burstDebris(h.position, hex3("#7a2a1a"), 16, 14); }
-      endRun(md.type === "mine" ? "Mine explosion" : md.type === "roller" ? "Hit by a rolling boulder" : "Spikes");
+      endRun(md.type === "mine" ? "Mine explosion" : md.type === "roller" ? "Hit by a rolling boulder" : md.type === "lava" ? "Lava pool" : md.type === "chaser" ? "Spiked stalker" : "Spikes");
       return;
     }
   }
@@ -1735,35 +1852,39 @@ function bindControls() {
   window.addEventListener("keydown", (e) => {
     if (e.code === "ArrowLeft" || e.code === "KeyA") input.left = true;
     if (e.code === "ArrowRight" || e.code === "KeyD") input.right = true;
+    if (e.code === "ArrowDown" || e.code === "KeyS") { input.brake = true; e.preventDefault(); }
     if (e.code === "Space") { input.jump = true; e.preventDefault(); }
     if (e.code === "Escape") setPause(!run.paused);
   });
   window.addEventListener("keyup", (e) => {
     if (e.code === "ArrowLeft" || e.code === "KeyA") input.left = false;
     if (e.code === "ArrowRight" || e.code === "KeyD") input.right = false;
+    if (e.code === "ArrowDown" || e.code === "KeyS") input.brake = false;
   });
 
   /* virtual joystick */
   const joy = $("joystick"), knob = $("joyKnob"), base = $("joyBase");
-  let joyId = null, cx0 = 0;
+  let joyId = null, cx0 = 0, cy0 = 0;
   joy.addEventListener("touchstart", (e) => {
     const t = e.changedTouches[0]; joyId = t.identifier; input.joyActive = true;
-    const r = base.getBoundingClientRect(); cx0 = r.left + r.width / 2;
+    const r = base.getBoundingClientRect(); cx0 = r.left + r.width / 2; cy0 = r.top + r.height / 2;
     e.preventDefault();
   }, { passive: false });
   joy.addEventListener("touchmove", (e) => {
     for (const t of e.changedTouches) {
       if (t.identifier !== joyId) continue;
       const dx = clamp((t.clientX - cx0) / 50, -1, 1);
+      const dy = clamp(((t.clientY == null ? cy0 : t.clientY) - cy0) / 50, -1, 1);
       input.axis = dx;
-      knob.style.transform = "translate(calc(-50% + " + dx * 36 + "px), -50%)";
+      input.brake = dy > 0.45; // pull the stick down to brake
+      knob.style.transform = "translate(calc(-50% + " + dx * 36 + "px), calc(-50% + " + dy * 36 + "px))";
     }
     e.preventDefault();
   }, { passive: false });
   const joyEnd = (e) => {
     for (const t of e.changedTouches) {
       if (t.identifier !== joyId) continue;
-      joyId = null; input.axis = 0; input.joyActive = false;
+      joyId = null; input.axis = 0; input.brake = false; input.joyActive = false;
       knob.style.transform = "translate(-50%, -50%)";
     }
   };

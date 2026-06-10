@@ -10,8 +10,8 @@ Built entirely with **Babylon.js** (CDN) + plain HTML/CSS/JS. No build step, no 
 - **Endless procedural terrain** — the slope rolls, winds and banks; the ground itself climbs into ~22 m canyon walls on both edges, lined with rocks.
 - **Crevasses (gaps)** — telegraphed by warning stripes, jumpable (Space / jump button); falling in ends the run.
 - **5 biomes** — alpine meadow → rocky peaks → snow and ice → volcanic → twilight; colors, fog and physics blend smoothly (ice is slippery).
-- **10 destructible objects** — from a fence and hay bale up to a golden idol, each with its own value.
-- **Hazards** — spikes, mines and rolling boulders, each marked by a pulsing red danger ring; a safe lane always exists and spacing respects human reaction time.
+- **16 destructible objects** — from a fence and hay bale up to a golden idol; heavier objects (hut, statue, well…) slow the boulder more on impact — except during Overdrive.
+- **Hazards** — spikes, mines, rolling boulders, lava pools and homing spiked stalkers, marked by pulsing red danger rings; variety and density ramp up with distance, but a safe lane always exists and spacing respects human reaction time.
 - **Score, combo, meter, Overdrive** — near-miss and gap-clear bonuses, temporary invincibility at full meter.
 - **Meta progression** — coins and gems, 6 permanent upgrades, a gem-powered lucky spin with run buffs, 45 goals (5 active at a time, shown on the HUD), 4 unlockable boulder skins, continue-after-death with a rising price, lifetime stats.
 - **Saving** — localStorage plus export/import of your save as a JSON file.
@@ -23,6 +23,7 @@ Built entirely with **Babylon.js** (CDN) + plain HTML/CSS/JS. No build step, no 
 | Action | Desktop | Mobile |
 |---|---|---|
 | Steer | A / D or ← / → | **tilt your device (gyro, on by default)** or the left joystick |
+| Brake | S or ↓ | pull the joystick down |
 | Jump | Space | big button on the right |
 | Pause | Esc or ⏸ | ⏸ |
 
@@ -65,7 +66,7 @@ node build.js
 ├── config.fallback.js      # bundled config copy for dev.html on file:// (generated)
 ├── config/                 # data-driven game balance (source of truth)
 │   ├── balance.json        # physics, terrain, gaps, hazards, scoring, camera
-│   ├── objects.json        # 10 destructible objects
+│   ├── objects.json        # 16 destructible objects
 │   ├── biomes.json         # 5 biomes (palettes, fog, grip, decor)
 │   ├── upgrades.json       # 6 permanent upgrades
 │   ├── spinner.json        # lucky spin buffs

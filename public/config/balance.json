@@ -1,7 +1,7 @@
 {
   "physics": {
     "gravity": 34.0,
-    "boulderRadius": 1.7,
+    "boulderRadius": 1.45,
     "slopeAccel": 26.0,
     "drag": 0.045,
     "maxSpeed": 58,
@@ -18,7 +18,9 @@
     "fallDeathDepth": 7,
     "speedCapStart": 30,
     "speedCapRampDist": 1500,
-    "lateralFloor": 0.5
+    "lateralFloor": 0.5,
+    "brakeDecel": 18,
+    "groundStick": 1.6
   },
   "terrain": {
     "halfWidth": 15,
@@ -32,7 +34,7 @@
     "windAmp2": 3,
     "windFreq2": 0.0075,
     "chuteDepth": 2.6,
-    "rippleAmp": 0.16,
+    "rippleAmp": 0.1,
     "rippleFreqX": 0.55,
     "rippleFreqZ": 0.33,
     "chunkLength": 60,
@@ -59,19 +61,23 @@
   },
   "hazards": {
     "firstHazardAt": 130,
-    "baseEvery": 85,
+    "baseEvery": 80,
     "minEvery": 34,
-    "shrinkPer1000m": 11,
+    "shrinkPer1000m": 14,
     "reactionTime": 1.15,
     "lanes": 3,
     "rollerSpeed": 7.5,
     "mineRadius": 2.6,
-    "spikeRadius": 2.4
+    "spikeRadius": 2.4,
+    "twoLaneAfter": 800,
+    "chaserAfter": 600,
+    "lavaAfter": 1100,
+    "chaserSpeed": 5.5
   },
   "spawning": {
     "objectsPerChunkBase": 7,
     "objectsPerChunkMax": 14,
-    "objectsRampPer1000m": 2.5,
+    "objectsRampPer1000m": 3,
     "coinsPerChunk": 4,
     "gemChance": 0.045,
     "decorPerChunk": 6
