@@ -62,7 +62,7 @@ function defaultSave() {
     v: 1, coins: 0, gems: 5,
     upgrades: {}, goalIndex: 0, goalsDone: [],
     skins: ["skinRock"], activeSkin: "skinRock",
-    stats: { bestDist: 0, bestScore: 0, runs: 0, smashed: 0, overdrives: 0, gaps: 0, totalCoins: 0 },
+    stats: { bestDist: 0, bestScore: 0, runs: 0, smashed: 0, overdrives: 0, gaps: 0, totalCoins: 0, totalDist: 0 },
     settings: { sens: 1, volume: 0.7, music: true, quality: "high", gyro: false, gyroTouched: false, reducedMotion: false },
     highscores: []
   };
@@ -568,7 +568,7 @@ const decorBuilders = {
 /* ----- hazards ----- */
 const hazardBuilders = {
   spikes() {
-    const n = root("spikes"); const m = mat("spikeM", "#3a3d44", { emissive: "#14060a" });
+    const n = root("spikes"); const m = mat("spikeM", "#43363a", { emissive: "#3a0d10" });
     for (let i = 0; i < 6; i++) {
       const c = cyl("s", rand(1.0, 1.7), 0.01, rand(0.35, 0.5), m, n, 6);
       c.position.set(rand(-1.6, 1.6), 0.6, rand(-1.2, 1.2));
@@ -586,7 +586,7 @@ const hazardBuilders = {
       s.position.set(Math.cos(a) * 0.8, 0.8, Math.sin(a) * 0.8);
       s.rotation.z = -Math.cos(a) * 1.4; s.rotation.x = Math.sin(a) * 1.4;
     }
-    const lamp = sph("l", 0.3, mat("mineL", "#ff3a3a", { emissive: "#ff2020" }), n, 6);
+    const lamp = sph("l", 0.3, mat("mineL", "#ff4a3a", { emissive: "#ff3a14" }), n, 6);
     lamp.position.y = 1.6;
     return n;
   },
@@ -601,7 +601,12 @@ const hazardBuilders = {
 };
 function hazardFactory(type) {
   const n = hazardBuilders[type]();
-  n.metadata = { kind: "hazard", type, radius: type === "roller" ? 2.0 : type === "mine" ? CFG.balance.hazards.mineRadius : CFG.balance.hazards.spikeRadius, dir: 1, passed: false, dead: false };
+  // pulsing red danger ring on the ground — instantly readable "do not touch"
+  const ringD = type === "roller" ? 6.0 : type === "mine" ? 5.6 : 5.2;
+  const ring = cyl("warnring", 0.07, ringD, ringD,
+    mat("dangerRing", "#ff2a2a", { emissive: "#d11414", alpha: 0.5 }), n, 22);
+  ring.position.y = 0.08;
+  n.metadata = { kind: "hazard", type, radius: type === "roller" ? 2.0 : type === "mine" ? CFG.balance.hazards.mineRadius : CFG.balance.hazards.spikeRadius, dir: 1, passed: false, dead: false, ring };
   return n;
 }
 
@@ -624,7 +629,7 @@ function gemFactory() {
 /* gap warning marker */
 function warnFactory() {
   const n = root("warn");
-  const m = mat("warnM", "#d23a2a", { emissive: "#8a1408" });
+  const m = mat("warnM", "#e8311c", { emissive: "#b81e0e" });
   const m2 = mat("warnM2", "#e8d8c0", { emissive: "#6a5a40" });
   for (let i = -3; i <= 3; i++) {
     const b = box("w", 2.4, 0.32, 1.1, i % 2 ? m : m2, n);
@@ -905,6 +910,7 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
       if (r < 0.18) {
         // roller crossing the whole track — telegraphed, all lanes "soft blocked", timing dodge
         const node = pooled("hazard_roller", () => hazardFactory("roller"));
+        node.getChildMeshes().forEach((m) => m.setEnabled(true));
         node.metadata.type = "roller"; node.metadata.dead = false; node.metadata.passed = false;
         node.metadata.dir = Math.random() < 0.5 ? -1 : 1;
         node.position.set(laneX(hz, node.metadata.dir < 0 ? 2 : 0), terrainY(laneX(hz, 1), hz), hz);
@@ -920,6 +926,7 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
           const lane = lanes.splice(li, 1)[0];
           const type = Math.random() < 0.5 ? "spikes" : "mine";
           const node = pooled("hazard_" + type, () => hazardFactory(type));
+          node.getChildMeshes().forEach((m) => m.setEnabled(true));
           node.metadata.type = type; node.metadata.dead = false; node.metadata.passed = false;
           const x = laneX(hz, lane);
           node.position.set(x, terrainY(x, hz), hz);
@@ -988,7 +995,7 @@ function placeTelegraph(rec, hz) {
   const wz = hz - 16;
   const node = pooled("tele", () => {
     const n = root("tele");
-    const m = mat("teleM", "#ffae3a", { emissive: "#a85c08" });
+    const m = mat("teleM", "#ffae3a", { emissive: "#c96d08" });
     const b1 = box("t1", 1.6, 0.14, 0.7, m, n); b1.rotation.y = 0.6;
     const b2 = box("t2", 1.6, 0.14, 0.7, m, n); b2.rotation.y = -0.6;
     n.metadata = { kind: "tele" }; return n;
@@ -1098,6 +1105,7 @@ function endRun(reason) {
   SAVE.coins += coinGain; SAVE.gems += run.gems;
   SAVE.stats.totalCoins += coinGain;
   SAVE.stats.runs++; SAVE.stats.smashed += run.smashed;
+  SAVE.stats.totalDist = (SAVE.stats.totalDist || 0) + run.dist;
   SAVE.stats.overdrives += run.overdrives; SAVE.stats.gaps += run.gapsCleared;
   let newBest = false;
   if (run.dist > SAVE.stats.bestDist) { SAVE.stats.bestDist = run.dist; newBest = true; }
@@ -1250,14 +1258,17 @@ function updateRun(dt) {
   /* forward speed from slope */
   const s = slopeAt(run.z);
   run.speed += (P.slopeAccel * s - P.drag * run.speed * run.speed * 0.018 - 0.4) * dt;
-  run.speed = clamp(run.speed, P.minSpeed, P.maxSpeed);
+  // speed cap ramps up with distance — the start stays calm and readable
+  const speedCap = lerp(P.speedCapStart, P.maxSpeed, clamp(run.dist / P.speedCapRampDist, 0, 1));
+  run.speed = clamp(run.speed, P.minSpeed, speedCap);
 
   /* steering with inertia; grip per biome */
   const steer = (input.axis || (input.left ? -1 : 0) + (input.right ? 1 : 0)) * SAVE.settings.sens;
   const grip = env.grip;
-  run.vx += steer * P.steerAccel * (1 + upBonus("steer")) * grip * dt;
+  const agility = clamp(run.speed / P.maxSpeed, P.lateralFloor, 1);
+  run.vx += steer * P.steerAccel * (1 + upBonus("steer")) * grip * agility * dt;
   run.vx -= run.vx * P.steerFriction * grip * dt;
-  run.vx = clamp(run.vx, -P.maxLateralSpeed, P.maxLateralSpeed);
+  run.vx = clamp(run.vx, -P.maxLateralSpeed * agility, P.maxLateralSpeed * agility);
   run.x += run.vx * dt;
   run.z += run.speed * dt;
   run.dist = run.z - run.startZ;
@@ -1347,6 +1358,10 @@ function collide(dt, env) {
     const h = run.hazards[i];
     const md = h.metadata;
     if (md.dead) continue;
+    if (md.ring) {
+      const pl = 1 + 0.16 * Math.sin(performance.now() * 0.009 + h.position.z);
+      md.ring.scaling.set(pl, 1, pl);
+    }
     if (md.type === "roller") {
       h.position.x += md.dir * CFG.balance.hazards.rollerSpeed * dt;
       const rel = h.position.x - centerX(h.position.z);
@@ -1356,7 +1371,7 @@ function collide(dt, env) {
     }
     if (md.type === "mine") {
       const lamp = h.getChildMeshes().find((m) => m.name === "l");
-      if (lamp) lamp.scaling.setAll(1 + 0.3 * Math.sin(performance.now() * 0.012));
+      if (lamp) lamp.scaling.setAll(1 + 0.55 * Math.sin(performance.now() * 0.012));
     }
     const dz = h.position.z - bp.z;
     if (dz < -8) {
@@ -1447,8 +1462,13 @@ function updateHUD(force) {
   else if (run.grace > 0) $("hudState").textContent = "INVULNERABLE";
   else if (run.state === "intro") $("hudState").textContent = "FREE FALL";
   else $("hudState").textContent = "";
-  const g = currentGoal();
-  $("hudGoal").textContent = g ? "Goal: " + g.label : "All goals complete!";
+  const act = activeGoals();
+  if (act.length) {
+    const i = Math.floor(performance.now() / 4000) % act.length;
+    const g = act[i];
+    $("hudGoal").textContent = "Goal " + (i + 1) + "/" + act.length + ": " + g.label +
+      " — " + fmt(Math.min(goalProgress(g), g.target)) + "/" + fmt(g.target);
+  } else $("hudGoal").textContent = "All goals complete!";
 }
 
 /* ---------- main loop ---------- */
@@ -1470,9 +1490,18 @@ function tick() {
 }
 
 /* =========================================================================
-   GOALS (sequential quest tree)
+   GOALS — up to 5 concurrently active goals
    ========================================================================= */
-function currentGoal() { return CFG.goals.goals[SAVE.goalIndex] || null; }
+const ACTIVE_GOALS = 5;
+function activeGoals() {
+  const out = [];
+  for (const g of CFG.goals.goals) {
+    if (SAVE.goalsDone.includes(g.id)) continue;
+    out.push(g);
+    if (out.length >= ACTIVE_GOALS) break;
+  }
+  return out;
+}
 function goalProgress(g) {
   switch (g.type) {
     case "runDistance": return run.dist;
@@ -1486,19 +1515,25 @@ function goalProgress(g) {
     case "totalSmash": return SAVE.stats.smashed;
     case "totalGaps": return SAVE.stats.gaps;
     case "totalOverdrive": return SAVE.stats.overdrives;
+    case "totalRuns": return SAVE.stats.runs;
+    case "totalDist": return SAVE.stats.totalDist || 0;
     default: return 0;
   }
 }
 function checkGoals() {
-  let msg = "";
-  let g = currentGoal();
-  while (g && goalProgress(g) >= g.target) {
-    SAVE.coins += g.coins; SAVE.gems += g.gems;
-    SAVE.goalsDone.push(g.id);
-    if (g.unlock && !SAVE.skins.includes(g.unlock)) SAVE.skins.push(g.unlock);
-    msg += "✔ Goal complete: " + g.label + " (+" + g.coins + " coins" + (g.gems ? ", +" + g.gems + " 💎" : "") + (g.unlock ? ", new skin!" : "") + ")\n";
-    SAVE.goalIndex++;
-    g = currentGoal();
+  let msg = "", changed = true;
+  while (changed) {
+    changed = false;
+    for (const g of activeGoals()) {
+      if (goalProgress(g) >= g.target) {
+        SAVE.coins += g.coins; SAVE.gems += g.gems;
+        SAVE.goalsDone.push(g.id);
+        if (g.unlock && !SAVE.skins.includes(g.unlock)) SAVE.skins.push(g.unlock);
+        msg += "✔ Goal complete: " + g.label + " (+" + g.coins + " coins" + (g.gems ? ", +" + g.gems + " 💎" : "") + (g.unlock ? ", new skin!" : "") + ")\n";
+        changed = true;
+        break; // active set shifted — recompute
+      }
+    }
   }
   return msg;
 }
@@ -1593,14 +1628,16 @@ function renderUpgrades() {
 
 function renderGoals() {
   const list = $("goalList"); list.innerHTML = "";
-  CFG.goals.goals.forEach((g, i) => {
+  const act = activeGoals().map((g) => g.id);
+  CFG.goals.goals.forEach((g) => {
+    const done = SAVE.goalsDone.includes(g.id);
+    const active = act.includes(g.id);
     const row = document.createElement("div");
-    const done = i < SAVE.goalIndex;
-    row.className = "goal-row" + (done ? " done" : i === SAVE.goalIndex ? " current" : "");
-    const prog = done ? g.target : i === SAVE.goalIndex ? Math.min(goalProgress(g), g.target) : 0;
-    row.innerHTML = "<div class='up-info'><b>" + (done ? "✔ " : "") + g.label + "</b>" +
+    row.className = "goal-row" + (done ? " done" : active ? " current" : " locked");
+    const prog = done ? g.target : active ? Math.min(goalProgress(g), g.target) : 0;
+    row.innerHTML = "<div class='up-info'><b>" + (done ? "✔ " : active ? "▶ " : "🔒 ") + g.label + "</b>" +
       "<span>+" + g.coins + " coins" + (g.gems ? " · +" + g.gems + " 💎" : "") + (g.unlock ? " · skin" : "") + "</span></div>" +
-      "<div class='goal-prog'>" + fmt(prog) + " / " + fmt(g.target) + "</div>";
+      "<div class='goal-prog'>" + (active || done ? fmt(prog) + " / " + fmt(g.target) : "—") + "</div>";
     list.appendChild(row);
   });
 }

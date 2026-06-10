@@ -142,6 +142,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
   .hud-bc{bottom:170px;width:60vw}
 }
 .skin-label{font-size:12px;color:var(--ink-dim);letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+.goal-row.locked{opacity:.55}
+.goal-row.locked .up-info b{color:var(--ink-dim)}
 
 </style>
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
@@ -287,7 +289,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
   </div>
 </div>
 <script>
-window.__INLINE_CONFIG__ = {"balance":{"physics":{"gravity":34,"boulderRadius":1.7,"slopeAccel":26,"drag":0.045,"maxSpeed":58,"minSpeed":9,"startSpeed":14,"steerAccel":70,"steerFriction":4.6,"maxLateralSpeed":30,"jumpPower":16.5,"jumpCooldown":0.28,"coyoteTime":0.13,"wallBouncePenalty":0.78,"wallBounceKick":12,"fallDeathDepth":7},"terrain":{"halfWidth":15,"grade":0.17,"hillAmp1":5.5,"hillFreq1":0.011,"hillAmp2":2.2,"hillFreq2":0.031,"windAmp1":8,"windFreq1":0.004,"windAmp2":3,"windFreq2":0.0075,"chuteDepth":2.6,"rippleAmp":0.16,"rippleFreqX":0.55,"rippleFreqZ":0.33,"chunkLength":60,"subdivX":16,"subdivZ":30,"chunksAhead":8,"chunksBehind":2,"wallSpacing":4.5,"wallOffset":0.2,"wallHeight":22,"wallSharpness":5,"meshExtra":16},"gaps":{"firstGapAt":220,"interval":170,"intervalMin":95,"intervalShrinkPer1000m":22,"baseWidth":7,"widthPer1000m":3.5,"maxWidth":15,"chance":0.72,"warnDistance":30},"hazards":{"firstHazardAt":130,"baseEvery":85,"minEvery":34,"shrinkPer1000m":11,"reactionTime":1.15,"lanes":3,"rollerSpeed":7.5,"mineRadius":2.6,"spikeRadius":2.4},"spawning":{"objectsPerChunkBase":7,"objectsPerChunkMax":14,"objectsRampPer1000m":2.5,"coinsPerChunk":4,"gemChance":0.045,"decorPerChunk":6},"scoring":{"comboWindow":2,"comboStep":0.25,"comboMax":5,"nearMissBonus":120,"nearMissRadius":3.4,"gapClearBonus":150,"distancePointsPerMeter":2},"overdrive":{"meterMax":100,"duration":7,"scoreMult":2,"graceTime":1.6,"drainOnEnd":true},"meta":{"coinValue":1,"continueBaseCost":3,"continueCostStep":3,"continueMaxPerRun":3},"camera":{"back":13.5,"height":7.5,"lookAheadBase":10,"lookAheadPerSpeed":0.28,"fovBase":0.95,"fovPerSpeed":0.0042,"fovMax":1.28,"smooth":6},"intro":{"dropHeight":130,"camStartHeight":26,"camStartBack":-8,"blendTime":1.6}},"objects":{"destructibles":[{"id":"fence","label":"Fence","score":25,"meter":3,"weight":22,"size":1,"color":"#8a6a44"},{"id":"hay","label":"Hay bale","score":35,"meter":4,"weight":18,"size":1.1,"color":"#c9a83f"},{"id":"barrel","label":"Barrel","score":45,"meter":5,"weight":16,"size":1,"color":"#7a4f2a"},{"id":"crates","label":"Crates","score":60,"meter":6,"weight":13,"size":1.2,"color":"#a07a4a"},{"id":"sign","label":"Signpost","score":40,"meter":4,"weight":10,"size":1,"color":"#6e5436"},{"id":"tree","label":"Tree","score":55,"meter":5,"weight":14,"size":1.4,"color":"#3e6b35"},{"id":"cart","label":"Cart","score":90,"meter":9,"weight":8,"size":1.3,"color":"#8c5a30"},{"id":"hut","label":"Hut","score":120,"meter":12,"weight":6,"size":1.7,"color":"#6b4a2e"},{"id":"totem","label":"Stone totem","score":180,"meter":16,"weight":4,"size":1.6,"color":"#8d8d96"},{"id":"idol","label":"Golden idol","score":400,"meter":30,"weight":1,"size":1.3,"color":"#e7c34a"}]},"biomes":{"blendZone":90,"biomes":[{"id":"meadow","label":"Alpine Meadow","length":900,"ground":"#5d8a44","ground2":"#4e7639","rock":"#7e7f88","fog":"#bcd6e8","sky":"#9fc8e8","skyHi":"#5d96cf","fogDensity":0.0065,"sun":"#fff3d6","ambient":"#9fb8cf","grip":1,"hazardMult":1,"decor":["pine","bush","flower"]},{"id":"rocky","label":"Rocky Peaks","length":900,"ground":"#8b7f6e","ground2":"#75695a","rock":"#6d6a70","fog":"#c4bdb2","sky":"#b7c3cd","skyHi":"#7d93a8","fogDensity":0.0078,"sun":"#ffe9c4","ambient":"#a8a49c","grip":1,"hazardMult":1.15,"decor":["spire","boulder"]},{"id":"snow","label":"Frozen Plains","length":900,"ground":"#e8eef4","ground2":"#cfdbe6","rock":"#9fb2c4","fog":"#e6eef6","sky":"#cfe1f0","skyHi":"#8fb6d9","fogDensity":0.009,"sun":"#eef4ff","ambient":"#c2d2e2","grip":0.55,"hazardMult":1,"decor":["icepine","icerock"]},{"id":"volcanic","label":"Volcanic Slope","length":900,"ground":"#4a3b38","ground2":"#3a2d2b","rock":"#3c3134","fog":"#8a5a44","sky":"#7e4a38","skyHi":"#52302a","fogDensity":0.011,"sun":"#ffb46a","ambient":"#7e5a4a","grip":0.95,"hazardMult":1.55,"decor":["obsidian","ember"]},{"id":"twilight","label":"Twilight","length":900,"ground":"#46527a","ground2":"#384264","rock":"#3d4566","fog":"#2e3a5e","sky":"#27314f","skyHi":"#141a30","fogDensity":0.0095,"sun":"#b9c6ff","ambient":"#5a6a9a","grip":0.9,"hazardMult":1.3,"decor":["crystal","spire"]}]},"upgrades":{"upgrades":[{"id":"jump","label":"Jump height","desc":"+6% jump height / level","baseCost":20,"costMult":1.6,"bonus":0.06,"maxLevel":8},{"id":"steer","label":"Steering","desc":"+7% steering speed / level","baseCost":20,"costMult":1.6,"bonus":0.07,"maxLevel":8},{"id":"overdrive","label":"Overdrive duration","desc":"+8% Overdrive duration / level","baseCost":30,"costMult":1.7,"bonus":0.08,"maxLevel":8},{"id":"startMeter","label":"Starting charge","desc":"+5% meter at run start / level","baseCost":25,"costMult":1.7,"bonus":0.05,"maxLevel":6},{"id":"coinGain","label":"Coin gain","desc":"+10% coins / level","baseCost":35,"costMult":1.8,"bonus":0.1,"maxLevel":6},{"id":"magnet","label":"Coin magnet","desc":"+0.8 m magnet range / level","baseCost":30,"costMult":1.7,"bonus":0.8,"maxLevel":6}]},"spinner":{"cost":2,"buffs":[{"id":"fewerHazards","label":"Fewer hazards","desc":"-35% hazards on your next run","weight":18},{"id":"coinMagnet","label":"Big magnet","desc":"+5 m magnet range","weight":18},{"id":"gemRate","label":"Gem vein","desc":"3× gem chance","weight":14},{"id":"dudMines","label":"Dud mines","desc":"Mines won't explode on your next run","weight":12},{"id":"fastMeter","label":"Fast charge","desc":"+50% meter charging","weight":18},{"id":"headStart","label":"Head start","desc":"Start with a full meter","weight":14},{"id":"jackpot","label":"JACKPOT","desc":"+25 coins, +5 gems, all buffs at once!","weight":2}]},"goals":{"goals":[{"id":"g01","label":"Travel 300 m in a single run","type":"runDistance","target":300,"coins":15,"gems":0},{"id":"g02","label":"Smash 10 objects in a single run","type":"runSmash","target":10,"coins":15,"gems":0},{"id":"g03","label":"Collect 25 coins in total","type":"totalCoins","target":25,"coins":20,"gems":1},{"id":"g04","label":"Clear 3 crevasses in a single run","type":"runGaps","target":3,"coins":25,"gems":0},{"id":"g05","label":"Trigger Overdrive","type":"runOverdrive","target":1,"coins":25,"gems":1},{"id":"g06","label":"Travel 800 m in a single run","type":"runDistance","target":800,"coins":30,"gems":1},{"id":"g07","label":"Reach a ×5 combo","type":"runCombo","target":5,"coins":30,"gems":0},{"id":"g08","label":"Smash 150 objects in total","type":"totalSmash","target":150,"coins":35,"gems":1},{"id":"g09","label":"Get 5 near-misses in a single run","type":"runNearMiss","target":5,"coins":35,"gems":1},{"id":"g10","label":"Travel 1,500 m in a single run","type":"runDistance","target":1500,"coins":45,"gems":1,"unlock":"skinIce"},{"id":"g11","label":"Score 25,000 in a single run","type":"runScore","target":25000,"coins":50,"gems":2},{"id":"g12","label":"Clear 25 crevasses in total","type":"totalGaps","target":25,"coins":50,"gems":2},{"id":"g13","label":"Trigger Overdrive 10× in total","type":"totalOverdrive","target":10,"coins":60,"gems":2,"unlock":"skinMagma"},{"id":"g14","label":"Travel 3,000 m in a single run","type":"runDistance","target":3000,"coins":80,"gems":3,"unlock":"skinGold"},{"id":"g15","label":"Score 100,000 in a single run","type":"runScore","target":100000,"coins":120,"gems":5}],"skins":[{"id":"skinRock","label":"Granite","color":"#8d8a86","default":true},{"id":"skinIce","label":"Ice","color":"#bfe2ff"},{"id":"skinMagma","label":"Magma","color":"#ff7a3c"},{"id":"skinGold","label":"Gold","color":"#f2c94c"}]}};
+window.__INLINE_CONFIG__ = {"balance":{"physics":{"gravity":34,"boulderRadius":1.7,"slopeAccel":26,"drag":0.045,"maxSpeed":58,"minSpeed":9,"startSpeed":14,"steerAccel":70,"steerFriction":4.6,"maxLateralSpeed":30,"jumpPower":16.5,"jumpCooldown":0.28,"coyoteTime":0.13,"wallBouncePenalty":0.78,"wallBounceKick":12,"fallDeathDepth":7,"speedCapStart":30,"speedCapRampDist":1500,"lateralFloor":0.5},"terrain":{"halfWidth":15,"grade":0.17,"hillAmp1":5.5,"hillFreq1":0.011,"hillAmp2":2.2,"hillFreq2":0.031,"windAmp1":8,"windFreq1":0.004,"windAmp2":3,"windFreq2":0.0075,"chuteDepth":2.6,"rippleAmp":0.16,"rippleFreqX":0.55,"rippleFreqZ":0.33,"chunkLength":60,"subdivX":16,"subdivZ":30,"chunksAhead":8,"chunksBehind":2,"wallSpacing":4.5,"wallOffset":0.2,"wallHeight":22,"wallSharpness":5,"meshExtra":16},"gaps":{"firstGapAt":220,"interval":170,"intervalMin":95,"intervalShrinkPer1000m":22,"baseWidth":7,"widthPer1000m":3.5,"maxWidth":15,"chance":0.72,"warnDistance":30},"hazards":{"firstHazardAt":130,"baseEvery":85,"minEvery":34,"shrinkPer1000m":11,"reactionTime":1.15,"lanes":3,"rollerSpeed":7.5,"mineRadius":2.6,"spikeRadius":2.4},"spawning":{"objectsPerChunkBase":7,"objectsPerChunkMax":14,"objectsRampPer1000m":2.5,"coinsPerChunk":4,"gemChance":0.045,"decorPerChunk":6},"scoring":{"comboWindow":2,"comboStep":0.25,"comboMax":5,"nearMissBonus":120,"nearMissRadius":3.4,"gapClearBonus":150,"distancePointsPerMeter":2},"overdrive":{"meterMax":100,"duration":7,"scoreMult":2,"graceTime":1.6,"drainOnEnd":true},"meta":{"coinValue":1,"continueBaseCost":3,"continueCostStep":3,"continueMaxPerRun":3},"camera":{"back":13.5,"height":7.5,"lookAheadBase":10,"lookAheadPerSpeed":0.28,"fovBase":0.95,"fovPerSpeed":0.0042,"fovMax":1.28,"smooth":6},"intro":{"dropHeight":130,"camStartHeight":26,"camStartBack":-8,"blendTime":1.6}},"objects":{"destructibles":[{"id":"fence","label":"Fence","score":25,"meter":3,"weight":22,"size":1,"color":"#8a6a44"},{"id":"hay","label":"Hay bale","score":35,"meter":4,"weight":18,"size":1.1,"color":"#c9a83f"},{"id":"barrel","label":"Barrel","score":45,"meter":5,"weight":16,"size":1,"color":"#7a4f2a"},{"id":"crates","label":"Crates","score":60,"meter":6,"weight":13,"size":1.2,"color":"#a07a4a"},{"id":"sign","label":"Signpost","score":40,"meter":4,"weight":10,"size":1,"color":"#6e5436"},{"id":"tree","label":"Tree","score":55,"meter":5,"weight":14,"size":1.4,"color":"#3e6b35"},{"id":"cart","label":"Cart","score":90,"meter":9,"weight":8,"size":1.3,"color":"#8c5a30"},{"id":"hut","label":"Hut","score":120,"meter":12,"weight":6,"size":1.7,"color":"#6b4a2e"},{"id":"totem","label":"Stone totem","score":180,"meter":16,"weight":4,"size":1.6,"color":"#8d8d96"},{"id":"idol","label":"Golden idol","score":400,"meter":30,"weight":1,"size":1.3,"color":"#e7c34a"}]},"biomes":{"blendZone":90,"biomes":[{"id":"meadow","label":"Alpine Meadow","length":900,"ground":"#5d8a44","ground2":"#4e7639","rock":"#7e7f88","fog":"#bcd6e8","sky":"#9fc8e8","skyHi":"#5d96cf","fogDensity":0.0065,"sun":"#fff3d6","ambient":"#9fb8cf","grip":1,"hazardMult":1,"decor":["pine","bush","flower"]},{"id":"rocky","label":"Rocky Peaks","length":900,"ground":"#8b7f6e","ground2":"#75695a","rock":"#6d6a70","fog":"#c4bdb2","sky":"#b7c3cd","skyHi":"#7d93a8","fogDensity":0.0078,"sun":"#ffe9c4","ambient":"#a8a49c","grip":1,"hazardMult":1.15,"decor":["spire","boulder"]},{"id":"snow","label":"Frozen Plains","length":900,"ground":"#e8eef4","ground2":"#cfdbe6","rock":"#9fb2c4","fog":"#e6eef6","sky":"#cfe1f0","skyHi":"#8fb6d9","fogDensity":0.009,"sun":"#eef4ff","ambient":"#c2d2e2","grip":0.55,"hazardMult":1,"decor":["icepine","icerock"]},{"id":"volcanic","label":"Volcanic Slope","length":900,"ground":"#4a3b38","ground2":"#3a2d2b","rock":"#3c3134","fog":"#8a5a44","sky":"#7e4a38","skyHi":"#52302a","fogDensity":0.011,"sun":"#ffb46a","ambient":"#7e5a4a","grip":0.95,"hazardMult":1.55,"decor":["obsidian","ember"]},{"id":"twilight","label":"Twilight","length":900,"ground":"#46527a","ground2":"#384264","rock":"#3d4566","fog":"#2e3a5e","sky":"#27314f","skyHi":"#141a30","fogDensity":0.0095,"sun":"#b9c6ff","ambient":"#5a6a9a","grip":0.9,"hazardMult":1.3,"decor":["crystal","spire"]}]},"upgrades":{"upgrades":[{"id":"jump","label":"Jump height","desc":"+6% jump height / level","baseCost":20,"costMult":1.6,"bonus":0.06,"maxLevel":8},{"id":"steer","label":"Steering","desc":"+7% steering speed / level","baseCost":20,"costMult":1.6,"bonus":0.07,"maxLevel":8},{"id":"overdrive","label":"Overdrive duration","desc":"+8% Overdrive duration / level","baseCost":30,"costMult":1.7,"bonus":0.08,"maxLevel":8},{"id":"startMeter","label":"Starting charge","desc":"+5% meter at run start / level","baseCost":25,"costMult":1.7,"bonus":0.05,"maxLevel":6},{"id":"coinGain","label":"Coin gain","desc":"+10% coins / level","baseCost":35,"costMult":1.8,"bonus":0.1,"maxLevel":6},{"id":"magnet","label":"Coin magnet","desc":"+0.8 m magnet range / level","baseCost":30,"costMult":1.7,"bonus":0.8,"maxLevel":6}]},"spinner":{"cost":2,"buffs":[{"id":"fewerHazards","label":"Fewer hazards","desc":"-35% hazards on your next run","weight":18},{"id":"coinMagnet","label":"Big magnet","desc":"+5 m magnet range","weight":18},{"id":"gemRate","label":"Gem vein","desc":"3× gem chance","weight":14},{"id":"dudMines","label":"Dud mines","desc":"Mines won't explode on your next run","weight":12},{"id":"fastMeter","label":"Fast charge","desc":"+50% meter charging","weight":18},{"id":"headStart","label":"Head start","desc":"Start with a full meter","weight":14},{"id":"jackpot","label":"JACKPOT","desc":"+25 coins, +5 gems, all buffs at once!","weight":2}]},"goals":{"goals":[{"id":"g01","label":"Travel 300 m in a single run","type":"runDistance","target":300,"coins":15,"gems":0},{"id":"g02","label":"Smash 10 objects in a single run","type":"runSmash","target":10,"coins":15,"gems":0},{"id":"g03","label":"Collect 25 coins in total","type":"totalCoins","target":25,"coins":20,"gems":1},{"id":"g04","label":"Clear 2 crevasses in a single run","type":"runGaps","target":2,"coins":20,"gems":0},{"id":"g05","label":"Reach a ×4 combo","type":"runCombo","target":4,"coins":20,"gems":0},{"id":"g06","label":"Travel 800 m in a single run","type":"runDistance","target":800,"coins":30,"gems":1},{"id":"g07","label":"Get 3 near-misses in a single run","type":"runNearMiss","target":3,"coins":25,"gems":0},{"id":"g08","label":"Trigger Overdrive","type":"runOverdrive","target":1,"coins":25,"gems":1},{"id":"g09","label":"Smash 100 objects in total","type":"totalSmash","target":100,"coins":30,"gems":1},{"id":"g10","label":"Score 10,000 in a single run","type":"runScore","target":10000,"coins":30,"gems":0},{"id":"g11","label":"Travel 1,500 m in a single run","type":"runDistance","target":1500,"coins":45,"gems":1,"unlock":"skinIce"},{"id":"g12","label":"Finish 10 runs","type":"totalRuns","target":10,"coins":30,"gems":1},{"id":"g13","label":"Clear 5 crevasses in a single run","type":"runGaps","target":5,"coins":35,"gems":1},{"id":"g14","label":"Collect 200 coins in total","type":"totalCoins","target":200,"coins":40,"gems":1},{"id":"g15","label":"Reach a ×8 combo","type":"runCombo","target":8,"coins":40,"gems":1},{"id":"g16","label":"Score 25,000 in a single run","type":"runScore","target":25000,"coins":50,"gems":2},{"id":"g17","label":"Smash 25 objects in a single run","type":"runSmash","target":25,"coins":45,"gems":1},{"id":"g18","label":"Clear 25 crevasses in total","type":"totalGaps","target":25,"coins":50,"gems":2},{"id":"g19","label":"Get 6 near-misses in a single run","type":"runNearMiss","target":6,"coins":45,"gems":1},{"id":"g20","label":"Travel 10,000 m in total","type":"totalDist","target":10000,"coins":50,"gems":2},{"id":"g21","label":"Travel 2,500 m in a single run","type":"runDistance","target":2500,"coins":60,"gems":2},{"id":"g22","label":"Trigger Overdrive twice in one run","type":"runOverdrive","target":2,"coins":55,"gems":2},{"id":"g23","label":"Smash 400 objects in total","type":"totalSmash","target":400,"coins":60,"gems":2},{"id":"g24","label":"Trigger Overdrive 10× in total","type":"totalOverdrive","target":10,"coins":60,"gems":2,"unlock":"skinMagma"},{"id":"g25","label":"Score 50,000 in a single run","type":"runScore","target":50000,"coins":65,"gems":2},{"id":"g26","label":"Travel 3,500 m in a single run","type":"runDistance","target":3500,"coins":80,"gems":3,"unlock":"skinGold"},{"id":"g27","label":"Reach a ×12 combo","type":"runCombo","target":12,"coins":70,"gems":2},{"id":"g28","label":"Finish 30 runs","type":"totalRuns","target":30,"coins":70,"gems":2},{"id":"g29","label":"Clear 8 crevasses in a single run","type":"runGaps","target":8,"coins":75,"gems":3},{"id":"g30","label":"Collect 750 coins in total","type":"totalCoins","target":750,"coins":80,"gems":3},{"id":"g31","label":"Smash 40 objects in a single run","type":"runSmash","target":40,"coins":85,"gems":3},{"id":"g32","label":"Get 10 near-misses in a single run","type":"runNearMiss","target":10,"coins":85,"gems":3},{"id":"g33","label":"Travel 30,000 m in total","type":"totalDist","target":30000,"coins":90,"gems":3},{"id":"g34","label":"Score 100,000 in a single run","type":"runScore","target":100000,"coins":95,"gems":3},{"id":"g35","label":"Clear 75 crevasses in total","type":"totalGaps","target":75,"coins":95,"gems":3},{"id":"g36","label":"Travel 5,000 m in a single run","type":"runDistance","target":5000,"coins":110,"gems":4},{"id":"g37","label":"Trigger Overdrive 3× in one run","type":"runOverdrive","target":3,"coins":105,"gems":4},{"id":"g38","label":"Smash 1,200 objects in total","type":"totalSmash","target":1200,"coins":110,"gems":4},{"id":"g39","label":"Trigger Overdrive 30× in total","type":"totalOverdrive","target":30,"coins":115,"gems":4},{"id":"g40","label":"Reach a ×16 combo","type":"runCombo","target":16,"coins":120,"gems":4},{"id":"g41","label":"Score 250,000 in a single run","type":"runScore","target":250000,"coins":140,"gems":5},{"id":"g42","label":"Travel 7,500 m in a single run","type":"runDistance","target":7500,"coins":150,"gems":5},{"id":"g43","label":"Travel 75,000 m in total","type":"totalDist","target":75000,"coins":150,"gems":5},{"id":"g44","label":"Finish 100 runs","type":"totalRuns","target":100,"coins":160,"gems":6},{"id":"g45","label":"Score 500,000 in a single run","type":"runScore","target":500000,"coins":200,"gems":8}],"skins":[{"id":"skinRock","label":"Granite","color":"#8d8a86","default":true},{"id":"skinIce","label":"Ice","color":"#bfe2ff"},{"id":"skinMagma","label":"Magma","color":"#ff7a3c"},{"id":"skinGold","label":"Gold","color":"#f2c94c"}]}};
 </script>
 <script>
 /* =========================================================================
@@ -354,7 +356,7 @@ function defaultSave() {
     v: 1, coins: 0, gems: 5,
     upgrades: {}, goalIndex: 0, goalsDone: [],
     skins: ["skinRock"], activeSkin: "skinRock",
-    stats: { bestDist: 0, bestScore: 0, runs: 0, smashed: 0, overdrives: 0, gaps: 0, totalCoins: 0 },
+    stats: { bestDist: 0, bestScore: 0, runs: 0, smashed: 0, overdrives: 0, gaps: 0, totalCoins: 0, totalDist: 0 },
     settings: { sens: 1, volume: 0.7, music: true, quality: "high", gyro: false, gyroTouched: false, reducedMotion: false },
     highscores: []
   };
@@ -860,7 +862,7 @@ const decorBuilders = {
 /* ----- hazards ----- */
 const hazardBuilders = {
   spikes() {
-    const n = root("spikes"); const m = mat("spikeM", "#3a3d44", { emissive: "#14060a" });
+    const n = root("spikes"); const m = mat("spikeM", "#43363a", { emissive: "#3a0d10" });
     for (let i = 0; i < 6; i++) {
       const c = cyl("s", rand(1.0, 1.7), 0.01, rand(0.35, 0.5), m, n, 6);
       c.position.set(rand(-1.6, 1.6), 0.6, rand(-1.2, 1.2));
@@ -878,7 +880,7 @@ const hazardBuilders = {
       s.position.set(Math.cos(a) * 0.8, 0.8, Math.sin(a) * 0.8);
       s.rotation.z = -Math.cos(a) * 1.4; s.rotation.x = Math.sin(a) * 1.4;
     }
-    const lamp = sph("l", 0.3, mat("mineL", "#ff3a3a", { emissive: "#ff2020" }), n, 6);
+    const lamp = sph("l", 0.3, mat("mineL", "#ff4a3a", { emissive: "#ff3a14" }), n, 6);
     lamp.position.y = 1.6;
     return n;
   },
@@ -893,7 +895,12 @@ const hazardBuilders = {
 };
 function hazardFactory(type) {
   const n = hazardBuilders[type]();
-  n.metadata = { kind: "hazard", type, radius: type === "roller" ? 2.0 : type === "mine" ? CFG.balance.hazards.mineRadius : CFG.balance.hazards.spikeRadius, dir: 1, passed: false, dead: false };
+  // pulsing red danger ring on the ground — instantly readable "do not touch"
+  const ringD = type === "roller" ? 6.0 : type === "mine" ? 5.6 : 5.2;
+  const ring = cyl("warnring", 0.07, ringD, ringD,
+    mat("dangerRing", "#ff2a2a", { emissive: "#d11414", alpha: 0.5 }), n, 22);
+  ring.position.y = 0.08;
+  n.metadata = { kind: "hazard", type, radius: type === "roller" ? 2.0 : type === "mine" ? CFG.balance.hazards.mineRadius : CFG.balance.hazards.spikeRadius, dir: 1, passed: false, dead: false, ring };
   return n;
 }
 
@@ -916,7 +923,7 @@ function gemFactory() {
 /* gap warning marker */
 function warnFactory() {
   const n = root("warn");
-  const m = mat("warnM", "#d23a2a", { emissive: "#8a1408" });
+  const m = mat("warnM", "#e8311c", { emissive: "#b81e0e" });
   const m2 = mat("warnM2", "#e8d8c0", { emissive: "#6a5a40" });
   for (let i = -3; i <= 3; i++) {
     const b = box("w", 2.4, 0.32, 1.1, i % 2 ? m : m2, n);
@@ -1197,6 +1204,7 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
       if (r < 0.18) {
         // roller crossing the whole track — telegraphed, all lanes "soft blocked", timing dodge
         const node = pooled("hazard_roller", () => hazardFactory("roller"));
+        node.getChildMeshes().forEach((m) => m.setEnabled(true));
         node.metadata.type = "roller"; node.metadata.dead = false; node.metadata.passed = false;
         node.metadata.dir = Math.random() < 0.5 ? -1 : 1;
         node.position.set(laneX(hz, node.metadata.dir < 0 ? 2 : 0), terrainY(laneX(hz, 1), hz), hz);
@@ -1212,6 +1220,7 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
           const lane = lanes.splice(li, 1)[0];
           const type = Math.random() < 0.5 ? "spikes" : "mine";
           const node = pooled("hazard_" + type, () => hazardFactory(type));
+          node.getChildMeshes().forEach((m) => m.setEnabled(true));
           node.metadata.type = type; node.metadata.dead = false; node.metadata.passed = false;
           const x = laneX(hz, lane);
           node.position.set(x, terrainY(x, hz), hz);
@@ -1280,7 +1289,7 @@ function placeTelegraph(rec, hz) {
   const wz = hz - 16;
   const node = pooled("tele", () => {
     const n = root("tele");
-    const m = mat("teleM", "#ffae3a", { emissive: "#a85c08" });
+    const m = mat("teleM", "#ffae3a", { emissive: "#c96d08" });
     const b1 = box("t1", 1.6, 0.14, 0.7, m, n); b1.rotation.y = 0.6;
     const b2 = box("t2", 1.6, 0.14, 0.7, m, n); b2.rotation.y = -0.6;
     n.metadata = { kind: "tele" }; return n;
@@ -1390,6 +1399,7 @@ function endRun(reason) {
   SAVE.coins += coinGain; SAVE.gems += run.gems;
   SAVE.stats.totalCoins += coinGain;
   SAVE.stats.runs++; SAVE.stats.smashed += run.smashed;
+  SAVE.stats.totalDist = (SAVE.stats.totalDist || 0) + run.dist;
   SAVE.stats.overdrives += run.overdrives; SAVE.stats.gaps += run.gapsCleared;
   let newBest = false;
   if (run.dist > SAVE.stats.bestDist) { SAVE.stats.bestDist = run.dist; newBest = true; }
@@ -1542,14 +1552,17 @@ function updateRun(dt) {
   /* forward speed from slope */
   const s = slopeAt(run.z);
   run.speed += (P.slopeAccel * s - P.drag * run.speed * run.speed * 0.018 - 0.4) * dt;
-  run.speed = clamp(run.speed, P.minSpeed, P.maxSpeed);
+  // speed cap ramps up with distance — the start stays calm and readable
+  const speedCap = lerp(P.speedCapStart, P.maxSpeed, clamp(run.dist / P.speedCapRampDist, 0, 1));
+  run.speed = clamp(run.speed, P.minSpeed, speedCap);
 
   /* steering with inertia; grip per biome */
   const steer = (input.axis || (input.left ? -1 : 0) + (input.right ? 1 : 0)) * SAVE.settings.sens;
   const grip = env.grip;
-  run.vx += steer * P.steerAccel * (1 + upBonus("steer")) * grip * dt;
+  const agility = clamp(run.speed / P.maxSpeed, P.lateralFloor, 1);
+  run.vx += steer * P.steerAccel * (1 + upBonus("steer")) * grip * agility * dt;
   run.vx -= run.vx * P.steerFriction * grip * dt;
-  run.vx = clamp(run.vx, -P.maxLateralSpeed, P.maxLateralSpeed);
+  run.vx = clamp(run.vx, -P.maxLateralSpeed * agility, P.maxLateralSpeed * agility);
   run.x += run.vx * dt;
   run.z += run.speed * dt;
   run.dist = run.z - run.startZ;
@@ -1639,6 +1652,10 @@ function collide(dt, env) {
     const h = run.hazards[i];
     const md = h.metadata;
     if (md.dead) continue;
+    if (md.ring) {
+      const pl = 1 + 0.16 * Math.sin(performance.now() * 0.009 + h.position.z);
+      md.ring.scaling.set(pl, 1, pl);
+    }
     if (md.type === "roller") {
       h.position.x += md.dir * CFG.balance.hazards.rollerSpeed * dt;
       const rel = h.position.x - centerX(h.position.z);
@@ -1648,7 +1665,7 @@ function collide(dt, env) {
     }
     if (md.type === "mine") {
       const lamp = h.getChildMeshes().find((m) => m.name === "l");
-      if (lamp) lamp.scaling.setAll(1 + 0.3 * Math.sin(performance.now() * 0.012));
+      if (lamp) lamp.scaling.setAll(1 + 0.55 * Math.sin(performance.now() * 0.012));
     }
     const dz = h.position.z - bp.z;
     if (dz < -8) {
@@ -1739,8 +1756,13 @@ function updateHUD(force) {
   else if (run.grace > 0) $("hudState").textContent = "INVULNERABLE";
   else if (run.state === "intro") $("hudState").textContent = "FREE FALL";
   else $("hudState").textContent = "";
-  const g = currentGoal();
-  $("hudGoal").textContent = g ? "Goal: " + g.label : "All goals complete!";
+  const act = activeGoals();
+  if (act.length) {
+    const i = Math.floor(performance.now() / 4000) % act.length;
+    const g = act[i];
+    $("hudGoal").textContent = "Goal " + (i + 1) + "/" + act.length + ": " + g.label +
+      " — " + fmt(Math.min(goalProgress(g), g.target)) + "/" + fmt(g.target);
+  } else $("hudGoal").textContent = "All goals complete!";
 }
 
 /* ---------- main loop ---------- */
@@ -1762,9 +1784,18 @@ function tick() {
 }
 
 /* =========================================================================
-   GOALS (sequential quest tree)
+   GOALS — up to 5 concurrently active goals
    ========================================================================= */
-function currentGoal() { return CFG.goals.goals[SAVE.goalIndex] || null; }
+const ACTIVE_GOALS = 5;
+function activeGoals() {
+  const out = [];
+  for (const g of CFG.goals.goals) {
+    if (SAVE.goalsDone.includes(g.id)) continue;
+    out.push(g);
+    if (out.length >= ACTIVE_GOALS) break;
+  }
+  return out;
+}
 function goalProgress(g) {
   switch (g.type) {
     case "runDistance": return run.dist;
@@ -1778,19 +1809,25 @@ function goalProgress(g) {
     case "totalSmash": return SAVE.stats.smashed;
     case "totalGaps": return SAVE.stats.gaps;
     case "totalOverdrive": return SAVE.stats.overdrives;
+    case "totalRuns": return SAVE.stats.runs;
+    case "totalDist": return SAVE.stats.totalDist || 0;
     default: return 0;
   }
 }
 function checkGoals() {
-  let msg = "";
-  let g = currentGoal();
-  while (g && goalProgress(g) >= g.target) {
-    SAVE.coins += g.coins; SAVE.gems += g.gems;
-    SAVE.goalsDone.push(g.id);
-    if (g.unlock && !SAVE.skins.includes(g.unlock)) SAVE.skins.push(g.unlock);
-    msg += "✔ Goal complete: " + g.label + " (+" + g.coins + " coins" + (g.gems ? ", +" + g.gems + " 💎" : "") + (g.unlock ? ", new skin!" : "") + ")\n";
-    SAVE.goalIndex++;
-    g = currentGoal();
+  let msg = "", changed = true;
+  while (changed) {
+    changed = false;
+    for (const g of activeGoals()) {
+      if (goalProgress(g) >= g.target) {
+        SAVE.coins += g.coins; SAVE.gems += g.gems;
+        SAVE.goalsDone.push(g.id);
+        if (g.unlock && !SAVE.skins.includes(g.unlock)) SAVE.skins.push(g.unlock);
+        msg += "✔ Goal complete: " + g.label + " (+" + g.coins + " coins" + (g.gems ? ", +" + g.gems + " 💎" : "") + (g.unlock ? ", new skin!" : "") + ")\n";
+        changed = true;
+        break; // active set shifted — recompute
+      }
+    }
   }
   return msg;
 }
@@ -1885,14 +1922,16 @@ function renderUpgrades() {
 
 function renderGoals() {
   const list = $("goalList"); list.innerHTML = "";
-  CFG.goals.goals.forEach((g, i) => {
+  const act = activeGoals().map((g) => g.id);
+  CFG.goals.goals.forEach((g) => {
+    const done = SAVE.goalsDone.includes(g.id);
+    const active = act.includes(g.id);
     const row = document.createElement("div");
-    const done = i < SAVE.goalIndex;
-    row.className = "goal-row" + (done ? " done" : i === SAVE.goalIndex ? " current" : "");
-    const prog = done ? g.target : i === SAVE.goalIndex ? Math.min(goalProgress(g), g.target) : 0;
-    row.innerHTML = "<div class='up-info'><b>" + (done ? "✔ " : "") + g.label + "</b>" +
+    row.className = "goal-row" + (done ? " done" : active ? " current" : " locked");
+    const prog = done ? g.target : active ? Math.min(goalProgress(g), g.target) : 0;
+    row.innerHTML = "<div class='up-info'><b>" + (done ? "✔ " : active ? "▶ " : "🔒 ") + g.label + "</b>" +
       "<span>+" + g.coins + " coins" + (g.gems ? " · +" + g.gems + " 💎" : "") + (g.unlock ? " · skin" : "") + "</span></div>" +
-      "<div class='goal-prog'>" + fmt(prog) + " / " + fmt(g.target) + "</div>";
+      "<div class='goal-prog'>" + (active || done ? fmt(prog) + " / " + fmt(g.target) : "—") + "</div>";
     list.appendChild(row);
   });
 }

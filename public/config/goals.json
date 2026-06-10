@@ -26,19 +26,19 @@
     },
     {
       "id": "g04",
-      "label": "Clear 3 crevasses in a single run",
+      "label": "Clear 2 crevasses in a single run",
       "type": "runGaps",
-      "target": 3,
-      "coins": 25,
+      "target": 2,
+      "coins": 20,
       "gems": 0
     },
     {
       "id": "g05",
-      "label": "Trigger Overdrive",
-      "type": "runOverdrive",
-      "target": 1,
-      "coins": 25,
-      "gems": 1
+      "label": "Reach a \u00d74 combo",
+      "type": "runCombo",
+      "target": 4,
+      "coins": 20,
+      "gems": 0
     },
     {
       "id": "g06",
@@ -50,30 +50,38 @@
     },
     {
       "id": "g07",
-      "label": "Reach a \u00d75 combo",
-      "type": "runCombo",
-      "target": 5,
-      "coins": 30,
+      "label": "Get 3 near-misses in a single run",
+      "type": "runNearMiss",
+      "target": 3,
+      "coins": 25,
       "gems": 0
     },
     {
       "id": "g08",
-      "label": "Smash 150 objects in total",
-      "type": "totalSmash",
-      "target": 150,
-      "coins": 35,
+      "label": "Trigger Overdrive",
+      "type": "runOverdrive",
+      "target": 1,
+      "coins": 25,
       "gems": 1
     },
     {
       "id": "g09",
-      "label": "Get 5 near-misses in a single run",
-      "type": "runNearMiss",
-      "target": 5,
-      "coins": 35,
+      "label": "Smash 100 objects in total",
+      "type": "totalSmash",
+      "target": 100,
+      "coins": 30,
       "gems": 1
     },
     {
       "id": "g10",
+      "label": "Score 10,000 in a single run",
+      "type": "runScore",
+      "target": 10000,
+      "coins": 30,
+      "gems": 0
+    },
+    {
+      "id": "g11",
       "label": "Travel 1,500 m in a single run",
       "type": "runDistance",
       "target": 1500,
@@ -82,7 +90,39 @@
       "unlock": "skinIce"
     },
     {
-      "id": "g11",
+      "id": "g12",
+      "label": "Finish 10 runs",
+      "type": "totalRuns",
+      "target": 10,
+      "coins": 30,
+      "gems": 1
+    },
+    {
+      "id": "g13",
+      "label": "Clear 5 crevasses in a single run",
+      "type": "runGaps",
+      "target": 5,
+      "coins": 35,
+      "gems": 1
+    },
+    {
+      "id": "g14",
+      "label": "Collect 200 coins in total",
+      "type": "totalCoins",
+      "target": 200,
+      "coins": 40,
+      "gems": 1
+    },
+    {
+      "id": "g15",
+      "label": "Reach a \u00d78 combo",
+      "type": "runCombo",
+      "target": 8,
+      "coins": 40,
+      "gems": 1
+    },
+    {
+      "id": "g16",
       "label": "Score 25,000 in a single run",
       "type": "runScore",
       "target": 25000,
@@ -90,7 +130,15 @@
       "gems": 2
     },
     {
-      "id": "g12",
+      "id": "g17",
+      "label": "Smash 25 objects in a single run",
+      "type": "runSmash",
+      "target": 25,
+      "coins": 45,
+      "gems": 1
+    },
+    {
+      "id": "g18",
       "label": "Clear 25 crevasses in total",
       "type": "totalGaps",
       "target": 25,
@@ -98,7 +146,47 @@
       "gems": 2
     },
     {
-      "id": "g13",
+      "id": "g19",
+      "label": "Get 6 near-misses in a single run",
+      "type": "runNearMiss",
+      "target": 6,
+      "coins": 45,
+      "gems": 1
+    },
+    {
+      "id": "g20",
+      "label": "Travel 10,000 m in total",
+      "type": "totalDist",
+      "target": 10000,
+      "coins": 50,
+      "gems": 2
+    },
+    {
+      "id": "g21",
+      "label": "Travel 2,500 m in a single run",
+      "type": "runDistance",
+      "target": 2500,
+      "coins": 60,
+      "gems": 2
+    },
+    {
+      "id": "g22",
+      "label": "Trigger Overdrive twice in one run",
+      "type": "runOverdrive",
+      "target": 2,
+      "coins": 55,
+      "gems": 2
+    },
+    {
+      "id": "g23",
+      "label": "Smash 400 objects in total",
+      "type": "totalSmash",
+      "target": 400,
+      "coins": 60,
+      "gems": 2
+    },
+    {
+      "id": "g24",
       "label": "Trigger Overdrive 10\u00d7 in total",
       "type": "totalOverdrive",
       "target": 10,
@@ -107,21 +195,173 @@
       "unlock": "skinMagma"
     },
     {
-      "id": "g14",
-      "label": "Travel 3,000 m in a single run",
+      "id": "g25",
+      "label": "Score 50,000 in a single run",
+      "type": "runScore",
+      "target": 50000,
+      "coins": 65,
+      "gems": 2
+    },
+    {
+      "id": "g26",
+      "label": "Travel 3,500 m in a single run",
       "type": "runDistance",
-      "target": 3000,
+      "target": 3500,
       "coins": 80,
       "gems": 3,
       "unlock": "skinGold"
     },
     {
-      "id": "g15",
+      "id": "g27",
+      "label": "Reach a \u00d712 combo",
+      "type": "runCombo",
+      "target": 12,
+      "coins": 70,
+      "gems": 2
+    },
+    {
+      "id": "g28",
+      "label": "Finish 30 runs",
+      "type": "totalRuns",
+      "target": 30,
+      "coins": 70,
+      "gems": 2
+    },
+    {
+      "id": "g29",
+      "label": "Clear 8 crevasses in a single run",
+      "type": "runGaps",
+      "target": 8,
+      "coins": 75,
+      "gems": 3
+    },
+    {
+      "id": "g30",
+      "label": "Collect 750 coins in total",
+      "type": "totalCoins",
+      "target": 750,
+      "coins": 80,
+      "gems": 3
+    },
+    {
+      "id": "g31",
+      "label": "Smash 40 objects in a single run",
+      "type": "runSmash",
+      "target": 40,
+      "coins": 85,
+      "gems": 3
+    },
+    {
+      "id": "g32",
+      "label": "Get 10 near-misses in a single run",
+      "type": "runNearMiss",
+      "target": 10,
+      "coins": 85,
+      "gems": 3
+    },
+    {
+      "id": "g33",
+      "label": "Travel 30,000 m in total",
+      "type": "totalDist",
+      "target": 30000,
+      "coins": 90,
+      "gems": 3
+    },
+    {
+      "id": "g34",
       "label": "Score 100,000 in a single run",
       "type": "runScore",
       "target": 100000,
+      "coins": 95,
+      "gems": 3
+    },
+    {
+      "id": "g35",
+      "label": "Clear 75 crevasses in total",
+      "type": "totalGaps",
+      "target": 75,
+      "coins": 95,
+      "gems": 3
+    },
+    {
+      "id": "g36",
+      "label": "Travel 5,000 m in a single run",
+      "type": "runDistance",
+      "target": 5000,
+      "coins": 110,
+      "gems": 4
+    },
+    {
+      "id": "g37",
+      "label": "Trigger Overdrive 3\u00d7 in one run",
+      "type": "runOverdrive",
+      "target": 3,
+      "coins": 105,
+      "gems": 4
+    },
+    {
+      "id": "g38",
+      "label": "Smash 1,200 objects in total",
+      "type": "totalSmash",
+      "target": 1200,
+      "coins": 110,
+      "gems": 4
+    },
+    {
+      "id": "g39",
+      "label": "Trigger Overdrive 30\u00d7 in total",
+      "type": "totalOverdrive",
+      "target": 30,
+      "coins": 115,
+      "gems": 4
+    },
+    {
+      "id": "g40",
+      "label": "Reach a \u00d716 combo",
+      "type": "runCombo",
+      "target": 16,
       "coins": 120,
+      "gems": 4
+    },
+    {
+      "id": "g41",
+      "label": "Score 250,000 in a single run",
+      "type": "runScore",
+      "target": 250000,
+      "coins": 140,
       "gems": 5
+    },
+    {
+      "id": "g42",
+      "label": "Travel 7,500 m in a single run",
+      "type": "runDistance",
+      "target": 7500,
+      "coins": 150,
+      "gems": 5
+    },
+    {
+      "id": "g43",
+      "label": "Travel 75,000 m in total",
+      "type": "totalDist",
+      "target": 75000,
+      "coins": 150,
+      "gems": 5
+    },
+    {
+      "id": "g44",
+      "label": "Finish 100 runs",
+      "type": "totalRuns",
+      "target": 100,
+      "coins": 160,
+      "gems": 6
+    },
+    {
+      "id": "g45",
+      "label": "Score 500,000 in a single run",
+      "type": "runScore",
+      "target": 500000,
+      "coins": 200,
+      "gems": 8
     }
   ],
   "skins": [

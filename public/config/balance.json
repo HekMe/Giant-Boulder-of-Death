@@ -15,7 +15,10 @@
     "coyoteTime": 0.13,
     "wallBouncePenalty": 0.78,
     "wallBounceKick": 12,
-    "fallDeathDepth": 7
+    "fallDeathDepth": 7,
+    "speedCapStart": 30,
+    "speedCapRampDist": 1500,
+    "lateralFloor": 0.5
   },
   "terrain": {
     "halfWidth": 15,

@@ -11,9 +11,9 @@ Built entirely with **Babylon.js** (CDN) + plain HTML/CSS/JS. No build step, no 
 - **Crevasses (gaps)** — telegraphed by warning stripes, jumpable (Space / jump button); falling in ends the run.
 - **5 biomes** — alpine meadow → rocky peaks → snow and ice → volcanic → twilight; colors, fog and physics blend smoothly (ice is slippery).
 - **10 destructible objects** — from a fence and hay bale up to a golden idol, each with its own value.
-- **Hazards** — spikes, mines and rolling boulders; a safe lane always exists and spacing respects human reaction time.
+- **Hazards** — spikes, mines and rolling boulders, each marked by a pulsing red danger ring; a safe lane always exists and spacing respects human reaction time.
 - **Score, combo, meter, Overdrive** — near-miss and gap-clear bonuses, temporary invincibility at full meter.
-- **Meta progression** — coins and gems, 6 permanent upgrades, a gem-powered lucky spin with run buffs, 15 sequential goals, 4 unlockable boulder skins, continue-after-death with a rising price, lifetime stats.
+- **Meta progression** — coins and gems, 6 permanent upgrades, a gem-powered lucky spin with run buffs, 45 goals (5 active at a time, shown on the HUD), 4 unlockable boulder skins, continue-after-death with a rising price, lifetime stats.
 - **Saving** — localStorage plus export/import of your save as a JSON file.
 - **Mobile and desktop** — the game detects mobile devices and enables **gyroscope (tilt) steering** automatically; a virtual joystick and a jump button are also available. Settings cover sensitivity, volume, quality and reduced motion.
 - **Procedural sound** — Web Audio API, zero audio files.
@@ -69,7 +69,7 @@ node build.js
 │   ├── biomes.json         # 5 biomes (palettes, fog, grip, decor)
 │   ├── upgrades.json       # 6 permanent upgrades
 │   ├── spinner.json        # lucky spin buffs
-│   └── goals.json          # 15 goals + skins
+│   └── goals.json          # 45 goals + skins
 ├── public/config/          # mirror copy of configs (fallback fetch path)
 └── .github/workflows/
     └── pages.yml           # automatic GitHub Pages deploy
