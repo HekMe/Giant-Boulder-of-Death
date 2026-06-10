@@ -1,116 +1,88 @@
-# Boulder Rampage
+# 🪨 ROCKFALL — nekonečný zjazd balvanu
 
-A 3D endless downhill roller built with [Babylon.js](https://www.babylonjs.com/) and
-plain WebGL. You steer a boulder racing down a continuously generated mountainside,
-smashing destructibles, dodging hazards, and chaining destruction to trigger Overdrive.
+Balvan padá z neba, dopadne na horský svah a valí sa dole — stále rýchlejšie, cez päť biomov, ponad trhliny, pomedzi ostne, míny a valiace sa skaly. Rozbíjaj objekty, zbieraj mince a drahokamy, nabíjaj Overdrive a posúvaj sa stromom cieľov k novým skinom.
 
-All geometry, levels, and content are generated procedurally at runtime. The project
-contains no third-party art, audio, or branded assets.
+Celá hra je postavená na **Babylon.js** (CDN) + čistom HTML/CSS/JS. Žiadny build krok, žiadne externé assety — všetka grafika aj zvuk sú procedurálne.
 
-## Gameplay
+## ✨ Čo hra obsahuje
 
-- Roll downhill at ever-increasing speed; the steeper the slope, the faster you go.
-- Smash destructibles to score points and charge the Overdrive meter.
-- Hitting a full meter triggers **Overdrive**: a temporary state where hazards become
-  destructible and scoring is boosted.
-- Touching a hazard ends the run unless you have a grace window active.
-- Collect coins (spent on permanent upgrades) and gems (spent on the spinner and continues).
+- **Cinematický intro pád z neba** — kamera sa počas pádu presunie za balvan, dopad so screen shake a prachom.
+- **Nekonečný procedurálny terén** — svah sa vlní, kľukatí a nakláňa; po oboch stranách kaňonové steny.
+- **Trhliny (gaps)** — telegrafované varovnými značkami, dajú sa preskočiť (Space / tlačidlo skoku); pád dnu = koniec behu.
+- **5 biomov** — alpská lúka → skaly → sneh a ľad → vulkán → súmrak; plynulé blendovanie farieb, hmly aj fyziky (ľad šmýka).
+- **10 rozbitných objektov** — od plota a sena až po zlatý idol, každý s vlastnou hodnotou.
+- **Hazardy** — ostne, míny a valiace sa balvany; vždy existuje bezpečná dráha a rozostupy rešpektujú reakčný čas.
+- **Skóre, kombo, meter, Overdrive** — near-miss a gap-clear bonusy, dočasná nesmrteľnosť pri plnom metri.
+- **Meta progresia** — mince a drahokamy, 6 permanentných upgradov, gem ruleta s buffmi, 15 sekvenčných cieľov, 4 odomykateľné skiny, continue po smrti s rastúcou cenou, doživotné štatistiky.
+- **Ukladanie** — localStorage + export/import save súboru (JSON).
+- **Mobil aj desktop** — virtuálny joystick, tlačidlo skoku, voliteľný gyroskop; nastavenia citlivosti, hlasitosti, kvality a reduced-motion.
+- **Procedurálny zvuk** — Web Audio API, žiadne audio súbory.
 
-### Controls
+## 🎮 Ovládanie
 
-| Action | Keyboard | Touch |
-| --- | --- | --- |
-| Steer | `A` / `D` or arrow keys | Virtual joystick (bottom-left) |
-| Jump  | `Space` | Jump button / tap right side |
+| Akcia | Desktop | Mobil |
+|---|---|---|
+| Riadenie | A / D alebo ← / → | joystick vľavo (alebo gyro) |
+| Skok | Space | tlačidlo vpravo |
+| Pauza | Esc alebo ⏸ | ⏸ |
 
-On mobile, device-orientation (gyro) tilt is used for steering when available, with the
-joystick as a fallback. Jumping clears low ground hazards if timed well.
+## 🚀 Spustenie lokálne
 
-## Run it locally
-
-The game must be served over HTTP (not opened as a `file://` URL), because it loads
-JSON config and an ES module.
+Hra načítava JSON konfigy cez `fetch`, takže ju **nespúšťaj cez `file://`** — potrebuje HTTP server:
 
 ```bash
-# Any static server works. With Python:
-python3 -m http.server 8000
-# then open http://localhost:8000
+# Python
+python3 -m http.server 8080
+# alebo Node
+npx serve .
 ```
 
-There are two equivalent builds:
+Potom otvor `http://localhost:8080`.
 
-- **`index.html`** — modular build. Loads `src/game.js` and reads config from `data/*.json`.
-- **`gist.html`** — single-file build with all config inlined. Useful for pasting into a
-  gist or any host where you want one file. Still needs an HTTP server (ES features / CDN).
+**Núdzové riešenie:** súbor `standalone.html` má všetko (CSS, konfigy aj kód) vložené priamo v sebe — funguje aj otvorený priamo z disku (stále potrebuje internet kvôli Babylon CDN).
 
-## Deploy to GitHub Pages
+## 🌐 Nasadenie na GitHub Pages
 
-A workflow is included at `.github/workflows/pages.yml`.
+1. Vytvor nový repozitár na GitHube.
+2. Nahraj **celý obsah** tohto priečinka do koreňa repozitára (vrátane skrytého `.github/`).
+3. V repozitári otvor **Settings → Pages** a v sekcii **Source** zvoľ **GitHub Actions**.
+4. Po pushi na vetvu `main` sa workflow `Deploy to GitHub Pages` spustí sám (dá sa spustiť aj ručne cez záložku Actions → Run workflow).
+5. Hra bude bežať na `https://<tvoje-meno>.github.io/<repo>/`.
 
-1. In your repository, go to **Settings → Pages → Build and deployment** and set
-   **Source: GitHub Actions**.
-2. Push to `main`, `master`, or `work`. The workflow builds and deploys automatically.
-   (You can also trigger it manually from **Actions → Deploy static site to GitHub Pages
-   → Run workflow**.)
-3. The game will be live at `https://<username>.github.io/<repository>/`.
-
-## Project structure
+## 📁 Štruktúra projektu
 
 ```
 .
-├── index.html              # Modular build (canvas + HUD/UI)
-├── gist.html               # Single-file build with inlined config
-├── style.css               # UI styling
-├── src/
-│   └── game.js             # Babylon.js runtime: terrain, physics, gameplay loop
-├── data/                   # Config read by index.html (relative path)
-│   ├── balance.json        # Physics, scoring, and spawn-density tuning
-│   ├── objects.json        # Destructibles, hazards, pickups
-│   ├── goals.json          # Goal tree and rewards
-│   ├── upgrades.json       # Permanent upgrade costs and bonuses
-│   ├── spinners.json       # Spinner buffs and rare events
-│   └── themes.json         # Theme definitions
-├── public/data/            # Same config, mirrored for hosts that serve from /public
-├── package.json            # Optional Vite dev/build scripts
+├── index.html              # UI, HUD, overlaye, mobilné ovládanie
+├── style.css               # tmavá „stone & ember“ vizuálna identita
+├── game.js                 # celá logika hry (jeden súbor, bez importov)
+├── standalone.html         # samostatná verzia so všetkým inline
+├── config/                 # data-driven balans hry
+│   ├── balance.json        # fyzika, terén, trhliny, hazardy, skóre, kamera
+│   ├── objects.json        # 10 rozbitných objektov
+│   ├── biomes.json         # 5 biomov (palety, hmla, grip, dekorácie)
+│   ├── upgrades.json       # 6 permanentných upgradov
+│   ├── spinner.json        # gem ruleta a buffy
+│   └── goals.json          # 15 cieľov + skiny
+├── public/config/          # zrkadlová kópia konfigov (záložná cesta)
 └── .github/workflows/
-    └── pages.yml           # GitHub Pages deploy workflow
+    └── pages.yml           # automatický deploy na GitHub Pages
 ```
 
-## How the 3D terrain works
+`game.js` skúša konfigy načítať z viacerých ciest (`config/`, `./config/`, `public/config/`, …), takže funguje v koreni domény aj v podpriečinku Pages. Ak existuje `window.__INLINE_CONFIG__` (standalone verzia), fetch sa preskočí úplne.
 
-The level is a single continuous heightfield rather than discrete flat platforms.
+## 🏔️ Ako funguje terén, trhliny a biomy
 
-- `centerX(z)` defines the winding centreline of the path as it descends.
-- `terrainY(x, z)` returns the surface height: an overall downhill grade, large rolling
-  hills, a gently banked chute that keeps the boulder centred, and small surface ripples.
+- **`centerX(z)`** — stred trate ako súčet sínusoviek; trať sa tým kľukatí. Steny, objekty aj kamera sa od neho odvíjajú.
+- **`terrainY(x, z)`** — výška terénu: základný klesajúci profil + vlny + naklonenie do zákrut (banked chute) + jemné zvlnenie. Tú istú funkciu používa mesh terénu aj fyzika balvanu, takže balvan vždy „sedí“ presne na zemi.
+- **Gap mapa** — trhliny sú deterministické: pozícia a šírka každej sa počíta hashom z indexu segmentu. Mesh terénu pri generovaní jednoducho vynechá trojuholníky v oblasti trhliny (vznikne skutočná diera) a fyzika sa pýta tej istej mapy, či je pod balvanom zem.
+- **Biome blending** — každý biome má paletu, hustotu hmly, grip a dekorácie. Na hraniciach sa všetko lineárne mieša v prechodovej zóne, vrátane vertex farieb terénu — prechody sú preto plynulé, nie strihané.
 
-The world is streamed as 45-metre chunks ahead of the player. Each chunk builds a
-subdivided ribbon mesh sampled from those two functions, so the ground genuinely slopes
-and rolls. Chunks behind the player are disposed to keep memory flat. The boulder follows
-the surface height every frame, accelerates based on the local slope steepness, and the
-chase camera sits uphill-and-behind looking down the descent.
+## 🛠️ Technické poznámky
 
-## Configuration
+- Babylon.js sa načítava z `https://cdn.babylonjs.com/babylon.js` ako globál — `game.js` je ES module bez importov.
+- Object pooling pre skaly, objekty, hazardy, mince a debris; staré chunky sa korektne dispose-ujú.
+- Delta time je clampnutý, takže lag spike hru nerozbije.
+- Pri zlyhaní štartu sa zobrazí overlay s popisom chyby namiesto čiernej obrazovky.
 
-Tuning lives entirely in the JSON files (and the inlined `DATA` block in `gist.html`).
-Adjust `data/balance.json` to change physics feel, scoring, and how densely each phase of
-a run spawns objects. Edit both `data/` and `public/data/` (or re-copy one to the other)
-to keep the two locations in sync.
-
-## Save data
-
-Progress (currencies, upgrades, completed goals, and stats) is stored in `localStorage`.
-Use **Export Save** to download a JSON backup and **Import Save** to restore it. The
-modular and single-file builds use separate save keys, so they do not share progress.
-
-## Tech notes
-
-- Babylon.js is loaded from the official CDN. For fully offline play, host the library
-  locally and update the script reference.
-- No build step is required to play; `package.json` only provides optional Vite scripts
-  for a dev server.
-
-## License
-
-You own this code and its procedurally generated content. Add a license file (for example
-MIT) if you intend to share or open-source it.
+Príjemné gúľanie! 🪨💨

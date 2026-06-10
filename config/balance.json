@@ -1,0 +1,101 @@
+{
+  "physics": {
+    "gravity": 34.0,
+    "boulderRadius": 1.7,
+    "slopeAccel": 26.0,
+    "drag": 0.045,
+    "maxSpeed": 58,
+    "minSpeed": 9,
+    "startSpeed": 14,
+    "steerAccel": 46,
+    "steerFriction": 5.2,
+    "maxLateralSpeed": 22,
+    "jumpPower": 16.5,
+    "jumpCooldown": 0.28,
+    "coyoteTime": 0.13,
+    "wallBouncePenalty": 0.78,
+    "wallBounceKick": 12,
+    "fallDeathDepth": 7
+  },
+  "terrain": {
+    "halfWidth": 14,
+    "grade": 0.17,
+    "hillAmp1": 5.5, "hillFreq1": 0.011,
+    "hillAmp2": 2.2, "hillFreq2": 0.031,
+    "windAmp1": 16, "windFreq1": 0.0065,
+    "windAmp2": 7,  "windFreq2": 0.017,
+    "chuteDepth": 2.6,
+    "rippleAmp": 0.16, "rippleFreqX": 0.55, "rippleFreqZ": 0.33,
+    "chunkLength": 60,
+    "subdivX": 12,
+    "subdivZ": 30,
+    "chunksAhead": 8,
+    "chunksBehind": 2,
+    "wallSpacing": 7.5,
+    "wallOffset": 2.2
+  },
+  "gaps": {
+    "firstGapAt": 220,
+    "interval": 170,
+    "intervalMin": 95,
+    "intervalShrinkPer1000m": 22,
+    "baseWidth": 7,
+    "widthPer1000m": 3.5,
+    "maxWidth": 15,
+    "chance": 0.72,
+    "warnDistance": 30
+  },
+  "hazards": {
+    "firstHazardAt": 130,
+    "baseEvery": 85,
+    "minEvery": 34,
+    "shrinkPer1000m": 11,
+    "reactionTime": 1.15,
+    "lanes": 3,
+    "rollerSpeed": 7.5,
+    "mineRadius": 2.6,
+    "spikeRadius": 2.4
+  },
+  "spawning": {
+    "objectsPerChunkBase": 7,
+    "objectsPerChunkMax": 14,
+    "objectsRampPer1000m": 2.5,
+    "coinsPerChunk": 4,
+    "gemChance": 0.045,
+    "decorPerChunk": 6
+  },
+  "scoring": {
+    "comboWindow": 2.0,
+    "comboStep": 0.25,
+    "comboMax": 5.0,
+    "nearMissBonus": 120,
+    "nearMissRadius": 3.4,
+    "gapClearBonus": 150,
+    "distancePointsPerMeter": 2
+  },
+  "overdrive": {
+    "meterMax": 100,
+    "duration": 7.0,
+    "scoreMult": 2.0,
+    "graceTime": 1.6,
+    "drainOnEnd": true
+  },
+  "meta": {
+    "coinValue": 1,
+    "continueBaseCost": 3,
+    "continueCostStep": 3,
+    "continueMaxPerRun": 3
+  },
+  "camera": {
+    "back": 13.5, "height": 7.5,
+    "lookAheadBase": 10, "lookAheadPerSpeed": 0.28,
+    "fovBase": 0.95, "fovPerSpeed": 0.0042, "fovMax": 1.28,
+    "smooth": 6.0
+  },
+  "intro": {
+    "dropHeight": 130,
+    "camStartHeight": 26,
+    "camStartBack": -8,
+    "blendTime": 1.6
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "blendZone": 90,
+  "biomes": [
+    {
+      "id": "meadow", "label": "Alpská lúka", "length": 900,
+      "ground": "#5d8a44", "ground2": "#4e7639", "rock": "#7e7f88",
+      "fog": "#bcd6e8", "sky": "#9fc8e8", "skyHi": "#5d96cf",
+      "fogDensity": 0.0065, "sun": "#fff3d6", "ambient": "#9fb8cf",
+      "grip": 1.0, "hazardMult": 1.0, "decor": ["pine", "bush", "flower"]
+    },
+    {
+      "id": "rocky", "label": "Skalné štíty", "length": 900,
+      "ground": "#8b7f6e", "ground2": "#75695a", "rock": "#6d6a70",
+      "fog": "#c4bdb2", "sky": "#b7c3cd", "skyHi": "#7d93a8",
+      "fogDensity": 0.0078, "sun": "#ffe9c4", "ambient": "#a8a49c",
+      "grip": 1.0, "hazardMult": 1.15, "decor": ["spire", "boulder"]
+    },
+    {
+      "id": "snow", "label": "Ľadové pláne", "length": 900,
+      "ground": "#e8eef4", "ground2": "#cfdbe6", "rock": "#9fb2c4",
+      "fog": "#e6eef6", "sky": "#cfe1f0", "skyHi": "#8fb6d9",
+      "fogDensity": 0.009, "sun": "#eef4ff", "ambient": "#c2d2e2",
+      "grip": 0.55, "hazardMult": 1.0, "decor": ["icepine", "icerock"]
+    },
+    {
+      "id": "volcanic", "label": "Sopečný svah", "length": 900,
+      "ground": "#4a3b38", "ground2": "#3a2d2b", "rock": "#3c3134",
+      "fog": "#8a5a44", "sky": "#7e4a38", "skyHi": "#52302a",
+      "fogDensity": 0.011, "sun": "#ffb46a", "ambient": "#7e5a4a",
+      "grip": 0.95, "hazardMult": 1.55, "decor": ["obsidian", "ember"]
+    },
+    {
+      "id": "twilight", "label": "Súmrak", "length": 900,
+      "ground": "#46527a", "ground2": "#384264", "rock": "#3d4566",
+      "fog": "#2e3a5e", "sky": "#27314f", "skyHi": "#141a30",
+      "fogDensity": 0.0095, "sun": "#b9c6ff", "ambient": "#5a6a9a",
+      "grip": 0.9, "hazardMult": 1.3, "decor": ["crystal", "spire"]
+    }
+  ]
+}
