@@ -1,12 +1,47 @@
 {
   "cost": 2,
   "buffs": [
-    { "id": "fewerHazards", "label": "Menej nástrah",     "desc": "-35 % nástrah v ďalšej jazde",     "weight": 18 },
-    { "id": "coinMagnet",   "label": "Veľký magnet",      "desc": "+5 m dosah magnetu",               "weight": 18 },
-    { "id": "gemRate",      "label": "Drahokamová žila",  "desc": "3× šanca na drahokamy",            "weight": 14 },
-    { "id": "dudMines",     "label": "Hluché míny",       "desc": "Míny v ďalšej jazde nevybuchnú",   "weight": 12 },
-    { "id": "fastMeter",    "label": "Rýchly náboj",      "desc": "+50 % nabíjania metra",            "weight": 18 },
-    { "id": "headStart",    "label": "Rozbeh",            "desc": "Štart s plným metrom",             "weight": 14 },
-    { "id": "jackpot",      "label": "JACKPOT",           "desc": "+25 mincí, +5 drahokamov, všetky bonusy!", "weight": 2 }
+    {
+      "id": "fewerHazards",
+      "label": "Fewer hazards",
+      "desc": "-35% hazards on your next run",
+      "weight": 18
+    },
+    {
+      "id": "coinMagnet",
+      "label": "Big magnet",
+      "desc": "+5 m magnet range",
+      "weight": 18
+    },
+    {
+      "id": "gemRate",
+      "label": "Gem vein",
+      "desc": "3\u00d7 gem chance",
+      "weight": 14
+    },
+    {
+      "id": "dudMines",
+      "label": "Dud mines",
+      "desc": "Mines won't explode on your next run",
+      "weight": 12
+    },
+    {
+      "id": "fastMeter",
+      "label": "Fast charge",
+      "desc": "+50% meter charging",
+      "weight": 18
+    },
+    {
+      "id": "headStart",
+      "label": "Head start",
+      "desc": "Start with a full meter",
+      "weight": 14
+    },
+    {
+      "id": "jackpot",
+      "label": "JACKPOT",
+      "desc": "+25 coins, +5 gems, all buffs at once!",
+      "weight": 2
+    }
   ]
 }

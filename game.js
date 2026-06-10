@@ -10,7 +10,7 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const lerp = (a, b, t) => a + (b - a) * t;
 const rand = (a, b) => a + Math.random() * (b - a);
 const randi = (a, b) => Math.floor(rand(a, b + 1));
-const fmt = (n) => Math.floor(n).toLocaleString("sk-SK");
+const fmt = (n) => Math.floor(n).toLocaleString("en-US");
 
 function fatal(msg) {
   try {
@@ -20,7 +20,7 @@ function fatal(msg) {
   console.error("[ROCKFALL fatal]", msg);
 }
 window.addEventListener("error", (e) => {
-  if (!window.__rfBooted) fatal("Chyba pri štarte: " + (e.message || e.type));
+  if (!window.__rfBooted) fatal("Startup error: " + (e.message || e.type));
 });
 
 function hex3(c) { return BABYLON.Color3.FromHexString(c); }
@@ -44,11 +44,15 @@ async function loadConfig() {
         if (!r.ok) throw new Error(base + f + ".json → HTTP " + r.status);
         out[f] = await r.json();
       }
-      console.info("[ROCKFALL] config z:", base);
+      console.info("[ROCKFALL] config from:", base);
       return out;
     } catch (e) { lastErr = e; }
   }
-  throw new Error("Konfiguráciu sa nepodarilo načítať zo žiadnej cesty. " + (lastErr ? lastErr.message : ""));
+  if (window.__FALLBACK_CONFIG__) {
+    console.warn("[ROCKFALL] fetch failed everywhere — using bundled fallback config.", lastErr);
+    return window.__FALLBACK_CONFIG__;
+  }
+  throw new Error("Could not load the game config from any path. " + (lastErr ? lastErr.message : ""));
 }
 
 /* ---------- persistent save ---------- */
@@ -59,7 +63,7 @@ function defaultSave() {
     upgrades: {}, goalIndex: 0, goalsDone: [],
     skins: ["skinRock"], activeSkin: "skinRock",
     stats: { bestDist: 0, bestScore: 0, runs: 0, smashed: 0, overdrives: 0, gaps: 0, totalCoins: 0 },
-    settings: { sens: 1, volume: 0.7, music: true, quality: "high", gyro: false, reducedMotion: false },
+    settings: { sens: 1, volume: 0.7, music: true, quality: "high", gyro: false, gyroTouched: false, reducedMotion: false },
     highscores: []
   };
 }
@@ -228,7 +232,7 @@ const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
 function initEngine() {
   if (typeof BABYLON === "undefined" || !BABYLON.Engine)
-    throw new Error("Babylon.js sa nenačítal z CDN. Skontroluj pripojenie / blokovanie skriptov.");
+    throw new Error("Babylon.js failed to load from the CDN. Check your connection / script blockers.");
   const canvas = $("renderCanvas");
   engine = new BABYLON.Engine(canvas, true, { stencil: false, preserveDrawingBuffer: false });
   scene = new BABYLON.Scene(engine);
@@ -1009,7 +1013,7 @@ const run = {
   paused: false,
   deathReason: ""
 };
-let input = { left: false, right: false, jump: false, axis: 0, gyro: 0 };
+let input = { left: false, right: false, jump: false, axis: 0, joyActive: false };
 
 function startRun(continueRun) {
   AudioFX.ensure(); AudioFX.resume(); AudioFX.startMusic();
@@ -1040,6 +1044,11 @@ function startRun(continueRun) {
     run.state = "run";
   }
   run.active = true; run.paused = false;
+  if (isMobile && SAVE.settings.gyro && typeof DeviceOrientationEvent !== "undefined" &&
+      DeviceOrientationEvent.requestPermission && !window.__gyroPerm) {
+    window.__gyroPerm = true;
+    DeviceOrientationEvent.requestPermission().catch(() => {});
+  }
   boulder.setEnabled(true);
   ensureChunks();
   hideAll(); $("hud").classList.remove("hidden");
@@ -1126,7 +1135,7 @@ function smashObject(node) {
 function smashHazard(node) {
   node.metadata.dead = true;
   node.getChildMeshes().forEach((m) => m.setEnabled(false));
-  addScore(200, node.position, "ZNIČENÉ!", "big");
+  addScore(200, node.position, "DESTROYED!", "big");
   burstDebris(node.position, hex3("#5a3a3a"), 12, 11);
   AudioFX.explosion();
   shake(0.5);
@@ -1236,7 +1245,7 @@ function updateRun(dt) {
     // gap-clear bonus
     if (run.inGapAir) {
       run.inGapAir = false; run.gapsCleared++;
-      addScore(CFG.balance.scoring.gapClearBonus, boulder.position, "TRHLINA!", "bonus");
+      addScore(CFG.balance.scoring.gapClearBonus, boulder.position, "CREVASSE!", "bonus");
       AudioFX.nearmiss();
     }
     run.y = gy; run.vy = 0;
@@ -1246,7 +1255,7 @@ function updateRun(dt) {
     run.airborne = true;
     if (gap) {
       run.inGapAir = true;
-      if (run.y < gy - P.fallDeathDepth) { endRun("Pád do trhliny"); return; }
+      if (run.y < gy - P.fallDeathDepth) { endRun("Fell into a crevasse"); return; }
     }
   }
 
@@ -1263,9 +1272,9 @@ function updateRun(dt) {
   /* canyon walls */
   const dx = run.x - centerX(run.z);
   const limit = T.halfWidth - r * 0.4;
-  if (Math.abs(dx) > limit + 6) { endRun("Opustil si trať"); return; }
+  if (Math.abs(dx) > limit + 6) { endRun("Left the track"); return; }
   if (Math.abs(dx) > limit) {
-    if (run.airborne && run.y > terrainY(run.x, run.z) + 7) { endRun("Preletel si cez stenu kaňonu"); return; }
+    if (run.airborne && run.y > terrainY(run.x, run.z) + 7) { endRun("Flew over the canyon wall"); return; }
     const sgn = Math.sign(dx);
     run.x = centerX(run.z) + sgn * limit;
     run.vx = -sgn * Math.max(Math.abs(run.vx) * 0.55, P.wallBounceKick);
@@ -1327,7 +1336,7 @@ function collide(dt, env) {
         const lateral = Math.abs(h.position.x - bp.x);
         if (lateral < NM.nearMissRadius + md.radius && lateral > md.radius * 0.6) {
           run.nearMisses++;
-          addScore(NM.nearMissBonus, bp, "TESNE!", "bonus");
+          addScore(NM.nearMissBonus, bp, "CLOSE!", "bonus");
           AudioFX.nearmiss();
         }
       }
@@ -1342,12 +1351,12 @@ function collide(dt, env) {
       if (run.grace > 0) continue;
       if (md.type === "mine" && run.buffs.dudMines) {
         md.dead = true; h.getChildMeshes().forEach((m) => m.setEnabled(false));
-        addScore(50, h.position, "HLUCHÁ", "bonus");
+        addScore(50, h.position, "DUD", "bonus");
         puffDust(h.position, 14);
         continue;
       }
       if (md.type === "mine") { AudioFX.explosion(); burstDebris(h.position, hex3("#7a2a1a"), 16, 14); }
-      endRun(md.type === "mine" ? "Výbuch míny" : md.type === "roller" ? "Zrážka s valiacim sa balvanom" : "Ostne");
+      endRun(md.type === "mine" ? "Mine explosion" : md.type === "roller" ? "Hit by a rolling boulder" : "Spikes");
       return;
     }
   }
@@ -1401,16 +1410,16 @@ function updateHUD(force) {
   $("hudDist").textContent = fmt(run.dist) + " m";
   $("hudCoins").textContent = fmt(run.coins);
   $("hudGems").textContent = fmt(run.gems);
-  $("hudCombo").textContent = run.combo > 1 ? "KOMBO ×" + comboMult().toFixed(2) : "";
+  $("hudCombo").textContent = run.combo > 1 ? "COMBO ×" + comboMult().toFixed(2) : "";
   const pct = (run.meter / CFG.balance.overdrive.meterMax) * 100;
   $("meterFill").style.width = pct + "%";
   document.querySelector(".meter").classList.toggle("full", run.overdrive > 0);
   if (run.overdrive > 0) $("hudState").textContent = "OVERDRIVE " + run.overdrive.toFixed(1) + "s";
-  else if (run.grace > 0) $("hudState").textContent = "NEZRANITEĽNÝ";
-  else if (run.state === "intro") $("hudState").textContent = "VOĽNÝ PÁD";
+  else if (run.grace > 0) $("hudState").textContent = "INVULNERABLE";
+  else if (run.state === "intro") $("hudState").textContent = "FREE FALL";
   else $("hudState").textContent = "";
   const g = currentGoal();
-  $("hudGoal").textContent = g ? "Cieľ: " + g.label : "Všetky ciele splnené!";
+  $("hudGoal").textContent = g ? "Goal: " + g.label : "All goals complete!";
 }
 
 /* ---------- main loop ---------- */
@@ -1458,7 +1467,7 @@ function checkGoals() {
     SAVE.coins += g.coins; SAVE.gems += g.gems;
     SAVE.goalsDone.push(g.id);
     if (g.unlock && !SAVE.skins.includes(g.unlock)) SAVE.skins.push(g.unlock);
-    msg += "✔ Cieľ splnený: " + g.label + " (+" + g.coins + " mincí" + (g.gems ? ", +" + g.gems + " 💎" : "") + (g.unlock ? ", nový vzhľad!" : "") + ")\n";
+    msg += "✔ Goal complete: " + g.label + " (+" + g.coins + " coins" + (g.gems ? ", +" + g.gems + " 💎" : "") + (g.unlock ? ", new skin!" : "") + ")\n";
     SAVE.goalIndex++;
     g = currentGoal();
   }
@@ -1479,9 +1488,9 @@ function showMenu() {
   $("menuCoins").textContent = fmt(SAVE.coins);
   $("menuGems").textContent = fmt(SAVE.gems);
   $("startStats").innerHTML =
-    "Najlepšia vzdialenosť: <b>" + fmt(SAVE.stats.bestDist) + " m</b> · Najlepšie skóre: <b>" + fmt(SAVE.stats.bestScore) + "</b><br>" +
-    "Jázd: " + fmt(SAVE.stats.runs) + " · Zničených objektov: " + fmt(SAVE.stats.smashed) +
-    " · Overdrive: " + fmt(SAVE.stats.overdrives) + " · Trhlín preskočených: " + fmt(SAVE.stats.gaps);
+    "Best distance: <b>" + fmt(SAVE.stats.bestDist) + " m</b> · Best score: <b>" + fmt(SAVE.stats.bestScore) + "</b><br>" +
+    "Runs: " + fmt(SAVE.stats.runs) + " · Objects smashed: " + fmt(SAVE.stats.smashed) +
+    " · Overdrives: " + fmt(SAVE.stats.overdrives) + " · Crevasses cleared: " + fmt(SAVE.stats.gaps);
   renderSkins();
   $("ovStart").classList.remove("hidden");
 }
@@ -1492,7 +1501,7 @@ function renderSkins() {
     const d = document.createElement("button");
     d.className = "skin" + (SAVE.activeSkin === s.id ? " active" : "") + (owned ? "" : " locked");
     d.style.background = "radial-gradient(circle at 32% 28%, #fff8, " + s.color + " 45%, #0008)";
-    d.title = s.label + (owned ? "" : " (zamknuté — odmena za ciele)");
+    d.title = s.label + (owned ? "" : " (locked — goal reward)");
     d.onclick = () => {
       if (!owned) return;
       AudioFX.click();
@@ -1505,7 +1514,7 @@ function renderSkins() {
 function showEndOverlay(coinGain, newBest, goalMsg, reason) {
   $("hud").classList.add("hidden");
   $("joystick").classList.add("hidden"); $("btnJump").classList.add("hidden");
-  $("endTitle").textContent = "KONIEC JAZDY — " + reason;
+  $("endTitle").textContent = "RUN OVER — " + reason;
   $("endDist").textContent = fmt(run.dist) + " m";
   $("endScore").textContent = fmt(run.score);
   $("endCoins").textContent = "+" + fmt(coinGain);
@@ -1514,15 +1523,15 @@ function showEndOverlay(coinGain, newBest, goalMsg, reason) {
   const eg = $("endGoal");
   if (goalMsg) { eg.textContent = goalMsg; eg.classList.remove("hidden"); } else eg.classList.add("hidden");
   const hs = SAVE.highscores.map((h, i) => (i + 1) + ". <b>" + fmt(h.score) + "</b> · " + fmt(h.dist) + " m · " + h.date).join("<br>");
-  $("hsTable").innerHTML = hs ? "<b>Najlepšie jazdy</b><br>" + hs : "";
+  $("hsTable").innerHTML = hs ? "<b>Best runs</b><br>" + hs : "";
   const M = CFG.balance.meta;
   const cost = M.continueBaseCost + M.continueCostStep * run.continuesUsed;
   const can = run.continuesUsed < M.continueMaxPerRun && SAVE.gems >= cost;
   const btn = $("btnContinue");
   btn.disabled = !can;
   btn.textContent = run.continuesUsed >= M.continueMaxPerRun
-    ? "POKRAČOVANIE VYČERPANÉ"
-    : "POKRAČOVAŤ (" + cost + " 💎)";
+    ? "NO CONTINUES LEFT"
+    : "CONTINUE (" + cost + " 💎)";
   $("ovEnd").classList.remove("hidden");
 }
 
@@ -1535,7 +1544,7 @@ function renderUpgrades() {
     const maxed = lvl >= u.maxLevel;
     const row = document.createElement("div"); row.className = "up-row";
     row.innerHTML = "<div class='up-info'><b>" + u.label + "</b><span>" + u.desc + "</span></div>" +
-      "<div class='up-lvl'>úr. " + lvl + "/" + u.maxLevel + "</div>";
+      "<div class='up-lvl'>lvl " + lvl + "/" + u.maxLevel + "</div>";
     const btn = document.createElement("button");
     btn.className = "buy-btn";
     btn.textContent = maxed ? "MAX" : cost + " 🪙";
@@ -1561,7 +1570,7 @@ function renderGoals() {
     row.className = "goal-row" + (done ? " done" : i === SAVE.goalIndex ? " current" : "");
     const prog = done ? g.target : i === SAVE.goalIndex ? Math.min(goalProgress(g), g.target) : 0;
     row.innerHTML = "<div class='up-info'><b>" + (done ? "✔ " : "") + g.label + "</b>" +
-      "<span>+" + g.coins + " mincí" + (g.gems ? " · +" + g.gems + " 💎" : "") + (g.unlock ? " · vzhľad" : "") + "</span></div>" +
+      "<span>+" + g.coins + " coins" + (g.gems ? " · +" + g.gems + " 💎" : "") + (g.unlock ? " · skin" : "") + "</span></div>" +
       "<div class='goal-prog'>" + fmt(prog) + " / " + fmt(g.target) + "</div>";
     list.appendChild(row);
   });
@@ -1572,7 +1581,7 @@ let spinning = false, spinAngle = 0;
 function doSpin() {
   if (spinning) return;
   const cost = CFG.spinner.cost;
-  if (SAVE.gems < cost) { $("spinResult").textContent = "Nedostatok drahokamov."; return; }
+  if (SAVE.gems < cost) { $("spinResult").textContent = "Not enough gems."; return; }
   AudioFX.click();
   SAVE.gems -= cost; persistSave();
   $("spGems").textContent = fmt(SAVE.gems);
@@ -1611,7 +1620,7 @@ function bindSettings() {
   $("setMusic").onchange = (e) => { st.music = e.target.checked; persistSave(); if (!st.music) AudioFX.stopMusic(); else { AudioFX.ensure(); AudioFX.startMusic(); } };
   $("setQuality").onchange = (e) => { st.quality = e.target.value; persistSave(); applyQuality(); };
   $("setGyro").onchange = (e) => {
-    st.gyro = e.target.checked; persistSave();
+    st.gyro = e.target.checked; st.gyroTouched = true; persistSave();
     if (st.gyro && typeof DeviceOrientationEvent !== "undefined" && DeviceOrientationEvent.requestPermission) {
       DeviceOrientationEvent.requestPermission().catch(() => {});
     }
@@ -1634,13 +1643,13 @@ function importSave(file) {
   rd.onload = () => {
     try {
       const s = JSON.parse(rd.result);
-      if (!validateSave(s)) throw new Error("Neplatný formát uloženia.");
+      if (!validateSave(s)) throw new Error("Invalid save format.");
       SAVE = Object.assign(defaultSave(), s,
         { stats: Object.assign(defaultSave().stats, s.stats || {}),
           settings: Object.assign(defaultSave().settings, s.settings || {}) });
       persistSave(); bindSettings(); applySkin(); showMenu();
-      alert("Uloženie importované. ✔");
-    } catch (e) { alert("Import zlyhal: " + e.message); }
+      alert("Save imported. ✔");
+    } catch (e) { alert("Import failed: " + e.message); }
   };
   rd.readAsText(file);
 }
@@ -1672,7 +1681,7 @@ function bindControls() {
   const joy = $("joystick"), knob = $("joyKnob"), base = $("joyBase");
   let joyId = null, cx0 = 0;
   joy.addEventListener("touchstart", (e) => {
-    const t = e.changedTouches[0]; joyId = t.identifier;
+    const t = e.changedTouches[0]; joyId = t.identifier; input.joyActive = true;
     const r = base.getBoundingClientRect(); cx0 = r.left + r.width / 2;
     e.preventDefault();
   }, { passive: false });
@@ -1688,7 +1697,7 @@ function bindControls() {
   const joyEnd = (e) => {
     for (const t of e.changedTouches) {
       if (t.identifier !== joyId) continue;
-      joyId = null; input.axis = 0;
+      joyId = null; input.axis = 0; input.joyActive = false;
       knob.style.transform = "translate(-50%, -50%)";
     }
   };
@@ -1697,7 +1706,7 @@ function bindControls() {
 
   /* gyro */
   window.addEventListener("deviceorientation", (e) => {
-    if (!SAVE.settings.gyro || e.gamma == null) return;
+    if (!SAVE.settings.gyro || e.gamma == null || input.joyActive) return;
     input.axis = clamp(e.gamma / 28, -1, 1);
   });
 }
@@ -1710,7 +1719,7 @@ function bindUI() {
   click("btnPlay", () => startRun(false));
   click("btnUpgrades", () => { hideAll(); renderUpgrades(); $("ovUpgrades").classList.remove("hidden"); });
   click("btnUpBack", showMenu);
-  click("btnSpinner", () => { hideAll(); $("spGems").textContent = fmt(SAVE.gems); $("spCost").textContent = CFG.spinner.cost; $("spinResult").textContent = "Bonus platí pre nasledujúcu jazdu."; $("ovSpinner").classList.remove("hidden"); });
+  click("btnSpinner", () => { hideAll(); $("spGems").textContent = fmt(SAVE.gems); $("spCost").textContent = CFG.spinner.cost; $("spinResult").textContent = "A buff applies to your next run."; $("ovSpinner").classList.remove("hidden"); });
   click("btnSpin", doSpin);
   click("btnSpBack", showMenu);
   click("btnGoals", () => { hideAll(); renderGoals(); $("ovGoals").classList.remove("hidden"); });
@@ -1740,6 +1749,7 @@ function bindUI() {
 async function boot() {
   try {
     loadSave();
+    if (isMobile && !SAVE.settings.gyroTouched) SAVE.settings.gyro = true;
     CFG = await loadConfig();
     T = CFG.balance.terrain;
     GP = CFG.balance.gaps;

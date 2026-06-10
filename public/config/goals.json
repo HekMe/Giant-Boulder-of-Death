@@ -1,25 +1,150 @@
 {
   "goals": [
-    { "id": "g01", "label": "Prejdi 300 m v jednej jazde",        "type": "runDistance",   "target": 300,  "coins": 15, "gems": 0 },
-    { "id": "g02", "label": "Znič 10 objektov v jednej jazde",    "type": "runSmash",      "target": 10,   "coins": 15, "gems": 0 },
-    { "id": "g03", "label": "Pozbieraj 25 mincí celkovo",          "type": "totalCoins",    "target": 25,   "coins": 20, "gems": 1 },
-    { "id": "g04", "label": "Preskoč 3 trhliny v jednej jazde",    "type": "runGaps",       "target": 3,    "coins": 25, "gems": 0 },
-    { "id": "g05", "label": "Aktivuj Overdrive",                   "type": "runOverdrive",  "target": 1,    "coins": 25, "gems": 1 },
-    { "id": "g06", "label": "Prejdi 800 m v jednej jazde",         "type": "runDistance",   "target": 800,  "coins": 30, "gems": 1 },
-    { "id": "g07", "label": "Dosiahni kombo ×5",                   "type": "runCombo",      "target": 5,    "coins": 30, "gems": 0 },
-    { "id": "g08", "label": "Znič 150 objektov celkovo",           "type": "totalSmash",    "target": 150,  "coins": 35, "gems": 1 },
-    { "id": "g09", "label": "Tesne minul: 5 near-miss v jazde",    "type": "runNearMiss",   "target": 5,    "coins": 35, "gems": 1 },
-    { "id": "g10", "label": "Prejdi 1 500 m v jednej jazde",       "type": "runDistance",   "target": 1500, "coins": 45, "gems": 1, "unlock": "skinIce" },
-    { "id": "g11", "label": "Skóre 25 000 v jednej jazde",         "type": "runScore",      "target": 25000,"coins": 50, "gems": 2 },
-    { "id": "g12", "label": "Preskoč 25 trhlín celkovo",           "type": "totalGaps",     "target": 25,   "coins": 50, "gems": 2 },
-    { "id": "g13", "label": "Aktivuj Overdrive 10× celkovo",       "type": "totalOverdrive","target": 10,   "coins": 60, "gems": 2, "unlock": "skinMagma" },
-    { "id": "g14", "label": "Prejdi 3 000 m v jednej jazde",       "type": "runDistance",   "target": 3000, "coins": 80, "gems": 3, "unlock": "skinGold" },
-    { "id": "g15", "label": "Skóre 100 000 v jednej jazde",        "type": "runScore",      "target": 100000,"coins": 120,"gems": 5 }
+    {
+      "id": "g01",
+      "label": "Travel 300 m in a single run",
+      "type": "runDistance",
+      "target": 300,
+      "coins": 15,
+      "gems": 0
+    },
+    {
+      "id": "g02",
+      "label": "Smash 10 objects in a single run",
+      "type": "runSmash",
+      "target": 10,
+      "coins": 15,
+      "gems": 0
+    },
+    {
+      "id": "g03",
+      "label": "Collect 25 coins in total",
+      "type": "totalCoins",
+      "target": 25,
+      "coins": 20,
+      "gems": 1
+    },
+    {
+      "id": "g04",
+      "label": "Clear 3 crevasses in a single run",
+      "type": "runGaps",
+      "target": 3,
+      "coins": 25,
+      "gems": 0
+    },
+    {
+      "id": "g05",
+      "label": "Trigger Overdrive",
+      "type": "runOverdrive",
+      "target": 1,
+      "coins": 25,
+      "gems": 1
+    },
+    {
+      "id": "g06",
+      "label": "Travel 800 m in a single run",
+      "type": "runDistance",
+      "target": 800,
+      "coins": 30,
+      "gems": 1
+    },
+    {
+      "id": "g07",
+      "label": "Reach a \u00d75 combo",
+      "type": "runCombo",
+      "target": 5,
+      "coins": 30,
+      "gems": 0
+    },
+    {
+      "id": "g08",
+      "label": "Smash 150 objects in total",
+      "type": "totalSmash",
+      "target": 150,
+      "coins": 35,
+      "gems": 1
+    },
+    {
+      "id": "g09",
+      "label": "Get 5 near-misses in a single run",
+      "type": "runNearMiss",
+      "target": 5,
+      "coins": 35,
+      "gems": 1
+    },
+    {
+      "id": "g10",
+      "label": "Travel 1,500 m in a single run",
+      "type": "runDistance",
+      "target": 1500,
+      "coins": 45,
+      "gems": 1,
+      "unlock": "skinIce"
+    },
+    {
+      "id": "g11",
+      "label": "Score 25,000 in a single run",
+      "type": "runScore",
+      "target": 25000,
+      "coins": 50,
+      "gems": 2
+    },
+    {
+      "id": "g12",
+      "label": "Clear 25 crevasses in total",
+      "type": "totalGaps",
+      "target": 25,
+      "coins": 50,
+      "gems": 2
+    },
+    {
+      "id": "g13",
+      "label": "Trigger Overdrive 10\u00d7 in total",
+      "type": "totalOverdrive",
+      "target": 10,
+      "coins": 60,
+      "gems": 2,
+      "unlock": "skinMagma"
+    },
+    {
+      "id": "g14",
+      "label": "Travel 3,000 m in a single run",
+      "type": "runDistance",
+      "target": 3000,
+      "coins": 80,
+      "gems": 3,
+      "unlock": "skinGold"
+    },
+    {
+      "id": "g15",
+      "label": "Score 100,000 in a single run",
+      "type": "runScore",
+      "target": 100000,
+      "coins": 120,
+      "gems": 5
+    }
   ],
   "skins": [
-    { "id": "skinRock",  "label": "Žula",     "color": "#8d8a86", "default": true },
-    { "id": "skinIce",   "label": "Ľad",      "color": "#bfe2ff" },
-    { "id": "skinMagma", "label": "Magma",    "color": "#ff7a3c" },
-    { "id": "skinGold",  "label": "Zlato",    "color": "#f2c94c" }
+    {
+      "id": "skinRock",
+      "label": "Granite",
+      "color": "#8d8a86",
+      "default": true
+    },
+    {
+      "id": "skinIce",
+      "label": "Ice",
+      "color": "#bfe2ff"
+    },
+    {
+      "id": "skinMagma",
+      "label": "Magma",
+      "color": "#ff7a3c"
+    },
+    {
+      "id": "skinGold",
+      "label": "Gold",
+      "color": "#f2c94c"
+    }
   ]
 }

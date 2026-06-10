@@ -1,88 +1,93 @@
-# 🪨 ROCKFALL — nekonečný zjazd balvanu
+# 🪨 ROCKFALL — endless downhill boulder run
 
-Balvan padá z neba, dopadne na horský svah a valí sa dole — stále rýchlejšie, cez päť biomov, ponad trhliny, pomedzi ostne, míny a valiace sa skaly. Rozbíjaj objekty, zbieraj mince a drahokamy, nabíjaj Overdrive a posúvaj sa stromom cieľov k novým skinom.
+A boulder drops out of the sky, slams into a mountainside and rolls downhill — faster and faster, through five biomes, over crevasses, between spikes, mines and rolling rocks. Smash objects, collect coins and gems, charge your Overdrive and work through the goal tree to unlock new boulder skins.
 
-Celá hra je postavená na **Babylon.js** (CDN) + čistom HTML/CSS/JS. Žiadny build krok, žiadne externé assety — všetka grafika aj zvuk sú procedurálne.
+Built entirely with **Babylon.js** (CDN) + plain HTML/CSS/JS. No build step, no external assets — all graphics and sound are procedural.
 
-## ✨ Čo hra obsahuje
+## ✨ Features
 
-- **Cinematický intro pád z neba** — kamera sa počas pádu presunie za balvan, dopad so screen shake a prachom.
-- **Nekonečný procedurálny terén** — svah sa vlní, kľukatí a nakláňa; po oboch stranách kaňonové steny.
-- **Trhliny (gaps)** — telegrafované varovnými značkami, dajú sa preskočiť (Space / tlačidlo skoku); pád dnu = koniec behu.
-- **5 biomov** — alpská lúka → skaly → sneh a ľad → vulkán → súmrak; plynulé blendovanie farieb, hmly aj fyziky (ľad šmýka).
-- **10 rozbitných objektov** — od plota a sena až po zlatý idol, každý s vlastnou hodnotou.
-- **Hazardy** — ostne, míny a valiace sa balvany; vždy existuje bezpečná dráha a rozostupy rešpektujú reakčný čas.
-- **Skóre, kombo, meter, Overdrive** — near-miss a gap-clear bonusy, dočasná nesmrteľnosť pri plnom metri.
-- **Meta progresia** — mince a drahokamy, 6 permanentných upgradov, gem ruleta s buffmi, 15 sekvenčných cieľov, 4 odomykateľné skiny, continue po smrti s rastúcou cenou, doživotné štatistiky.
-- **Ukladanie** — localStorage + export/import save súboru (JSON).
-- **Mobil aj desktop** — virtuálny joystick, tlačidlo skoku, voliteľný gyroskop; nastavenia citlivosti, hlasitosti, kvality a reduced-motion.
-- **Procedurálny zvuk** — Web Audio API, žiadne audio súbory.
+- **Cinematic sky-drop intro** — the camera swings behind the boulder mid-fall; impact lands with screen shake and a dust burst.
+- **Endless procedural terrain** — the slope rolls, winds and banks; canyon rock walls line both edges.
+- **Crevasses (gaps)** — telegraphed by warning stripes, jumpable (Space / jump button); falling in ends the run.
+- **5 biomes** — alpine meadow → rocky peaks → snow and ice → volcanic → twilight; colors, fog and physics blend smoothly (ice is slippery).
+- **10 destructible objects** — from a fence and hay bale up to a golden idol, each with its own value.
+- **Hazards** — spikes, mines and rolling boulders; a safe lane always exists and spacing respects human reaction time.
+- **Score, combo, meter, Overdrive** — near-miss and gap-clear bonuses, temporary invincibility at full meter.
+- **Meta progression** — coins and gems, 6 permanent upgrades, a gem-powered lucky spin with run buffs, 15 sequential goals, 4 unlockable boulder skins, continue-after-death with a rising price, lifetime stats.
+- **Saving** — localStorage plus export/import of your save as a JSON file.
+- **Mobile and desktop** — the game detects mobile devices and enables **gyroscope (tilt) steering** automatically; a virtual joystick and a jump button are also available. Settings cover sensitivity, volume, quality and reduced motion.
+- **Procedural sound** — Web Audio API, zero audio files.
 
-## 🎮 Ovládanie
+## 🎮 Controls
 
-| Akcia | Desktop | Mobil |
+| Action | Desktop | Mobile |
 |---|---|---|
-| Riadenie | A / D alebo ← / → | joystick vľavo (alebo gyro) |
-| Skok | Space | tlačidlo vpravo |
-| Pauza | Esc alebo ⏸ | ⏸ |
+| Steer | A / D or ← / → | **tilt your device (gyro, on by default)** or the left joystick |
+| Jump | Space | big button on the right |
+| Pause | Esc or ⏸ | ⏸ |
 
-## 🚀 Spustenie lokálne
+On mobile the gyroscope is enabled automatically. While you're touching the joystick, it takes priority over tilt. You can turn the gyro off in Settings. On iOS the browser asks for motion-sensor permission the first time you press START RUN.
 
-Hra načítava JSON konfigy cez `fetch`, takže ju **nespúšťaj cez `file://`** — potrebuje HTTP server:
+## 🚀 Running locally
+
+The recommended way is a tiny HTTP server (the game loads its JSON configs via `fetch`):
 
 ```bash
 # Python
 python3 -m http.server 8080
-# alebo Node
+# or Node
 npx serve .
 ```
 
-Potom otvor `http://localhost:8080`.
+Then open `http://localhost:8080`.
 
-**Núdzové riešenie:** súbor `standalone.html` má všetko (CSS, konfigy aj kód) vložené priamo v sebe — funguje aj otvorený priamo z disku (stále potrebuje internet kvôli Babylon CDN).
+Opening `index.html` straight from disk (`file://`) also works: when `fetch` is blocked, the game falls back to a bundled copy of the config (`config.fallback.js`). There's also `standalone.html`, a single file with everything (CSS, config and code) inlined. Both still need internet access for the Babylon.js CDN.
 
-## 🌐 Nasadenie na GitHub Pages
+## 🌐 Deploying to GitHub Pages
 
-1. Vytvor nový repozitár na GitHube.
-2. Nahraj **celý obsah** tohto priečinka do koreňa repozitára (vrátane skrytého `.github/`).
-3. V repozitári otvor **Settings → Pages** a v sekcii **Source** zvoľ **GitHub Actions**.
-4. Po pushi na vetvu `main` sa workflow `Deploy to GitHub Pages` spustí sám (dá sa spustiť aj ručne cez záložku Actions → Run workflow).
-5. Hra bude bežať na `https://<tvoje-meno>.github.io/<repo>/`.
+1. Create a new repository on GitHub.
+2. Upload the **entire contents** of this folder to the repository **root** (including the hidden `.github/` folder). The files `index.html`, `game.js` etc. must sit directly in the root — not inside a subfolder.
+3. In the repository open **Settings → Pages** and under **Source** select **GitHub Actions**.
+4. Every push to `main` triggers the `Deploy to GitHub Pages` workflow automatically (you can also run it manually from the Actions tab → Run workflow).
+5. The game goes live at `https://<your-username>.github.io/<repo>/`.
 
-## 📁 Štruktúra projektu
+## 📁 Project structure
 
 ```
 .
-├── index.html              # UI, HUD, overlaye, mobilné ovládanie
-├── style.css               # tmavá „stone & ember“ vizuálna identita
-├── game.js                 # celá logika hry (jeden súbor, bez importov)
-├── standalone.html         # samostatná verzia so všetkým inline
-├── config/                 # data-driven balans hry
-│   ├── balance.json        # fyzika, terén, trhliny, hazardy, skóre, kamera
-│   ├── objects.json        # 10 rozbitných objektov
-│   ├── biomes.json         # 5 biomov (palety, hmla, grip, dekorácie)
-│   ├── upgrades.json       # 6 permanentných upgradov
-│   ├── spinner.json        # gem ruleta a buffy
-│   └── goals.json          # 15 cieľov + skiny
-├── public/config/          # zrkadlová kópia konfigov (záložná cesta)
+├── index.html              # UI, HUD, overlays, mobile controls
+├── style.css               # dark "stone & ember" visual identity
+├── game.js                 # entire game logic (one file, no imports)
+├── config.fallback.js      # bundled config copy, used only when fetch fails (file://)
+├── standalone.html         # single-file version with everything inlined
+├── config/                 # data-driven game balance
+│   ├── balance.json        # physics, terrain, gaps, hazards, scoring, camera
+│   ├── objects.json        # 10 destructible objects
+│   ├── biomes.json         # 5 biomes (palettes, fog, grip, decor)
+│   ├── upgrades.json       # 6 permanent upgrades
+│   ├── spinner.json        # lucky spin buffs
+│   └── goals.json          # 15 goals + skins
+├── public/config/          # mirror copy of configs (fallback path)
 └── .github/workflows/
-    └── pages.yml           # automatický deploy na GitHub Pages
+    └── pages.yml           # automatic GitHub Pages deploy
 ```
 
-`game.js` skúša konfigy načítať z viacerých ciest (`config/`, `./config/`, `public/config/`, …), takže funguje v koreni domény aj v podpriečinku Pages. Ak existuje `window.__INLINE_CONFIG__` (standalone verzia), fetch sa preskočí úplne.
+`game.js` tries several config paths (`config/`, `./config/`, `public/config/`, …) so it works at a domain root as well as in a Pages subdirectory. If `window.__INLINE_CONFIG__` exists (standalone version) fetching is skipped entirely; if every fetch fails, `window.__FALLBACK_CONFIG__` from `config.fallback.js` is used.
 
-## 🏔️ Ako funguje terén, trhliny a biomy
+> Note: after editing `config/*.json`, regenerate `config.fallback.js` (and `standalone.html` if you use it) or they'll keep the old values.
 
-- **`centerX(z)`** — stred trate ako súčet sínusoviek; trať sa tým kľukatí. Steny, objekty aj kamera sa od neho odvíjajú.
-- **`terrainY(x, z)`** — výška terénu: základný klesajúci profil + vlny + naklonenie do zákrut (banked chute) + jemné zvlnenie. Tú istú funkciu používa mesh terénu aj fyzika balvanu, takže balvan vždy „sedí“ presne na zemi.
-- **Gap mapa** — trhliny sú deterministické: pozícia a šírka každej sa počíta hashom z indexu segmentu. Mesh terénu pri generovaní jednoducho vynechá trojuholníky v oblasti trhliny (vznikne skutočná diera) a fyzika sa pýta tej istej mapy, či je pod balvanom zem.
-- **Biome blending** — každý biome má paletu, hustotu hmly, grip a dekorácie. Na hraniciach sa všetko lineárne mieša v prechodovej zóne, vrátane vertex farieb terénu — prechody sú preto plynulé, nie strihané.
+## 🏔️ How the terrain, gaps and biomes work
 
-## 🛠️ Technické poznámky
+- **`centerX(z)`** — the track centerline as a sum of sine waves; this makes the road wind. Walls, objects and the camera all derive from it.
+- **`terrainY(x, z)`** — terrain height: a descending base profile + hills + banking into curves (banked chute) + fine ripples. The very same function drives the terrain mesh and the boulder physics, so the boulder always sits exactly on the ground.
+- **Gap map** — crevasses are deterministic: each one's position and width are hashed from its segment index. The terrain mesh simply skips triangles inside a gap (a real hole appears), and the physics queries the same map to know whether there is ground under the boulder.
+- **Biome blending** — every biome has a palette, fog density, grip and decor set. At borders everything is linearly blended across a transition zone, including the terrain's vertex colors — so transitions are smooth, never a hard cut.
 
-- Babylon.js sa načítava z `https://cdn.babylonjs.com/babylon.js` ako globál — `game.js` je ES module bez importov.
-- Object pooling pre skaly, objekty, hazardy, mince a debris; staré chunky sa korektne dispose-ujú.
-- Delta time je clampnutý, takže lag spike hru nerozbije.
-- Pri zlyhaní štartu sa zobrazí overlay s popisom chyby namiesto čiernej obrazovky.
+## 🛠️ Technical notes
 
-Príjemné gúľanie! 🪨💨
+- Babylon.js loads from `https://cdn.babylonjs.com/babylon.js` as a global — `game.js` is a plain script with no imports.
+- Object pooling for rocks, objects, hazards, coins and debris; old chunks are disposed properly.
+- Delta time is clamped, so a lag spike won't break the simulation.
+- If startup fails, an error overlay explains what went wrong instead of a black screen.
+
+Happy rolling! 🪨💨

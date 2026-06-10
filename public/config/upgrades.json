@@ -1,10 +1,58 @@
 {
   "upgrades": [
-    { "id": "jump",     "label": "Výška skoku",      "desc": "+6 % výšky skoku / úroveň",        "baseCost": 20,  "costMult": 1.6, "bonus": 0.06, "maxLevel": 8 },
-    { "id": "steer",    "label": "Riadenie",          "desc": "+7 % rýchlosti riadenia / úroveň", "baseCost": 20,  "costMult": 1.6, "bonus": 0.07, "maxLevel": 8 },
-    { "id": "overdrive","label": "Trvanie Overdrive", "desc": "+8 % trvania Overdrive / úroveň",  "baseCost": 30,  "costMult": 1.7, "bonus": 0.08, "maxLevel": 8 },
-    { "id": "startMeter","label": "Štartovací náboj", "desc": "+5 % metra na štarte / úroveň",    "baseCost": 25,  "costMult": 1.7, "bonus": 0.05, "maxLevel": 6 },
-    { "id": "coinGain", "label": "Zisk mincí",        "desc": "+10 % mincí / úroveň",             "baseCost": 35,  "costMult": 1.8, "bonus": 0.10, "maxLevel": 6 },
-    { "id": "magnet",   "label": "Magnet na mince",   "desc": "+0,8 m dosah magnetu / úroveň",    "baseCost": 30,  "costMult": 1.7, "bonus": 0.8,  "maxLevel": 6 }
+    {
+      "id": "jump",
+      "label": "Jump height",
+      "desc": "+6% jump height / level",
+      "baseCost": 20,
+      "costMult": 1.6,
+      "bonus": 0.06,
+      "maxLevel": 8
+    },
+    {
+      "id": "steer",
+      "label": "Steering",
+      "desc": "+7% steering speed / level",
+      "baseCost": 20,
+      "costMult": 1.6,
+      "bonus": 0.07,
+      "maxLevel": 8
+    },
+    {
+      "id": "overdrive",
+      "label": "Overdrive duration",
+      "desc": "+8% Overdrive duration / level",
+      "baseCost": 30,
+      "costMult": 1.7,
+      "bonus": 0.08,
+      "maxLevel": 8
+    },
+    {
+      "id": "startMeter",
+      "label": "Starting charge",
+      "desc": "+5% meter at run start / level",
+      "baseCost": 25,
+      "costMult": 1.7,
+      "bonus": 0.05,
+      "maxLevel": 6
+    },
+    {
+      "id": "coinGain",
+      "label": "Coin gain",
+      "desc": "+10% coins / level",
+      "baseCost": 35,
+      "costMult": 1.8,
+      "bonus": 0.1,
+      "maxLevel": 6
+    },
+    {
+      "id": "magnet",
+      "label": "Coin magnet",
+      "desc": "+0.8 m magnet range / level",
+      "baseCost": 30,
+      "costMult": 1.7,
+      "bonus": 0.8,
+      "maxLevel": 6
+    }
   ]
 }
