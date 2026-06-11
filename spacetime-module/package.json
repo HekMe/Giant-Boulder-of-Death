@@ -1,0 +1,10 @@
+{
+  "name": "rockfall-module",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "spacetimedb": "^2.0.0"
+  }
+}
