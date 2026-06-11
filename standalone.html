@@ -420,6 +420,23 @@ function upBonus(id) {
   return def ? upLevel(id) * def.bonus : 0;
 }
 
+
+/* per-biome musical moods: root (Hz), scale (semitone degrees), arpeggio pace (ms), pad (Hz) */
+const BIOME_MOODS = {
+  meadow:   { root: 220.0, scale: [0, 2, 4, 7, 9, 12, 14], tempo: 290, pad: 110.0 },
+  forest:   { root: 196.0, scale: [0, 3, 5, 7, 10, 12, 15], tempo: 310, pad: 98.0 },
+  rocky:    { root: 174.6, scale: [0, 2, 5, 7, 9, 12, 14], tempo: 300, pad: 87.3 },
+  desert:   { root: 220.0, scale: [0, 1, 4, 5, 7, 8, 11], tempo: 320, pad: 110.0 },
+  snow:     { root: 246.9, scale: [0, 2, 4, 7, 11, 12, 16], tempo: 360, pad: 82.4 },
+  swamp:    { root: 185.0, scale: [0, 3, 5, 6, 10, 12, 15], tempo: 345, pad: 92.5 },
+  canyon:   { root: 207.7, scale: [0, 2, 4, 7, 9, 12, 14], tempo: 275, pad: 103.8 },
+  volcanic: { root: 164.8, scale: [0, 1, 3, 5, 7, 8, 10], tempo: 245, pad: 82.4 },
+  twilight: { root: 233.1, scale: [0, 2, 3, 7, 8, 12, 14], tempo: 330, pad: 77.8 },
+  crystal:  { root: 261.6, scale: [0, 2, 4, 6, 7, 11, 12], tempo: 300, pad: 130.8 },
+  golden:   { root: 233.1, scale: [0, 2, 4, 7, 9, 12, 16], tempo: 285, pad: 116.5 },
+  aurora:   { root: 277.2, scale: [0, 2, 4, 7, 9, 11, 14], tempo: 340, pad: 69.3 }
+};
+
 /* ---------- procedural audio (Web Audio) ---------- */
 const AudioFX = {
   ctx: null, master: null, musicGain: null, musicNodes: [],
@@ -481,7 +498,34 @@ const AudioFX = {
   overdrive() { this.tone("sawtooth", 160, 760, 0.7, 0.3); this.noise(0.5, 0.2, 300, 3200); },
   nearmiss() { this.tone("sine", 950, 1500, 0.12, 0.12); },
   death() { this.noise(0.9, 0.6, 700, 50); this.tone("sawtooth", 200, 28, 0.9, 0.3); },
-  musicTimer: null, musicStep: 0,
+  musicTimer: null, musicStep: 0, mood: null, moodId: "", padOscs: [],
+  setMood(id) {
+    const m = BIOME_MOODS[id] || BIOME_MOODS.meadow;
+    if (this.moodId === id) return;
+    this.moodId = id; this.mood = m;
+    // retune the pad live
+    this.padOscs.forEach((o, i) => { o.frequency.value = m.pad * (i ? 1.006 : 1); });
+    // re-pace the arpeggio
+    if (this.musicTimer) { clearInterval(this.musicTimer); this.musicTimer = setInterval(() => this._note(), m.tempo); }
+  },
+  _note() {
+    if (!this.ctx || this.ctx.state !== "running" || !SAVE.settings.music || !this.mood) return;
+    const m = this.mood;
+    const pattern = [0, 2, 4, 5, 4, 2, 3, 1];
+    const i = this.musicStep++ % pattern.length;
+    if (hash01(this.musicStep * 11) < 0.22) return; // rests keep it airy
+    const deg = m.scale[pattern[i] % m.scale.length];
+    const oct = this.musicStep % 32 < 16 ? 1 : 0.5;
+    const f = m.root * Math.pow(2, deg / 12) * oct;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.type = "triangle"; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+    o.connect(g); g.connect(this.musicGain);
+    o.start(t); o.stop(t + 0.6);
+  },
   startMusic() {
     if (!this.ctx || !SAVE.settings.music || this.musicTimer) return;
     this.musicGain = this.ctx.createGain(); this.musicGain.gain.value = 0.14;
@@ -490,34 +534,21 @@ const AudioFX = {
     const padLp = this.ctx.createBiquadFilter(); padLp.type = "lowpass"; padLp.frequency.value = 260;
     const padG = this.ctx.createGain(); padG.gain.value = 0.3;
     padLp.connect(padG); padG.connect(this.musicGain);
-    [110, 110.6].forEach((f) => {
+    this.padOscs = [110, 110.6].map((f) => {
       const o = this.ctx.createOscillator(); o.type = "sine"; o.frequency.value = f;
       o.connect(padLp); o.start();
       this.musicNodes.push(o);
+      return o;
     });
-    // gentle A-minor pentatonic arpeggio, occasional rests, drops a fourth every phrase
-    const scale = [220, 261.63, 293.66, 329.63, 392, 440, 523.25];
-    const pattern = [0, 2, 4, 6, 4, 2, 3, 5];
     this.musicStep = 0;
-    this.musicTimer = setInterval(() => {
-      if (!this.ctx || this.ctx.state !== "running" || !SAVE.settings.music) return;
-      const i = this.musicStep++ % pattern.length;
-      if (hash01(this.musicStep * 11) < 0.22) return; // rests keep it airy
-      const f = scale[pattern[i]] * (this.musicStep % 32 < 16 ? 1 : 0.749);
-      const t = this.ctx.currentTime;
-      const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-      o.type = "triangle"; o.frequency.value = f;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.16, t + 0.03);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-      o.connect(g); g.connect(this.musicGain);
-      o.start(t); o.stop(t + 0.6);
-    }, 290);
+    this.moodId = "";
+    this.setMood("meadow");
+    if (!this.musicTimer) this.musicTimer = setInterval(() => this._note(), this.mood.tempo);
   },
   stopMusic() {
     if (this.musicTimer) { clearInterval(this.musicTimer); this.musicTimer = null; }
     this.musicNodes.forEach((n) => { try { n.stop(); } catch (e) {} });
-    this.musicNodes = [];
+    this.musicNodes = []; this.padOscs = []; this.moodId = "";
   }
 };
 
@@ -634,7 +665,11 @@ function mat(name, hex, opts = {}) {
 }
 let biomeRockMats = [];
 function buildBiomeMaterials() {
-  biomeRockMats = CFG.biomes.biomes.map((b, i) => mat("rock_" + b.id, b.rock));
+  biomeRockMats = CFG.biomes.biomes.map((b, i) => {
+    const m = mat("rock_" + b.id, b.rock);
+    m.backFaceCulling = false;
+    return m;
+  });
 }
 
 /* ---------- generic pool ---------- */
@@ -1366,24 +1401,62 @@ function buildGroundMesh(ci) {
   return mesh;
 }
 
+// continuous rocky wall surface — one solid ribbon per side, no gaps to slip through
+function buildWallMesh(ci, side, rockMat) {
+  const len = T.chunkLength, z0 = ci * len;
+  const nz = T.subdivZ, ny = 3;
+  const H = T.wallHeight * 0.85;
+  const baseX = T.halfWidth - (CFG.balance.physics.wallPad || 0) + 0.1; // inner face = exactly where the boulder bounces
+  const positions = [], indices = [];
+  for (let j = 0; j <= nz; j++) {
+    const z = z0 + (j / nz) * len;
+    const cx = centerX(z);
+    const colH = H + 2.4 * Math.sin(z * 0.31 + side * 2.1) + 1.5 * Math.sin(z * 0.83); // jagged rim
+    const yBase = terrainY(cx + side * (T.halfWidth * 0.98), z) - 1.6;
+    for (let i = 0; i <= ny; i++) {
+      const v = i / ny;
+      const lean = v * v * 2.8; // wall leans outward with height
+      const noise = 0.55 * Math.sin(z * 0.7 + v * 9.7 + side) + 0.35 * Math.sin(z * 1.9 + v * 4.3);
+      positions.push(cx + side * (baseX + lean + noise * (0.25 + v)), yBase + v * colH, z);
+    }
+  }
+  for (let j = 0; j < nz; j++) for (let i = 0; i < ny; i++) {
+    const a = j * (ny + 1) + i, b = a + (ny + 1);
+    indices.push(a, b, a + 1, a + 1, b, b + 1);
+  }
+  const normals = [];
+  BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+  const vd = new BABYLON.VertexData();
+  vd.positions = positions; vd.indices = indices; vd.normals = normals;
+  const mesh = new BABYLON.Mesh("wall" + ci + "_" + side, scene);
+  vd.applyToMesh(mesh);
+  mesh.material = rockMat;
+  mesh.isPickable = false;
+  mesh.freezeWorldMatrix();
+  return mesh;
+}
+
 function spawnChunk(ci) {
   const len = T.chunkLength, z0 = ci * len, z1 = z0 + len;
-  const rec = { ground: buildGroundMesh(ci), items: [], statics: [] };
+  const rec = { ground: buildGroundMesh(ci), items: [], statics: [], walls: [] };
   const env = blendedEnv(z0 + len / 2);
   const biome = env.t > 0.5 ? env.nxt : env.cur;
   const rockMat = MATS["rock_" + biome.id];
 
-  // canyon walls on both edges — two staggered rows hugging the physics boundary
-  for (let z = z0; z < z1; z += T.wallSpacing) {
+  // solid canyon wall surface on both sides
+  rec.walls.push(buildWallMesh(ci, -1, rockMat), buildWallMesh(ci, 1, rockMat));
+
+  // sparse boulders along the rim — decoration on top of the solid wall
+  for (let z = z0; z < z1; z += T.wallSpacing * 1.7) {
     for (const side of [-1, 1]) {
-      const inner = (Math.floor(z / T.wallSpacing) % 2) === 0;
+      if (Math.random() < 0.35) continue;
       const node = pooled("rock", rockFactory);
       setRockMaterial(node, rockMat);
-      const x = centerX(z) + side * (T.halfWidth + T.wallOffset + (inner ? rand(0, 0.8) : rand(1.6, 3.0)));
-      node.position.set(x, terrainY(x, z) - 1.0, z + rand(-1.4, 1.4));
+      const x = centerX(z) + side * (T.halfWidth + 2.0 + rand(0, 2.6));
+      node.position.set(x, terrainY(x, z) - 0.8, z + rand(-1.4, 1.4));
       node.rotation.y = rand(0, Math.PI * 2);
-      const s = rand(1.1, 2.0);
-      node.scaling.set(s, s * rand(1.1, 2.1), s);
+      const s = rand(0.9, 1.7);
+      node.scaling.set(s, s * rand(1.0, 1.8), s);
       rec.items.push({ kind: "rock", node });
     }
   }
@@ -1586,6 +1659,7 @@ function disposeChunk(ci) {
   const rec = chunks.get(ci);
   if (!rec) return;
   rec.ground.dispose();
+  if (rec.walls) for (const w of rec.walls) w.dispose();
   for (const it of rec.items) {
     unpool(it.kind, it.node);
     const idx1 = run.objects.indexOf(it.node); if (idx1 >= 0) run.objects.splice(idx1, 1);
@@ -1923,7 +1997,6 @@ function updateRun(dt) {
   const limit = T.halfWidth - r - (P.wallPad || 0); // boulder edge stops before the rock faces
   if (Math.abs(dx) > limit + 4) { endRun("Left the track"); return; }
   if (Math.abs(dx) > limit) {
-    if (run.airborne && run.y > terrainY(run.x, run.z) + 7) { endRun("Flew over the canyon wall"); return; }
     const sgn = Math.sign(dx);
     run.x = centerX(run.z) + sgn * limit;
     run.vx = -sgn * Math.max(Math.abs(run.vx) * 0.55, P.wallBounceKick);
@@ -2095,6 +2168,7 @@ function updateEnvironment() {
   hemi.diffuse = env.ambient;
   hemi.groundColor = env.ground.scale(0.5);
   $("hudBiome").textContent = env.label;
+  AudioFX.setMood(env.t > 0.5 ? env.nxt.id : env.cur.id);
   if (run.active) {
     const bid = env.t > 0.5 ? env.nxt.id : env.cur.id;
     if (!run.biomesSeen.includes(bid)) run.biomesSeen.push(bid);
@@ -2347,8 +2421,6 @@ function showEndOverlay(coinGain, newBest, goalMsg, reason) {
   btn.textContent = run.continuesUsed >= maxC
     ? "NO CONTINUES LEFT"
     : cost === 0 ? "CONTINUE (FREE ★)" : "CONTINUE (" + cost + " 💎)";
-  btn.dataset = btn.dataset || {};
-  window.__continueCost = cost;
   $("ovEnd").classList.remove("hidden");
 }
 

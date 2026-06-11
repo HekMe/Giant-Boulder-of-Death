@@ -7,7 +7,7 @@ Built entirely with **Babylon.js** (CDN) + plain HTML/CSS/JS. No build step, no 
 ## ✨ Features
 
 - **Cinematic sky-drop intro** — the camera swings behind the boulder mid-fall; impact lands with screen shake and a dust burst.
-- **Endless procedural terrain** — the slope rolls, winds and banks; the ground itself climbs into ~22 m canyon walls on both edges, lined with rocks.
+- **Endless procedural terrain** — the slope rolls, winds and banks; both edges are sealed by a continuous, solid rocky wall surface (with a jagged rim and boulders on top) — the wall face sits exactly at the physics boundary, so what you see is what stops you.
 - **Crevasses (gaps)** — telegraphed by warning stripes, jumpable (Space / jump button); falling in ends the run.
 - **12 biomes with rarity tiers** — five common, four rare, two epic and one legendary, picked zone-by-zone with a per-run seed; each biome favors its own destructibles and enemies, and rarer biomes drop more coins. Colors, fog and physics blend smoothly (ice is slippery).
 - **22 destructible objects** — from a fence and hay bale up to a golden idol; heavier objects (hut, statue, obelisk…) slow the boulder more on impact — except during Overdrive. Every kill is recorded in the **Encyclopedia**.
@@ -17,7 +17,7 @@ Built entirely with **Babylon.js** (CDN) + plain HTML/CSS/JS. No build step, no 
 - **Meta progression** — coins and gems, 6 permanent upgrades, a gem-powered lucky spin with run buffs, 75 goals (5 active at a time, shown on the HUD), 9 boulder skins, 5 purchasable trail colors, a next-run item **Shop** (Stone Cloak shields, Coin Doubler, Lucky Charm), continue-after-death with a rising price, lifetime stats.
 - **Saving** — localStorage plus export/import of your save as a JSON file.
 - **Mobile and desktop** — the game detects mobile devices and enables **gyroscope (tilt) steering** automatically; a virtual joystick and a jump button are also available. Settings cover sensitivity, volume, quality and reduced motion.
-- **Procedural sound** — Web Audio API, zero audio files.
+- **Procedural sound & adaptive music** — Web Audio API, zero audio files; the ambient music retunes per biome (scale, root, tempo and pad all shift as you cross into a new zone).
 
 ## 🎮 Controls
 
