@@ -28,6 +28,8 @@ const page = `<!DOCTYPE html>
 ${css}
 </style>
 <script src="https://cdn.babylonjs.com/babylon.js"><\/script>
+<script src="net-config.js" defer onerror="this.remove()"><\/script>
+<script src="net.js" defer onerror="this.remove()"><\/script>
 </head>
 <body>
 ${body.trim()}
