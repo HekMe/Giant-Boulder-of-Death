@@ -7,7 +7,7 @@
       "baseCost": 20,
       "costMult": 1.6,
       "bonus": 0.06,
-      "maxLevel": 8
+      "maxLevel": 10
     },
     {
       "id": "steer",
@@ -16,7 +16,7 @@
       "baseCost": 20,
       "costMult": 1.6,
       "bonus": 0.07,
-      "maxLevel": 8
+      "maxLevel": 10
     },
     {
       "id": "overdrive",
@@ -25,7 +25,7 @@
       "baseCost": 30,
       "costMult": 1.7,
       "bonus": 0.08,
-      "maxLevel": 8
+      "maxLevel": 10
     },
     {
       "id": "startMeter",
@@ -34,7 +34,7 @@
       "baseCost": 25,
       "costMult": 1.7,
       "bonus": 0.05,
-      "maxLevel": 6
+      "maxLevel": 10
     },
     {
       "id": "coinGain",
@@ -43,7 +43,7 @@
       "baseCost": 35,
       "costMult": 1.8,
       "bonus": 0.1,
-      "maxLevel": 6
+      "maxLevel": 10
     },
     {
       "id": "magnet",
@@ -52,7 +52,84 @@
       "baseCost": 30,
       "costMult": 1.7,
       "bonus": 0.8,
-      "maxLevel": 6
+      "maxLevel": 10
+    },
+    {
+      "id": "scoreGain",
+      "label": "Score gain",
+      "desc": "+6% score from everything / level",
+      "baseCost": 30,
+      "costMult": 1.6,
+      "bonus": 0.06,
+      "maxLevel": 10
+    },
+    {
+      "id": "fewerHaz",
+      "label": "Hazard thinning",
+      "desc": "-4% hazard density / level",
+      "baseCost": 35,
+      "costMult": 1.65,
+      "bonus": 0.04,
+      "maxLevel": 8
+    },
+    {
+      "id": "brakePower",
+      "label": "Brake power",
+      "desc": "+10% braking strength / level",
+      "baseCost": 25,
+      "costMult": 1.55,
+      "bonus": 0.1,
+      "maxLevel": 8
+    },
+    {
+      "id": "powerLuck",
+      "label": "Power-up luck",
+      "desc": "+15% power-up spawn chance / level",
+      "baseCost": 40,
+      "costMult": 1.6,
+      "bonus": 0.15,
+      "maxLevel": 8
+    },
+    {
+      "id": "gemFind",
+      "label": "Gem hunter",
+      "desc": "+15% gem spawn chance / level",
+      "baseCost": 45,
+      "costMult": 1.65,
+      "bonus": 0.15,
+      "maxLevel": 8
+    },
+    {
+      "id": "extraLives",
+      "label": "Extra life",
+      "desc": "+1 free continue per run / level",
+      "baseCost": 220,
+      "costMult": 2.6,
+      "bonus": 1,
+      "maxLevel": 3
+    }
+  ],
+  "items": [
+    {
+      "id": "shield",
+      "label": "Stone Cloak",
+      "desc": "Survive 1 enemy hit next run (stacks up to 3)",
+      "cost": 100,
+      "max": 3
+    },
+    {
+      "id": "coinDoubler",
+      "label": "Coin Doubler",
+      "desc": "2\u00d7 coins earned on your next run",
+      "cost": 150,
+      "max": 1
+    },
+    {
+      "id": "luckyCharm",
+      "label": "Lucky Charm",
+      "desc": "2\u00d7 gem spawn chance on your next run",
+      "cost": 120,
+      "max": 1
     }
   ]
 }

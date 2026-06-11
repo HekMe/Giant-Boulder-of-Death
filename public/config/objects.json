@@ -159,6 +159,66 @@
       "size": 1.4,
       "color": "#a8a8b4",
       "slow": 2.6
+    },
+    {
+      "id": "scarecrow",
+      "label": "Scarecrow",
+      "score": 35,
+      "meter": 4,
+      "weight": 11,
+      "size": 1.1,
+      "color": "#b89a5a",
+      "slow": 0.5
+    },
+    {
+      "id": "lantern",
+      "label": "Lantern post",
+      "score": 45,
+      "meter": 5,
+      "weight": 10,
+      "size": 1.0,
+      "color": "#ffc94a",
+      "slow": 0.6
+    },
+    {
+      "id": "pumpkin",
+      "label": "Giant pumpkin",
+      "score": 55,
+      "meter": 5,
+      "weight": 9,
+      "size": 1.2,
+      "color": "#e8762a",
+      "slow": 0.9
+    },
+    {
+      "id": "fountain",
+      "label": "Fountain",
+      "score": 110,
+      "meter": 10,
+      "weight": 5,
+      "size": 1.4,
+      "color": "#9ab8c8",
+      "slow": 2.4
+    },
+    {
+      "id": "obelisk",
+      "label": "Obelisk",
+      "score": 170,
+      "meter": 15,
+      "weight": 3,
+      "size": 1.5,
+      "color": "#5a5a6a",
+      "slow": 2.8
+    },
+    {
+      "id": "gong",
+      "label": "Bronze gong",
+      "score": 130,
+      "meter": 12,
+      "weight": 4,
+      "size": 1.3,
+      "color": "#c8923a",
+      "slow": 1.4
     }
   ]
 }

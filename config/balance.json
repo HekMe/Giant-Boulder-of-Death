@@ -2,9 +2,9 @@
   "physics": {
     "gravity": 34.0,
     "boulderRadius": 1.45,
-    "slopeAccel": 26.0,
+    "slopeAccel": 23,
     "drag": 0.045,
-    "maxSpeed": 58,
+    "maxSpeed": 50,
     "minSpeed": 9,
     "startSpeed": 14,
     "steerAccel": 70,
@@ -16,11 +16,12 @@
     "wallBouncePenalty": 0.78,
     "wallBounceKick": 12,
     "fallDeathDepth": 7,
-    "speedCapStart": 30,
+    "speedCapStart": 26,
     "speedCapRampDist": 1500,
     "lateralFloor": 0.5,
-    "brakeDecel": 18,
-    "groundStick": 1.6
+    "brakeDecel": 26,
+    "groundStick": 1.6,
+    "wallPad": 0.5
   },
   "terrain": {
     "halfWidth": 15,
@@ -119,5 +120,13 @@
     "camStartHeight": 26,
     "camStartBack": -8,
     "blendTime": 1.6
+  },
+  "powerups": {
+    "chunkChance": 0.1,
+    "duration": 10,
+    "ringChance": 0.16,
+    "ringBoost": 9,
+    "boostTime": 2.5,
+    "boostExtra": 10
   }
 }

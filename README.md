@@ -9,11 +9,12 @@ Built entirely with **Babylon.js** (CDN) + plain HTML/CSS/JS. No build step, no 
 - **Cinematic sky-drop intro** — the camera swings behind the boulder mid-fall; impact lands with screen shake and a dust burst.
 - **Endless procedural terrain** — the slope rolls, winds and banks; the ground itself climbs into ~22 m canyon walls on both edges, lined with rocks.
 - **Crevasses (gaps)** — telegraphed by warning stripes, jumpable (Space / jump button); falling in ends the run.
-- **5 biomes** — alpine meadow → rocky peaks → snow and ice → volcanic → twilight; colors, fog and physics blend smoothly (ice is slippery).
-- **16 destructible objects** — from a fence and hay bale up to a golden idol; heavier objects (hut, statue, well…) slow the boulder more on impact — except during Overdrive.
+- **12 biomes with rarity tiers** — five common, four rare, two epic and one legendary, picked zone-by-zone with a per-run seed; each biome favors its own destructibles and enemies, and rarer biomes drop more coins. Colors, fog and physics blend smoothly (ice is slippery).
+- **22 destructible objects** — from a fence and hay bale up to a golden idol; heavier objects (hut, statue, obelisk…) slow the boulder more on impact — except during Overdrive. Every kill is recorded in the **Encyclopedia**.
 - **Hazards** — spikes, mines, rolling boulders, lava pools and homing spiked stalkers, marked by pulsing red danger rings; variety and density ramp up with distance, but a safe lane always exists and spacing respects human reaction time.
 - **Score, combo, meter, Overdrive** — near-miss and gap-clear bonuses, temporary invincibility at full meter.
-- **Meta progression** — coins and gems, 6 permanent upgrades, a gem-powered lucky spin with run buffs, 45 goals (5 active at a time, shown on the HUD), 4 unlockable boulder skins, continue-after-death with a rising price, lifetime stats.
+- **Power-ups & boost rings** — rare track pickups (Super Jump, ×2 Score & Coins, Steer Boost, Mega Magnet) and floating rings that grant a burst of speed.
+- **Meta progression** — coins and gems, 6 permanent upgrades, a gem-powered lucky spin with run buffs, 75 goals (5 active at a time, shown on the HUD), 9 boulder skins, 5 purchasable trail colors, a next-run item **Shop** (Stone Cloak shields, Coin Doubler, Lucky Charm), continue-after-death with a rising price, lifetime stats.
 - **Saving** — localStorage plus export/import of your save as a JSON file.
 - **Mobile and desktop** — the game detects mobile devices and enables **gyroscope (tilt) steering** automatically; a virtual joystick and a jump button are also available. Settings cover sensitivity, volume, quality and reduced motion.
 - **Procedural sound** — Web Audio API, zero audio files.
@@ -66,11 +67,11 @@ node build.js
 ├── config.fallback.js      # bundled config copy for dev.html on file:// (generated)
 ├── config/                 # data-driven game balance (source of truth)
 │   ├── balance.json        # physics, terrain, gaps, hazards, scoring, camera
-│   ├── objects.json        # 16 destructible objects
-│   ├── biomes.json         # 5 biomes (palettes, fog, grip, decor)
-│   ├── upgrades.json       # 6 permanent upgrades
+│   ├── objects.json        # 22 destructible objects
+│   ├── biomes.json         # 12 biomes (rarity, palettes, fog, grip, affinities)
+│   ├── upgrades.json       # 12 permanent upgrades + next-run shop items
 │   ├── spinner.json        # lucky spin buffs
-│   └── goals.json          # 45 goals + skins
+│   └── goals.json          # 75 goals + skins + trails
 ├── public/config/          # mirror copy of configs (fallback fetch path)
 └── .github/workflows/
     └── pages.yml           # automatic GitHub Pages deploy

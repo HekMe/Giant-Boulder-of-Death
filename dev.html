@@ -48,8 +48,10 @@
     <button id="btnPlay" class="big-btn">START RUN</button>
     <div class="menu-grid">
       <button id="btnUpgrades" class="menu-btn">Upgrades</button>
+      <button id="btnShop" class="menu-btn">Shop</button>
       <button id="btnSpinner" class="menu-btn">Lucky Spin</button>
       <button id="btnGoals" class="menu-btn">Goals</button>
+      <button id="btnEncy" class="menu-btn">Encyclopedia</button>
       <button id="btnSettings" class="menu-btn">Settings</button>
       <button id="btnExport" class="menu-btn">Export save</button>
       <button id="btnImport" class="menu-btn">Import save</button>
@@ -57,6 +59,8 @@
     <input type="file" id="fileImport" accept="application/json" hidden>
     <div class="skin-label">Boulder skin</div>
     <div id="skinRow" class="skin-row"></div>
+    <div class="skin-label">Trail</div>
+    <div id="trailRow" class="skin-row"></div>
     <div id="startStats" class="start-stats"></div>
     <p class="controls-hint">A/D or arrows = steer · S/↓ = brake · Space = jump · Esc = pause<br>On mobile: tilt your device (gyro) or use the joystick (pull down = brake) · big button = jump</p>
   </div>
@@ -130,7 +134,6 @@
 <div id="ovSettings" class="overlay hidden">
   <div class="panel">
     <h2>SETTINGS</h2>
-    <div class="set-row"><label>Steering sensitivity</label><input type="range" id="setSens" min="0.5" max="2" step="0.1"></div>
     <div class="set-row"><label>Volume</label><input type="range" id="setVol" min="0" max="1" step="0.05"></div>
     <div class="set-row"><label>Music / ambient</label><input type="checkbox" id="setMusic"></div>
     <div class="set-row"><label>Graphics quality</label>
@@ -138,6 +141,25 @@
     <div class="set-row"><label>Gyroscope (mobile)</label><input type="checkbox" id="setGyro"></div>
     <div class="set-row"><label>Reduced camera motion</label><input type="checkbox" id="setMotion"></div>
     <button id="btnSetBack" class="menu-btn">Back</button>
+  </div>
+</div>
+
+<!-- SHOP -->
+<div id="ovShop" class="overlay hidden">
+  <div class="panel">
+    <h2>SHOP — next run</h2>
+    <div class="cur-row"><span class="ico coin"></span><span id="shopCoins">0</span></div>
+    <div id="shopList" class="list"></div>
+    <button id="btnShopBack" class="menu-btn">Back</button>
+  </div>
+</div>
+
+<!-- ENCYCLOPEDIA -->
+<div id="ovEncy" class="overlay hidden">
+  <div class="panel">
+    <h2>ENCYCLOPEDIA</h2>
+    <div id="encyList" class="list"></div>
+    <button id="btnEncyBack" class="menu-btn">Back</button>
   </div>
 </div>
 

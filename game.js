@@ -24,6 +24,7 @@ window.addEventListener("error", (e) => {
 });
 
 function hex3(c) { return BABYLON.Color3.FromHexString(c); }
+function hex4(c, a) { const k = hex3(c); return new BABYLON.Color4(k.r, k.g, k.b, a == null ? 1 : a); }
 function lerpC(a, b, t) { return new BABYLON.Color3(lerp(a.r, b.r, t), lerp(a.g, b.g, t), lerp(a.b, b.b, t)); }
 
 /* deterministic hash -> [0,1) */
@@ -62,7 +63,10 @@ function defaultSave() {
     v: 1, coins: 0, gems: 5,
     upgrades: {}, goalIndex: 0, goalsDone: [],
     skins: ["skinRock"], activeSkin: "skinRock",
-    stats: { bestDist: 0, bestScore: 0, runs: 0, smashed: 0, overdrives: 0, gaps: 0, totalCoins: 0, totalDist: 0 },
+    trails: ["trailEmber"], activeTrail: "trailEmber",
+    runItems: { shield: 0, coinDoubler: 0, luckyCharm: 0 },
+    ency: { objects: {}, hazards: {} },
+    stats: { bestDist: 0, bestScore: 0, runs: 0, smashed: 0, overdrives: 0, gaps: 0, totalCoins: 0, totalDist: 0, powerups: 0, rings: 0, biomesSeen: [] },
     settings: { sens: 1, volume: 0.7, music: true, quality: "high", gyro: false, gyroTouched: false, reducedMotion: false },
     highscores: []
   };
@@ -75,9 +79,13 @@ function loadSave() {
       const s = JSON.parse(raw);
       if (validateSave(s)) SAVE = Object.assign(defaultSave(), s,
         { stats: Object.assign(defaultSave().stats, s.stats || {}),
-          settings: Object.assign(defaultSave().settings, s.settings || {}) });
+          settings: Object.assign(defaultSave().settings, s.settings || {}),
+          runItems: Object.assign(defaultSave().runItems, s.runItems || {}),
+          ency: { objects: Object.assign({}, (s.ency || {}).objects), hazards: Object.assign({}, (s.ency || {}).hazards) } });
     }
   } catch (e) { console.warn("save load failed", e); }
+  SAVE.settings.sens = 1; // sensitivity is governed by the Steering upgrade, not a setting
+  if (!Array.isArray(SAVE.stats.biomesSeen)) SAVE.stats.biomesSeen = [];
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) { console.warn(e); }
@@ -399,12 +407,21 @@ function buildBoulder() {
   trailPS.start();
   auraPS.start(); auraPS.emitRate = 0;
 }
+function applyTrail() {
+  const tdef = (CFG.goals.trails || []).find((t) => t.id === SAVE.activeTrail) || (CFG.goals.trails || [])[0];
+  if (!tdef || !trailPS) return;
+  trailPS.color1 = hex4(tdef.c1, 0.9); trailPS.color2 = hex4(tdef.c2, 0.7);
+  if (auraPS) { auraPS.color1 = hex4(tdef.c1, 0.8); auraPS.color2 = hex4(tdef.c2, 0.5); }
+}
 function applySkin() {
   const skin = CFG.goals.skins.find((s) => s.id === SAVE.activeSkin) || CFG.goals.skins[0];
   boulderMat.diffuseColor = hex3(skin.color);
-  boulderMat.emissiveColor = skin.id === "skinMagma" ? hex3("#5a1d05")
-    : skin.id === "skinGold" ? hex3("#3a2c08")
-    : skin.id === "skinIce" ? hex3("#16242e") : new BABYLON.Color3(0, 0, 0);
+  const em = {
+    skinMagma: "#5a1d05", skinGold: "#3a2c08", skinIce: "#16242e",
+    skinObsidian: "#1a1230", skinCrystal: "#103642", skinEmerald: "#06371c",
+    skinRuby: "#3a0812", skinVoid: "#241040"
+  }[skin.id];
+  boulderMat.emissiveColor = em ? hex3(em) : new BABYLON.Color3(0, 0, 0);
 }
 
 /* procedural radial flare texture for particles (no asset files) */
@@ -590,6 +607,57 @@ const destructibleBuilders = {
     const arm = cyl("arm", 1.1, 0.16, 0.2, s2, n, 7);
     arm.position.set(0.55, 2.0, 0.2); arm.rotation.z = -1.1;
     return n;
+  },
+  scarecrow(d) {
+    const n = root("scare"); const w = mat("woodD", "#6e5436");
+    cyl("post", 2.0, 0.12, 0.14, w, n, 6).position.y = 1.0;
+    const arms = cyl("arms", 1.8, 0.1, 0.1, w, n, 6);
+    arms.rotation.z = Math.PI / 2; arms.position.y = 1.6;
+    sph("head", 0.6, mat("hay", "#c9a84c"), n, 7).position.y = 2.15;
+    box("coat", 0.8, 0.9, 0.4, mat("coatM", "#7a4a3a"), n).position.y = 1.25;
+    return n;
+  },
+  lantern(d) {
+    const n = root("lant");
+    cyl("post", 2.4, 0.1, 0.12, mat("iron", "#3c3c40"), n, 6).position.y = 1.2;
+    const glow = box("g", 0.5, 0.6, 0.5, mat("lampG", "#ffc94a", { emissive: "#c98a14" }), n);
+    glow.position.y = 2.55;
+    box("cap", 0.7, 0.12, 0.7, mat("iron", "#3c3c40"), n).position.y = 2.95;
+    return n;
+  },
+  pumpkin(d) {
+    const n = root("pump");
+    const p = sph("p", 1.7, mat("pumpM", "#e8762a", { emissive: "#3a1404" }), n, 9);
+    p.position.y = 0.75; p.scaling.y = 0.8;
+    cyl("stem", 0.4, 0.1, 0.16, mat("stemM", "#4a6a2e"), n, 5).position.y = 1.55;
+    return n;
+  },
+  fountain(d) {
+    const n = root("fount"); const st = mat("stone", "#8d8d96");
+    cyl("base", 0.6, 2.4, 2.6, st, n, 12).position.y = 0.3;
+    cyl("mid", 1.0, 0.4, 0.55, st, n, 8).position.y = 1.1;
+    cyl("bowl", 0.3, 1.4, 1.1, st, n, 10).position.y = 1.75;
+    const wat = cyl("wat", 0.1, 2.1, 2.1, mat("watM", "#9ad8f0", { emissive: "#1a4a5e", alpha: 0.8 }), n, 12);
+    wat.position.y = 0.62;
+    return n;
+  },
+  obelisk(d) {
+    const n = root("obel"); const st = mat("stone2", "#73737c");
+    box("base", 1.4, 0.5, 1.4, st, n).position.y = 0.25;
+    const sh = box("shaft", 0.8, 3.2, 0.8, mat("obM", "#5a5a6a", { emissive: "#10101c" }), n);
+    sh.position.y = 2.0; sh.scaling.x = 0.9;
+    const tip = cyl("tip", 0.6, 0.02, 0.6, st, n, 4);
+    tip.position.y = 3.9;
+    return n;
+  },
+  gong(d) {
+    const n = root("gong"); const w = mat("woodD", "#6e5436");
+    box("p1", 0.16, 2.4, 0.16, w, n).position.set(-1.2, 1.2, 0);
+    box("p2", 0.16, 2.4, 0.16, w, n).position.set(1.2, 1.2, 0);
+    box("top", 2.7, 0.16, 0.16, w, n).position.y = 2.4;
+    const disc = cyl("disc", 0.12, 1.8, 1.8, mat("gongM", "#c8923a", { emissive: "#4a2c08" }), n, 16);
+    disc.rotation.x = Math.PI / 2; disc.position.y = 1.3;
+    return n;
   }
 };
 
@@ -616,6 +684,29 @@ const decorBuilders = {
   obsidian() { const n = root("ob"); const c = cyl("c", rand(1.5, 3.2), 0.05, rand(0.6, 1.2), mat("obsM", "#221c22", { emissive: "#180a12" }), n, 5);
     c.position.y = 0.9; c.rotation.z = rand(-0.2, 0.2); return n; },
   ember() { const n = root("em"); sph("e", rand(0.3, 0.6), mat("embM", "#ff6a2a", { emissive: "#c2410a" }), n, 6).position.y = 0.3; return n; },
+  cactus() {
+    const n = root("cac"); const g = mat("cacM", "#4a8a3e");
+    const h = rand(1.6, 2.6);
+    cyl("t", h, 0.32, 0.36, g, n, 7).position.y = h / 2;
+    const a = cyl("a", 0.9, 0.2, 0.22, g, n, 6); a.position.set(0.45, h * 0.55, 0); a.rotation.z = -0.5;
+    return n;
+  },
+  deadtree() {
+    const n = root("dt"); const w = mat("deadW", "#5a4a3a");
+    const h = rand(2.2, 3.4);
+    cyl("t", h, 0.16, 0.3, w, n, 6).position.y = h / 2;
+    const b1 = cyl("b1", 1.2, 0.06, 0.12, w, n, 5); b1.position.set(0.4, h * 0.7, 0); b1.rotation.z = -0.9;
+    const b2 = cyl("b2", 0.9, 0.05, 0.1, w, n, 5); b2.position.set(-0.35, h * 0.55, 0.1); b2.rotation.z = 0.8;
+    return n;
+  },
+  mushroom() {
+    const n = root("mu");
+    const h = rand(0.5, 1.1);
+    cyl("st", h, 0.16, 0.22, mat("muSt", "#d8cdb8"), n, 6).position.y = h / 2;
+    const cap = sph("cap", h * 1.1, mat("muCap", "#b8483a", { emissive: "#3a0c08" }), n, 7);
+    cap.position.y = h; cap.scaling.y = 0.55;
+    return n;
+  },
   crystal() { const n = root("cr"); const c = BABYLON.MeshBuilder.CreatePolyhedron("c", { type: 1, size: rand(0.5, 1.0) }, scene);
     c.material = mat("cryM", "#8fa8ff", { emissive: "#2a3a8a" }); c.parent = n; c.position.y = 0.7; c.rotation.x = 0.6; return n; }
 };
@@ -715,6 +806,32 @@ function gemFactory() {
   g.material = mat("gemM", "#5ad0e0", { emissive: "#0e4a55" });
   g.parent = n; g.position.y = 1.2;
   n.metadata = { kind: "gem", radius: 1.4, taken: false };
+  return n;
+}
+const POWER_DEFS = {
+  superjump: { label: "SUPER JUMP", color: "#5aff7a", em: "#0e5520" },
+  multi:     { label: "×2 SCORE & COINS", color: "#ffd23a", em: "#6a4a05" },
+  steer:     { label: "STEER BOOST", color: "#5ab8ff", em: "#0a3a6a" },
+  magnet:    { label: "MEGA MAGNET", color: "#d87aff", em: "#440a6a" }
+};
+function powerFactory(ptype) {
+  const n = root("power");
+  const d = POWER_DEFS[ptype];
+  const core = BABYLON.MeshBuilder.CreatePolyhedron("p", { type: 2, size: 0.7 }, scene);
+  core.material = mat("pw_" + ptype, d.color, { emissive: d.em });
+  core.parent = n; core.position.y = 1.5;
+  const halo = cyl("halo", 0.05, 2.2, 2.2, mat("pwHalo_" + ptype, d.color, { emissive: d.em, alpha: 0.4 }), n, 18);
+  halo.position.y = 0.1;
+  n.metadata = { kind: "power", ptype, radius: 1.8, taken: false };
+  return n;
+}
+function ringFactory() {
+  const n = root("ring");
+  const torus = BABYLON.MeshBuilder.CreateTorus("r", { diameter: 4.4, thickness: 0.32, tessellation: 22 }, scene);
+  torus.material = mat("ringM", "#3affd8", { emissive: "#0a8a6a" });
+  torus.rotation.x = Math.PI / 2;
+  torus.parent = n; torus.position.y = 0;
+  n.metadata = { kind: "ring", radius: 2.1, taken: false };
   return n;
 }
 /* gap warning marker */
@@ -832,15 +949,23 @@ function prepBiomes() {
     cSun: hex3(b.sun), cAmbient: hex3(b.ambient)
   }));
 }
+let runSeed = 0;
+function biomePick(zone) {
+  if (zone <= 0) return biomeCache[0]; // every run begins on the meadow
+  const RW = CFG.biomes.rarityWeights || { common: 1 };
+  const total = biomeCache.reduce((s, b) => s + (RW[b.rarity] || 1), 0);
+  let w = hash01(zone * 13.77 + runSeed * 0.001 + 0.37) * total;
+  for (const b of biomeCache) { w -= (RW[b.rarity] || 1); if (w <= 0) return b; }
+  return biomeCache[0];
+}
 function biomeAt(dist) {
-  const arr = biomeCache, total = arr.reduce((s, b) => s + b.length, 0);
-  let p = ((dist % total) + total) % total;
-  let i = 0;
-  while (p >= arr[i].length) { p -= arr[i].length; i = (i + 1) % arr.length; }
-  const cur = arr[i], nxt = arr[(i + 1) % arr.length];
-  const bz = CFG.biomes.blendZone;
-  const t = p > cur.length - bz ? (p - (cur.length - bz)) / bz : 0;
-  return { cur, nxt, t, index: i };
+  const ZONE = CFG.biomes.zoneLength || 700, bz = CFG.biomes.blendZone;
+  const z = Math.max(0, Math.floor(dist / ZONE));
+  const local = dist - z * ZONE;
+  const cur = biomePick(z);
+  const nxt = biomePick(z + 1);
+  const t = local > ZONE - bz ? (local - (ZONE - bz)) / bz : 0;
+  return { cur, nxt, t, index: z };
 }
 function blendedEnv(dist) {
   const { cur, nxt, t } = biomeAt(dist);
@@ -854,6 +979,7 @@ function blendedEnv(dist) {
     fogDensity: lerp(cur.fogDensity, nxt.fogDensity, t),
     grip: lerp(cur.grip, nxt.grip, t),
     hazardMult: lerp(cur.hazardMult, nxt.hazardMult, t),
+    coinMult: lerp(cur.coinMult || 1, nxt.coinMult || 1, t),
     label: t > 0.5 ? nxt.label : cur.label,
     cur, nxt, t
   };
@@ -990,7 +1116,7 @@ function laneX(z, lane) { return centerX(z) + (lane - 1) * T.halfWidth * 0.58; }
 function spawnGameplayContent(rec, z0, z1, env, biome) {
   const S = CFG.balance.spawning, H = CFG.balance.hazards;
   const dist = Math.max(0, z0 - run.startZ);
-  const hazardBuff = run.buffs.fewerHazards ? 0.65 : 1;
+  const hazardBuff = (run.buffs.fewerHazards ? 0.65 : 1) * (1 - upBonus("fewerHaz"));
 
   /* hazards with guaranteed safe lane + reaction spacing */
   while (nextHazardZ < z1) {
@@ -998,7 +1124,7 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
     const hz = nextHazardZ;
     if (hz - run.startZ >= H.firstHazardAt && !nearGap(hz, 14)) {
       const r = Math.random();
-      if (r < 0.18) {
+      if (r < 0.18 && (biome.hazards || ["roller"]).includes("roller")) {
         // roller crossing the whole track — telegraphed, all lanes "soft blocked", timing dodge
         const node = pooled("hazard_roller", () => hazardFactory("roller"));
         node.getChildMeshes().forEach((m) => m.setEnabled(true));
@@ -1012,10 +1138,10 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
         // block 1–2 of 3 lanes, always leave at least one safe
         const lanes = [0, 1, 2];
         const blockedCount = (dist > H.twoLaneAfter && Math.random() < (dist > 3000 ? 0.62 : 0.45)) ? 2 : 1;
-        // enemy variety grows with distance
-        const pool = ["spikes", "mine"];
-        if (dist > H.chaserAfter) pool.push("chaser");
-        if (dist > H.lavaAfter) pool.push("lava", "lava");
+        // enemy variety grows with distance, filtered by what lives in this biome
+        let pool = (biome.hazards || ["spikes", "mine", "roller", "chaser", "lava"]).filter((tp) =>
+          tp !== "roller" && (tp !== "chaser" || dist > H.chaserAfter) && (tp !== "lava" || dist > H.lavaAfter));
+        if (!pool.length) pool = ["spikes"];
         for (let k = 0; k < blockedCount; k++) {
           const li = randi(0, lanes.length - 1);
           const lane = lanes.splice(li, 1)[0];
@@ -1039,12 +1165,14 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
   /* destructibles */
   const count = Math.min(S.objectsPerChunkMax, Math.floor(S.objectsPerChunkBase + S.objectsRampPer1000m * dist / 1000));
   const defs = CFG.objects.destructibles;
-  const totalW = defs.reduce((s, d) => s + d.weight, 0);
   for (let i = 0; i < count; i++) {
     const z = rand(z0 + 4, z1 - 4);
     if (nearGap(z, 6) || nearHazard(z, 9)) continue;
-    let w = Math.random() * totalW, def = defs[0];
-    for (const d of defs) { w -= d.weight; if (w <= 0) { def = d; break; } }
+    const fav = biome.objects || [];
+    const biomeW = (d) => d.weight * (fav.includes(d.id) ? 3 : 1);
+    const totalBW = defs.reduce((sum, d) => sum + biomeW(d), 0);
+    let w = Math.random() * totalBW, def = defs[0];
+    for (const d of defs) { w -= biomeW(d); if (w <= 0) { def = d; break; } }
     const node = pooled("obj_" + def.id, () => destructibleFactory(def));
     node.metadata.alive = true;
     node.getChildMeshes().forEach((m) => m.setEnabled(true));
@@ -1056,7 +1184,8 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
   }
 
   /* coins + gems */
-  for (let i = 0; i < S.coinsPerChunk; i++) {
+  const coinRolls = Math.max(1, Math.round(S.coinsPerChunk * (env.coinMult || 1)));
+  for (let i = 0; i < coinRolls; i++) {
     const z = rand(z0 + 3, z1 - 3);
     if (nearGap(z, 5)) continue;
     const lane = randi(0, 2);
@@ -1072,7 +1201,7 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
       run.pickups.push(node);
     }
   }
-  const gemCh = S.gemChance * (run.buffs.gemRate ? 3 : 1);
+  const gemCh = S.gemChance * (run.buffs.gemRate ? 3 : 1) * (1 + upBonus("gemFind")) * (run.itemLucky ? 2 : 1);
   if (Math.random() < gemCh * 10) { // per-chunk roll scaled
     const z = rand(z0 + 5, z1 - 5);
     if (!nearGap(z, 5)) {
@@ -1082,6 +1211,37 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
       const x = centerX(z) + rand(-0.6, 0.6) * T.halfWidth * 0.7;
       node.position.set(x, terrainY(x, z), z);
       rec.items.push({ kind: "gem", node });
+      run.pickups.push(node);
+    }
+  }
+
+  /* power-ups — rare, one type per spawn */
+  const PU = CFG.balance.powerups;
+  if (Math.random() < PU.chunkChance * (1 + upBonus("powerLuck"))) {
+    const z = rand(z0 + 6, z1 - 6);
+    if (!nearGap(z, 5) && !nearHazard(z, 8)) {
+      const types = Object.keys(POWER_DEFS);
+      const ptype = types[randi(0, types.length - 1)];
+      const node = pooled("power_" + ptype, () => powerFactory(ptype));
+      node.metadata.taken = false; node.metadata.ptype = ptype;
+      node.getChildMeshes().forEach((m) => m.setEnabled(true));
+      const x = laneX(z, randi(0, 2));
+      node.position.set(x, terrainY(x, z), z);
+      rec.items.push({ kind: "power_" + ptype, node });
+      run.pickups.push(node);
+    }
+  }
+  /* boost rings — floating, fly through for a burst of speed */
+  if (Math.random() < PU.ringChance) {
+    const z = rand(z0 + 6, z1 - 6);
+    if (!nearHazard(z, 7)) {
+      const node = pooled("ring", ringFactory);
+      node.metadata.taken = false;
+      node.getChildMeshes().forEach((m) => m.setEnabled(true));
+      const x = laneX(z, randi(0, 2));
+      const high = nearGap(z, 8) || Math.random() < 0.45;
+      node.position.set(x, terrainY(centerX(z), z) + (high ? rand(2.8, 3.6) : rand(1.2, 1.8)), z);
+      rec.items.push({ kind: "ring", node });
       run.pickups.push(node);
     }
   }
@@ -1138,6 +1298,9 @@ const run = {
   shake: 0, rollAngle: 0,
   continuesUsed: 0,
   buffs: {},
+  power: { superjump: 0, multi: 0, steer: 0, magnet: 0 },
+  boostT: 0, shields: 0, itemCoinDoubler: false, itemLucky: false,
+  powerups: 0, rings: 0, biomesSeen: [],
   objects: [], hazards: [], pickups: [],
   lastGapId: -1, inGapAir: false,
   introT: 0,
@@ -1158,6 +1321,15 @@ function startRun(continueRun) {
     run.combo = 0; run.maxCombo = 0; run.overdrive = 0; run.grace = 0;
     run.smashed = 0; run.gapsCleared = 0; run.nearMisses = 0; run.overdrives = 0;
     run.continuesUsed = 0; run.lastGapId = -1;
+    run.power = { superjump: 0, multi: 0, steer: 0, magnet: 0 };
+    run.boostT = 0; run.powerups = 0; run.rings = 0; run.biomesSeen = [];
+    runSeed = Math.floor(Math.random() * 1e6);
+    // consume next-run shop items
+    run.shields = SAVE.runItems.shield || 0;
+    run.itemCoinDoubler = !!SAVE.runItems.coinDoubler;
+    run.itemLucky = !!SAVE.runItems.luckyCharm;
+    SAVE.runItems = { shield: 0, coinDoubler: 0, luckyCharm: 0 };
+    persistSave();
     nextHazardZ = run.startZ + CFG.balance.hazards.firstHazardAt;
     run.speed = CFG.balance.physics.startSpeed;
     // sky-drop intro
@@ -1196,12 +1368,15 @@ function endRun(reason) {
   burstDebris(boulder.position, hex3("#8d8a86"), 14, 12);
   puffDust(boulder.position, 60);
   // rewards
-  const coinGain = Math.floor(run.coins * (1 + upBonus("coinGain"))) + Math.floor(run.dist / 100);
+  const coinGain = Math.floor((run.coins * (1 + upBonus("coinGain"))) * (run.itemCoinDoubler ? 2 : 1)) + Math.floor(run.dist / 100);
   SAVE.coins += coinGain; SAVE.gems += run.gems;
   SAVE.stats.totalCoins += coinGain;
   SAVE.stats.runs++; SAVE.stats.smashed += run.smashed;
   SAVE.stats.totalDist = (SAVE.stats.totalDist || 0) + run.dist;
   SAVE.stats.overdrives += run.overdrives; SAVE.stats.gaps += run.gapsCleared;
+  SAVE.stats.powerups = (SAVE.stats.powerups || 0) + run.powerups;
+  SAVE.stats.rings = (SAVE.stats.rings || 0) + run.rings;
+  for (const bid of run.biomesSeen) if (!SAVE.stats.biomesSeen.includes(bid)) SAVE.stats.biomesSeen.push(bid);
   let newBest = false;
   if (run.dist > SAVE.stats.bestDist) { SAVE.stats.bestDist = run.dist; newBest = true; }
   if (run.score > SAVE.stats.bestScore) { SAVE.stats.bestScore = run.score; newBest = true; }
@@ -1217,7 +1392,8 @@ function endRun(reason) {
 function meterMult() { return 1 + run.meter / CFG.balance.overdrive.meterMax; }
 function comboMult() { return Math.min(CFG.balance.scoring.comboMax, 1 + run.combo * CFG.balance.scoring.comboStep); }
 function addScore(base, pos, label, cls) {
-  let v = base * meterMult() * comboMult();
+  let v = base * meterMult() * comboMult() * (1 + upBonus("scoreGain"));
+  if (run.power.multi > 0) v *= 2;
   if (run.overdrive > 0) v *= CFG.balance.overdrive.scoreMult;
   v = Math.floor(v);
   run.score += v;
@@ -1258,6 +1434,7 @@ function smashObject(node) {
   run.combo++; run.comboT = CFG.balance.scoring.comboWindow;
   run.maxCombo = Math.max(run.maxCombo, run.combo);
   run.smashed++;
+  SAVE.ency.objects[def.id] = (SAVE.ency.objects[def.id] || 0) + 1;
   addScore(def.score, node.position, "", def.score >= 150 ? "big" : "");
   if (run.overdrive <= 0) run.speed = Math.max(CFG.balance.physics.minSpeed, run.speed - (def.slow || 1));
   chargeMeter(def.meter);
@@ -1266,6 +1443,7 @@ function smashObject(node) {
   shake(0.12 + def.size * 0.08);
 }
 function smashHazard(node) {
+  SAVE.ency.hazards[node.metadata.type] = (SAVE.ency.hazards[node.metadata.type] || 0) + 1;
   node.metadata.dead = true;
   node.getChildMeshes().forEach((m) => m.setEnabled(false));
   addScore(200, node.position, "DESTROYED!", "big");
@@ -1354,16 +1532,27 @@ function updateRun(dt) {
   /* forward speed from slope */
   const s = slopeAt(run.z);
   run.speed += (P.slopeAccel * s - P.drag * run.speed * run.speed * 0.018 - 0.4) * dt;
-  if (input.brake) run.speed -= P.brakeDecel * dt; // gentle brake for control
+  if (input.brake && run.speed > P.minSpeed) {
+    run.speed -= P.brakeDecel * (1 + upBonus("brakePower")) * dt;
+    run.brakeFxT = (run.brakeFxT || 0) - dt;
+    if (!run.airborne && run.brakeFxT <= 0) {
+      run.brakeFxT = 0.12;
+      puffDust(new BABYLON.Vector3(run.x, run.y - r * 0.6, run.z - r), 5);
+      AudioFX.scrape();
+    }
+  }
+  for (const k in run.power) if (run.power[k] > 0) run.power[k] -= dt;
+  if (run.boostT > 0) run.boostT -= dt;
   // speed cap ramps up with distance — the start stays calm and readable
-  const speedCap = lerp(P.speedCapStart, P.maxSpeed, clamp(run.dist / P.speedCapRampDist, 0, 1));
+  const speedCap = lerp(P.speedCapStart, P.maxSpeed, clamp(run.dist / P.speedCapRampDist, 0, 1))
+    + (run.boostT > 0 ? CFG.balance.powerups.boostExtra : 0);
   run.speed = clamp(run.speed, P.minSpeed, speedCap);
 
   /* steering with inertia; grip per biome */
   const steer = (input.axis || (input.left ? -1 : 0) + (input.right ? 1 : 0)) * SAVE.settings.sens;
   const grip = env.grip;
   const agility = clamp(run.speed / P.maxSpeed, P.lateralFloor, 1);
-  run.vx += steer * P.steerAccel * (1 + upBonus("steer")) * grip * agility * dt;
+  run.vx += steer * P.steerAccel * (1 + upBonus("steer")) * (run.power.steer > 0 ? 1.5 : 1) * grip * agility * dt;
   run.vx -= run.vx * P.steerFriction * grip * dt;
   run.vx = clamp(run.vx, -P.maxLateralSpeed * agility, P.maxLateralSpeed * agility);
   run.x += run.vx * dt;
@@ -1404,7 +1593,7 @@ function updateRun(dt) {
   if (input.jump) {
     input.jump = false;
     if ((!run.airborne || run.coyote > 0) && run.jumpCd <= 0) {
-      run.vy = P.jumpPower * (1 + upBonus("jump"));
+      run.vy = P.jumpPower * (1 + upBonus("jump")) * (run.power.superjump > 0 ? 1.55 : 1);
       run.jumpCd = P.jumpCooldown; run.coyote = 0; run.airborne = true; run.jumping = true;
       AudioFX.jump();
     }
@@ -1412,7 +1601,7 @@ function updateRun(dt) {
 
   /* canyon walls */
   const dx = run.x - centerX(run.z);
-  const limit = T.halfWidth - r * 0.4;
+  const limit = T.halfWidth - r - (P.wallPad || 0); // boulder edge stops before the rock faces
   if (Math.abs(dx) > limit + 4) { endRun("Left the track"); return; }
   if (Math.abs(dx) > limit) {
     if (run.airborne && run.y > terrainY(run.x, run.z) + 7) { endRun("Flew over the canyon wall"); return; }
@@ -1510,6 +1699,13 @@ function collide(dt, env) {
     if (dx * dx + dz * dz < hitR * hitR && !overTop) {
       if (run.overdrive > 0) { smashHazard(h); continue; }
       if (run.grace > 0) continue;
+      if (run.shields > 0) {
+        run.shields--;
+        smashHazard(h);
+        run.grace = Math.max(run.grace, 1.2);
+        popScore(bp, "SHIELD! (" + run.shields + " left)", "bonus");
+        continue;
+      }
       if (md.type === "mine" && run.buffs.dudMines) {
         md.dead = true; h.getChildMeshes().forEach((m) => m.setEnabled(false));
         addScore(50, h.position, "DUD", "bonus");
@@ -1530,17 +1726,34 @@ function collide(dt, env) {
     const dz = p.position.z - bp.z;
     if (dz < -4 || dz > 4) continue;
     const dx = p.position.x - bp.x;
-    if (dx * dx + dz * dz < Math.pow(r + p.metadata.radius, 2)) {
+    const dyP = p.metadata.kind === "ring" ? (p.position.y - bp.y) : 0;
+    if (dx * dx + dz * dz + dyP * dyP * 0.6 < Math.pow(r + p.metadata.radius, 2)) {
       p.metadata.taken = true;
       p.getChildMeshes().forEach((m) => m.setEnabled(false));
-      if (p.metadata.kind === "coin") { run.coins++; AudioFX.coin(); popScore(p.position, "+1", "big"); chargeMeter(1); }
-      else { run.gems++; AudioFX.gem(); popScore(p.position, "+1 💎", "bonus"); }
+      if (p.metadata.kind === "coin") {
+        const gain = run.power.multi > 0 ? 2 : 1;
+        run.coins += gain; AudioFX.coin(); popScore(p.position, "+" + gain, "big"); chargeMeter(1);
+      } else if (p.metadata.kind === "gem") {
+        run.gems++; AudioFX.gem(); popScore(p.position, "+1 💎", "bonus");
+      } else if (p.metadata.kind === "power") {
+        const PU = CFG.balance.powerups;
+        run.power[p.metadata.ptype] = PU.duration;
+        run.powerups++;
+        AudioFX.overdrive(); popScore(p.position, POWER_DEFS[p.metadata.ptype].label + "!", "big");
+      } else if (p.metadata.kind === "ring") {
+        const PU = CFG.balance.powerups;
+        run.boostT = PU.boostTime;
+        run.speed = Math.min(run.speed + PU.ringBoost, CFG.balance.physics.maxSpeed + PU.boostExtra);
+        run.rings++;
+        addScore(150, p.position, "BOOST!", "bonus");
+        AudioFX.nearmiss(); shake(0.25);
+      }
     }
   }
 }
 
 function magnet(dt) {
-  const range = upBonus("magnet") + (run.buffs.coinMagnet ? 5 : 0);
+  const range = upBonus("magnet") + (run.buffs.coinMagnet ? 5 : 0) + (run.power.magnet > 0 ? 6 : 0);
   if (range <= 0) return;
   const bp = boulder.position;
   for (const p of run.pickups) {
@@ -1563,6 +1776,10 @@ function updateEnvironment() {
   hemi.diffuse = env.ambient;
   hemi.groundColor = env.ground.scale(0.5);
   $("hudBiome").textContent = env.label;
+  if (run.active) {
+    const bid = env.t > 0.5 ? env.nxt.id : env.cur.id;
+    if (!run.biomesSeen.includes(bid)) run.biomesSeen.push(bid);
+  }
 }
 
 /* ---------- HUD ---------- */
@@ -1575,10 +1792,19 @@ function updateHUD(force) {
   const pct = (run.meter / CFG.balance.overdrive.meterMax) * 100;
   $("meterFill").style.width = pct + "%";
   document.querySelector(".meter").classList.toggle("full", run.overdrive > 0);
-  if (run.overdrive > 0) $("hudState").textContent = "OVERDRIVE " + run.overdrive.toFixed(1) + "s";
-  else if (run.grace > 0) $("hudState").textContent = "INVULNERABLE";
-  else if (run.state === "intro") $("hudState").textContent = "FREE FALL";
-  else $("hudState").textContent = "";
+  if (run.state === "intro") $("hudState").textContent = "FREE FALL";
+  else if (run.overdrive > 0) $("hudState").textContent = "OVERDRIVE " + run.overdrive.toFixed(1) + "s";
+  else {
+    const tags = [];
+    if (run.grace > 0) tags.push("INVULNERABLE");
+    if (run.shields > 0) tags.push("🛡×" + run.shields);
+    if (run.power.superjump > 0) tags.push("⤴ JUMP " + Math.ceil(run.power.superjump) + "s");
+    if (run.power.multi > 0) tags.push("×2 " + Math.ceil(run.power.multi) + "s");
+    if (run.power.steer > 0) tags.push("⚡ STEER " + Math.ceil(run.power.steer) + "s");
+    if (run.power.magnet > 0) tags.push("🧲 " + Math.ceil(run.power.magnet) + "s");
+    if (run.boostT > 0) tags.push("BOOST");
+    $("hudState").textContent = tags.join("  ");
+  }
   const act = activeGoals();
   if (act.length) {
     const i = Math.floor(performance.now() / 4000) % act.length;
@@ -1634,6 +1860,11 @@ function goalProgress(g) {
     case "totalOverdrive": return SAVE.stats.overdrives;
     case "totalRuns": return SAVE.stats.runs;
     case "totalDist": return SAVE.stats.totalDist || 0;
+    case "runPowerups": return run.powerups;
+    case "totalPowerups": return SAVE.stats.powerups || 0;
+    case "runRings": return run.rings;
+    case "totalRings": return SAVE.stats.rings || 0;
+    case "biomesSeen": return (SAVE.stats.biomesSeen || []).length;
     default: return 0;
   }
 }
@@ -1659,7 +1890,7 @@ function checkGoals() {
    UI — overlays, menus, meta
    ========================================================================= */
 function hideAll() {
-  ["ovStart", "ovEnd", "ovPause", "ovUpgrades", "ovSpinner", "ovGoals", "ovSettings"].forEach((id) => $(id).classList.add("hidden"));
+  ["ovStart", "ovEnd", "ovPause", "ovUpgrades", "ovSpinner", "ovGoals", "ovSettings", "ovShop", "ovEncy"].forEach((id) => $(id).classList.add("hidden"));
 }
 function showMenu() {
   hideAll();
@@ -1673,6 +1904,7 @@ function showMenu() {
     "Runs: " + fmt(SAVE.stats.runs) + " · Objects smashed: " + fmt(SAVE.stats.smashed) +
     " · Overdrives: " + fmt(SAVE.stats.overdrives) + " · Crevasses cleared: " + fmt(SAVE.stats.gaps);
   renderSkins();
+  renderTrails();
   $("ovStart").classList.remove("hidden");
 }
 function renderSkins() {
@@ -1692,6 +1924,87 @@ function renderSkins() {
   }
 }
 
+function renderTrails() {
+  const row = $("trailRow"); row.innerHTML = "";
+  for (const t of (CFG.goals.trails || [])) {
+    const owned = SAVE.trails.includes(t.id);
+    const d = document.createElement("button");
+    d.className = "skin trail" + (SAVE.activeTrail === t.id ? " active" : "") + (owned ? "" : " locked");
+    d.style.background = "linear-gradient(135deg, " + t.c1 + ", " + t.c2 + ")";
+    d.title = t.label + (owned ? "" : " — " + t.cost + " coins to unlock");
+    if (!owned) d.textContent = t.cost + "🪙";
+    d.onclick = () => {
+      AudioFX.click();
+      if (owned) { SAVE.activeTrail = t.id; }
+      else if (SAVE.coins >= t.cost) { SAVE.coins -= t.cost; SAVE.trails.push(t.id); SAVE.activeTrail = t.id; }
+      else return;
+      persistSave(); applyTrail(); renderTrails();
+      $("menuCoins").textContent = fmt(SAVE.coins);
+    };
+    row.appendChild(d);
+  }
+}
+
+function renderShop() {
+  $("shopCoins").textContent = fmt(SAVE.coins);
+  const list = $("shopList"); list.innerHTML = "";
+  for (const it of (CFG.upgrades.items || [])) {
+    const have = SAVE.runItems[it.id] || 0;
+    const row = document.createElement("div"); row.className = "up-row";
+    row.innerHTML = "<div class='up-info'><b>" + it.label + (have ? " ×" + have : "") + "</b><span>" + it.desc + "</span></div>";
+    const btn = document.createElement("button");
+    btn.className = "buy-btn";
+    const maxed = have >= it.max;
+    btn.textContent = maxed ? "READY" : it.cost + " 🪙";
+    btn.disabled = maxed || SAVE.coins < it.cost;
+    btn.onclick = () => {
+      AudioFX.click();
+      if (SAVE.coins >= it.cost && !maxed) {
+        SAVE.coins -= it.cost;
+        SAVE.runItems[it.id] = have + 1;
+        persistSave(); renderShop();
+      }
+    };
+    row.appendChild(btn);
+    list.appendChild(row);
+  }
+  const note = document.createElement("div");
+  note.className = "shop-note";
+  note.textContent = "Items are consumed by your next run.";
+  list.appendChild(note);
+}
+
+const HAZARD_INFO = {
+  spikes: "Spike trap", mine: "Mine", roller: "Rolling boulder",
+  lava: "Lava pool", chaser: "Spiked stalker"
+};
+function renderEncy() {
+  const list = $("encyList"); list.innerHTML = "";
+  const section = (title) => {
+    const h = document.createElement("div"); h.className = "ency-head"; h.textContent = title;
+    list.appendChild(h);
+  };
+  let totalO = 0;
+  section("DESTRUCTIBLES");
+  for (const d of CFG.objects.destructibles) {
+    const c = SAVE.ency.objects[d.id] || 0; totalO += c;
+    const row = document.createElement("div"); row.className = "goal-row" + (c ? "" : " locked");
+    row.innerHTML = "<div class='up-info'><b>" + (c ? d.label : "???") + "</b><span>" + (c ? d.score + " pts · slows " + (d.slow || 1) + " m/s" : "not yet smashed") + "</span></div>" +
+      "<div class='goal-prog'>×" + fmt(c) + "</div>";
+    list.appendChild(row);
+  }
+  let totalH = 0;
+  section("ENEMIES (destroyed in Overdrive or with a shield)");
+  for (const id in HAZARD_INFO) {
+    const c = SAVE.ency.hazards[id] || 0; totalH += c;
+    const row = document.createElement("div"); row.className = "goal-row" + (c ? "" : " locked");
+    row.innerHTML = "<div class='up-info'><b>" + (c ? HAZARD_INFO[id] : "???") + "</b><span>" + (c ? "destroyed" : "not yet destroyed") + "</span></div>" +
+      "<div class='goal-prog'>×" + fmt(c) + "</div>";
+    list.appendChild(row);
+  }
+  section("TOTAL: " + fmt(totalO) + " objects · " + fmt(totalH) + " enemies");
+}
+
 function showEndOverlay(coinGain, newBest, goalMsg, reason) {
   $("hud").classList.add("hidden");
   $("joystick").classList.add("hidden"); $("btnJump").classList.add("hidden");
@@ -1706,13 +2019,17 @@ function showEndOverlay(coinGain, newBest, goalMsg, reason) {
   const hs = SAVE.highscores.map((h, i) => (i + 1) + ". <b>" + fmt(h.score) + "</b> · " + fmt(h.dist) + " m · " + h.date).join("<br>");
   $("hsTable").innerHTML = hs ? "<b>Best runs</b><br>" + hs : "";
   const M = CFG.balance.meta;
-  const cost = M.continueBaseCost + M.continueCostStep * run.continuesUsed;
-  const can = run.continuesUsed < M.continueMaxPerRun && SAVE.gems >= cost;
+  const freeLeft = upLevel("extraLives") - run.continuesUsed;
+  const cost = freeLeft > 0 ? 0 : M.continueBaseCost + M.continueCostStep * (run.continuesUsed - upLevel("extraLives"));
+  const maxC = M.continueMaxPerRun + upLevel("extraLives");
+  const can = run.continuesUsed < maxC && SAVE.gems >= cost;
   const btn = $("btnContinue");
   btn.disabled = !can;
-  btn.textContent = run.continuesUsed >= M.continueMaxPerRun
+  btn.textContent = run.continuesUsed >= maxC
     ? "NO CONTINUES LEFT"
-    : "CONTINUE (" + cost + " 💎)";
+    : cost === 0 ? "CONTINUE (FREE ★)" : "CONTINUE (" + cost + " 💎)";
+  btn.dataset = btn.dataset || {};
+  window.__continueCost = cost;
   $("ovEnd").classList.remove("hidden");
 }
 
@@ -1795,10 +2112,9 @@ function applyBuff(b) {
 /* settings */
 function bindSettings() {
   const st = SAVE.settings;
-  $("setSens").value = st.sens; $("setVol").value = st.volume;
+  $("setVol").value = st.volume;
   $("setMusic").checked = st.music; $("setQuality").value = st.quality;
   $("setGyro").checked = st.gyro; $("setMotion").checked = st.reducedMotion;
-  $("setSens").oninput = (e) => { st.sens = +e.target.value; persistSave(); };
   $("setVol").oninput = (e) => { st.volume = +e.target.value; AudioFX.ensure(); AudioFX.setVolume(st.volume); persistSave(); };
   $("setMusic").onchange = (e) => { st.music = e.target.checked; persistSave(); if (!st.music) AudioFX.stopMusic(); else { AudioFX.ensure(); AudioFX.startMusic(); } };
   $("setQuality").onchange = (e) => { st.quality = e.target.value; persistSave(); applyQuality(); };
@@ -1912,6 +2228,10 @@ function bindUI() {
   click("btnGoals", () => { hideAll(); renderGoals(); $("ovGoals").classList.remove("hidden"); });
   click("btnGoalBack", showMenu);
   click("btnSettings", () => { hideAll(); $("ovSettings").classList.remove("hidden"); });
+  click("btnShop", () => { hideAll(); renderShop(); $("ovShop").classList.remove("hidden"); });
+  click("btnShopBack", showMenu);
+  click("btnEncy", () => { hideAll(); renderEncy(); $("ovEncy").classList.remove("hidden"); });
+  click("btnEncyBack", showMenu);
   click("btnSetBack", showMenu);
   click("btnExport", exportSave);
   click("btnImport", () => $("fileImport").click());
@@ -1924,8 +2244,10 @@ function bindUI() {
   click("btnMenu", () => { run.buffs = {}; showMenu(); });
   click("btnContinue", () => {
     const M = CFG.balance.meta;
-    const cost = M.continueBaseCost + M.continueCostStep * run.continuesUsed;
-    if (SAVE.gems < cost || run.continuesUsed >= M.continueMaxPerRun) return;
+    const freeLeft = upLevel("extraLives") - run.continuesUsed;
+    const cost = freeLeft > 0 ? 0 : M.continueBaseCost + M.continueCostStep * (run.continuesUsed - upLevel("extraLives"));
+    const maxC = M.continueMaxPerRun + upLevel("extraLives");
+    if (SAVE.gems < cost || run.continuesUsed >= maxC) return;
     SAVE.gems -= cost; run.continuesUsed++;
     persistSave();
     $("ovEnd").classList.add("hidden");
@@ -1945,6 +2267,7 @@ async function boot() {
     buildBiomeMaterials();
     buildRockTemplates();
     buildBoulder();
+    applyTrail();
     buildDebrisPool();
     buildDust();
     bindUI();
