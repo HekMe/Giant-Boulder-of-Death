@@ -68,12 +68,21 @@
     "reactionTime": 1.15,
     "lanes": 3,
     "rollerSpeed": 7.5,
-    "mineRadius": 2.6,
-    "spikeRadius": 2.4,
+    "mineRadius": 1.1,
+    "spikeRadius": 1.3,
     "twoLaneAfter": 800,
     "chaserAfter": 600,
     "lavaAfter": 1100,
-    "chaserSpeed": 5.5
+    "chaserSpeed": 5.5,
+    "gates": {
+      "chaser": 600,
+      "lava": 1100,
+      "icicle": 300,
+      "blade": 400,
+      "crusher": 700,
+      "geyser": 900,
+      "thorns": 0
+    }
   },
   "spawning": {
     "objectsPerChunkBase": 7,

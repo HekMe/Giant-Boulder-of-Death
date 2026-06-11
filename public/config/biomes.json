@@ -29,10 +29,30 @@
         "scarecrow"
       ],
       "hazards": [
-        "spikes",
-        "mine",
-        "roller",
-        "chaser"
+        {
+          "type": "spikes",
+          "w": 3
+        },
+        {
+          "type": "mine",
+          "w": 2
+        },
+        {
+          "type": "roller",
+          "w": 2
+        },
+        {
+          "type": "chaser",
+          "w": 1
+        },
+        {
+          "type": "blade",
+          "w": 1
+        },
+        {
+          "type": "thorns",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#7d756a"
@@ -64,9 +84,30 @@
         "lantern"
       ],
       "hazards": [
-        "spikes",
-        "roller",
-        "chaser"
+        {
+          "type": "spikes",
+          "w": 3
+        },
+        {
+          "type": "roller",
+          "w": 2
+        },
+        {
+          "type": "chaser",
+          "w": 2
+        },
+        {
+          "type": "thorns",
+          "w": 2
+        },
+        {
+          "type": "blade",
+          "w": 1
+        },
+        {
+          "type": "icicle",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#6a6258"
@@ -97,10 +138,30 @@
         "obelisk"
       ],
       "hazards": [
-        "spikes",
-        "mine",
-        "roller",
-        "chaser"
+        {
+          "type": "spikes",
+          "w": 3
+        },
+        {
+          "type": "roller",
+          "w": 3
+        },
+        {
+          "type": "crusher",
+          "w": 2
+        },
+        {
+          "type": "blade",
+          "w": 1
+        },
+        {
+          "type": "chaser",
+          "w": 1
+        },
+        {
+          "type": "mine",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#7a7268"
@@ -131,10 +192,30 @@
         "scarecrow"
       ],
       "hazards": [
-        "mine",
-        "spikes",
-        "chaser",
-        "lava"
+        {
+          "type": "mine",
+          "w": 3
+        },
+        {
+          "type": "spikes",
+          "w": 2
+        },
+        {
+          "type": "geyser",
+          "w": 2
+        },
+        {
+          "type": "chaser",
+          "w": 2
+        },
+        {
+          "type": "thorns",
+          "w": 1
+        },
+        {
+          "type": "lava",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#b89468"
@@ -165,9 +246,30 @@
         "hut"
       ],
       "hazards": [
-        "spikes",
-        "roller",
-        "chaser"
+        {
+          "type": "icicle",
+          "w": 3
+        },
+        {
+          "type": "spikes",
+          "w": 2
+        },
+        {
+          "type": "roller",
+          "w": 2
+        },
+        {
+          "type": "chaser",
+          "w": 1
+        },
+        {
+          "type": "thorns",
+          "w": 1
+        },
+        {
+          "type": "crusher",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#a8b8c8"
@@ -199,9 +301,30 @@
         "pumpkin"
       ],
       "hazards": [
-        "spikes",
-        "chaser",
-        "roller"
+        {
+          "type": "thorns",
+          "w": 3
+        },
+        {
+          "type": "geyser",
+          "w": 2
+        },
+        {
+          "type": "spikes",
+          "w": 2
+        },
+        {
+          "type": "chaser",
+          "w": 2
+        },
+        {
+          "type": "mine",
+          "w": 1
+        },
+        {
+          "type": "icicle",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#5a6048"
@@ -233,9 +356,30 @@
         "gong"
       ],
       "hazards": [
-        "roller",
-        "mine",
-        "spikes"
+        {
+          "type": "roller",
+          "w": 3
+        },
+        {
+          "type": "crusher",
+          "w": 2
+        },
+        {
+          "type": "spikes",
+          "w": 2
+        },
+        {
+          "type": "blade",
+          "w": 1
+        },
+        {
+          "type": "mine",
+          "w": 2
+        },
+        {
+          "type": "geyser",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#a86848"
@@ -266,9 +410,30 @@
         "gong"
       ],
       "hazards": [
-        "lava",
-        "mine",
-        "chaser"
+        {
+          "type": "lava",
+          "w": 3
+        },
+        {
+          "type": "geyser",
+          "w": 2
+        },
+        {
+          "type": "mine",
+          "w": 2
+        },
+        {
+          "type": "chaser",
+          "w": 2
+        },
+        {
+          "type": "crusher",
+          "w": 1
+        },
+        {
+          "type": "blade",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#4a3a34"
@@ -299,9 +464,30 @@
         "obelisk"
       ],
       "hazards": [
-        "mine",
-        "chaser",
-        "spikes"
+        {
+          "type": "blade",
+          "w": 2
+        },
+        {
+          "type": "mine",
+          "w": 2
+        },
+        {
+          "type": "chaser",
+          "w": 2
+        },
+        {
+          "type": "spikes",
+          "w": 2
+        },
+        {
+          "type": "icicle",
+          "w": 1
+        },
+        {
+          "type": "crusher",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#56506e"
@@ -332,8 +518,30 @@
         "fountain"
       ],
       "hazards": [
-        "chaser",
-        "mine"
+        {
+          "type": "blade",
+          "w": 2
+        },
+        {
+          "type": "chaser",
+          "w": 2
+        },
+        {
+          "type": "crusher",
+          "w": 2
+        },
+        {
+          "type": "icicle",
+          "w": 2
+        },
+        {
+          "type": "spikes",
+          "w": 1
+        },
+        {
+          "type": "geyser",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#6aa8b8"
@@ -365,9 +573,30 @@
         "fountain"
       ],
       "hazards": [
-        "lava",
-        "chaser",
-        "mine"
+        {
+          "type": "crusher",
+          "w": 2
+        },
+        {
+          "type": "blade",
+          "w": 2
+        },
+        {
+          "type": "lava",
+          "w": 2
+        },
+        {
+          "type": "mine",
+          "w": 2
+        },
+        {
+          "type": "chaser",
+          "w": 1
+        },
+        {
+          "type": "geyser",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#a89058"
@@ -399,8 +628,30 @@
         "fountain"
       ],
       "hazards": [
-        "chaser",
-        "mine"
+        {
+          "type": "icicle",
+          "w": 2
+        },
+        {
+          "type": "blade",
+          "w": 2
+        },
+        {
+          "type": "chaser",
+          "w": 2
+        },
+        {
+          "type": "geyser",
+          "w": 2
+        },
+        {
+          "type": "crusher",
+          "w": 1
+        },
+        {
+          "type": "thorns",
+          "w": 1
+        }
       ],
       "length": 700,
       "rock": "#4a7888"

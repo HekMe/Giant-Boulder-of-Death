@@ -697,7 +697,11 @@ const destructibleBuilders = {
 };
 
 function destructibleFactory(def) {
-  const n = destructibleBuilders[def.id](def);
+  const n = destructibleBuilders[def.base || def.id](def);
+  if (def.tint) {
+    const tm = mat("vt_" + def.id, def.tint);
+    n.getChildMeshes().forEach((m, i) => { if (i % 2 === 0) m.material = tm; });
+  }
   n.scaling.setAll(def.size);
   n.metadata = { kind: "destructible", def, radius: 1.4 * def.size, alive: true };
   return n;
@@ -792,6 +796,51 @@ const hazardBuilders = {
     }
     return n;
   },
+  thorns() {
+    const n = root("thorns");
+    const dark = mat("thornM", "#2c3326", { emissive: "#1a0808" });
+    for (let i = -3; i <= 3; i++) {
+      const sp = cyl("th", rand(0.8, 1.3), 0.02, 0.22, dark, n, 5);
+      sp.position.set(i * 0.95, 0.5, rand(-0.3, 0.3));
+      sp.rotation.z = rand(-0.25, 0.25);
+    }
+    return n;
+  },
+  blade() {
+    const n = root("blade");
+    cyl("pole", 2.6, 0.14, 0.18, mat("iron", "#3c3c40"), n, 6).position.y = 1.3;
+    const disc = cyl("dsc", 0.14, 2.4, 2.4, mat("bladeM", "#b8c0c8", { emissive: "#3a4048" }), n, 14);
+    disc.rotation.x = Math.PI / 2; disc.position.y = 1.1;
+    for (let i = 0; i < 4; i++) {
+      const tooth = box("t", 0.5, 0.1, 0.24, mat("bladeT", "#e84a3a", { emissive: "#8a1408" }), n);
+      const a = (i / 4) * Math.PI * 2;
+      tooth.position.set(Math.cos(a) * 1.25, 1.1, Math.sin(a) * 1.25);
+      tooth.rotation.y = -a;
+    }
+    return n;
+  },
+  crusher() {
+    const n = root("crush"); const ir = mat("iron", "#3c3c40");
+    box("p1", 0.3, 4.2, 0.3, ir, n).position.set(-1.6, 2.1, 0);
+    box("p2", 0.3, 4.2, 0.3, ir, n).position.set(1.6, 2.1, 0);
+    const blk = box("blk", 2.9, 1.6, 1.7, mat("crushM", "#5a4a44", { emissive: "#2a0e0a" }), n);
+    blk.position.y = 3.2;
+    return n;
+  },
+  geyser() {
+    const n = root("geyser");
+    const crater = cyl("crater", 0.3, 3.4, 2.6, mat("gyCr", "#6a5a4a"), n, 12);
+    crater.position.y = 0.15;
+    const col = cyl("col", 4.0, 1.3, 1.8, mat("gyCol", "#c8e8f0", { emissive: "#4a8a9a", alpha: 0.65 }), n, 10);
+    col.position.y = 2.1; col.scaling.y = 0.05;
+    return n;
+  },
+  icicle() {
+    const n = root("icicle");
+    const ice = cyl("ice", 3.2, 0.02, 1.0, mat("icicleM", "#cfeaff", { emissive: "#2a5a7a", alpha: 0.9 }), n, 8);
+    ice.position.y = 9; // hangs high, drops when you approach
+    return n;
+  },
   chaser() {
     const n = root("chaser");
     const body = sph("b", 1.7, mat("chaserM", "#4a2030", { emissive: "#5a0a1a" }), n, 8);
@@ -808,22 +857,21 @@ const hazardBuilders = {
     return n;
   }
 };
+const HAZARD_BODY = { // collision = enemy BODY only; the warning ring is safe to enter
+  spikes: 1.3, mine: 1.1, roller: 1.5, lava: 1.9, chaser: 1.2,
+  thorns: 3.2, blade: 1.6, crusher: 1.7, geyser: 1.5, icicle: 1.1
+};
 function hazardFactory(type) {
   const n = hazardBuilders[type]();
-  // pulsing red danger ring on the ground — instantly readable "do not touch"
+  // pulsing red danger ring on the ground — a WARNING zone, not the kill zone
   let ring = null;
-  if (type !== "lava") {
-    const ringD = type === "roller" ? 6.0 : type === "mine" ? 5.6 : type === "chaser" ? 5.0 : 5.2;
+  if (type !== "lava" && type !== "geyser") {
+    const ringD = type === "thorns" ? 8.6 : (HAZARD_BODY[type] + 1.3) * 2;
     ring = cyl("warnring", 0.07, ringD, ringD,
       mat("dangerRing", "#ff2a2a", { emissive: "#d11414", alpha: 0.5 }), n, 22);
     ring.position.y = 0.08;
   }
-  const radius = type === "roller" ? 2.0
-    : type === "mine" ? CFG.balance.hazards.mineRadius
-    : type === "lava" ? 2.2
-    : type === "chaser" ? 1.9
-    : CFG.balance.hazards.spikeRadius;
-  n.metadata = { kind: "hazard", type, radius, dir: 1, passed: false, dead: false, ring };
+  n.metadata = { kind: "hazard", type, radius: HAZARD_BODY[type] || 1.3, dir: 1, passed: false, dead: false, ring, phase: rand(0, Math.PI * 2) };
   return n;
 }
 
@@ -1097,7 +1145,7 @@ function buildWallMesh(ci, side, rockMat) {
     for (let i = 0; i <= ny; i++) {
       const v = i / ny;
       const lean = v * v * 2.8; // wall leans outward with height
-      const noise = 0.55 * Math.sin(z * 0.7 + v * 9.7 + side) + 0.35 * Math.sin(z * 1.9 + v * 4.3);
+      const noise = Math.abs(0.55 * Math.sin(z * 0.7 + v * 9.7 + side) + 0.35 * Math.sin(z * 1.9 + v * 4.3));
       positions.push(cx + side * (baseX + lean + noise * (0.25 + v)), yBase + v * colH, z);
     }
   }
@@ -1133,7 +1181,7 @@ function spawnChunk(ci) {
       if (Math.random() < 0.35) continue;
       const node = pooled("rock", rockFactory);
       setRockMaterial(node, rockMat);
-      const x = centerX(z) + side * (T.halfWidth + 2.0 + rand(0, 2.6));
+      const x = centerX(z) + side * (T.halfWidth + 4.2 + rand(0, 3.0));
       node.position.set(x, terrainY(x, z) - 0.8, z + rand(-1.4, 1.4));
       node.rotation.y = rand(0, Math.PI * 2);
       const s = rand(0.9, 1.7);
@@ -1196,8 +1244,18 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
     if (nextHazardZ < z0) { nextHazardZ = z0; }
     const hz = nextHazardZ;
     if (hz - run.startZ >= H.firstHazardAt && !nearGap(hz, 14)) {
-      const r = Math.random();
-      if (r < 0.18 && (biome.hazards || ["roller"]).includes("roller")) {
+      // weighted pick from this biome's enemy roster, gated by distance
+      const gates = H.gates || {};
+      const roster = (biome.hazards || [{ type: "spikes", w: 1 }]).filter((e) => dist >= (gates[e.type] || 0));
+      const pickType = () => {
+        if (!roster.length) return "spikes";
+        const tw = roster.reduce((sum, e) => sum + e.w, 0);
+        let w = Math.random() * tw;
+        for (const e of roster) { w -= e.w; if (w <= 0) return e.type; }
+        return roster[0].type;
+      };
+      const first = pickType();
+      if (first === "roller") {
         // roller crossing the whole track — telegraphed, all lanes "soft blocked", timing dodge
         const node = pooled("hazard_roller", () => hazardFactory("roller"));
         node.getChildMeshes().forEach((m) => m.setEnabled(true));
@@ -1211,17 +1269,15 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
         // block 1–2 of 3 lanes, always leave at least one safe
         const lanes = [0, 1, 2];
         const blockedCount = (dist > H.twoLaneAfter && Math.random() < (dist > 3000 ? 0.62 : 0.45)) ? 2 : 1;
-        // enemy variety grows with distance, filtered by what lives in this biome
-        let pool = (biome.hazards || ["spikes", "mine", "roller", "chaser", "lava"]).filter((tp) =>
-          tp !== "roller" && (tp !== "chaser" || dist > H.chaserAfter) && (tp !== "lava" || dist > H.lavaAfter));
-        if (!pool.length) pool = ["spikes"];
         for (let k = 0; k < blockedCount; k++) {
           const li = randi(0, lanes.length - 1);
           const lane = lanes.splice(li, 1)[0];
-          const type = pool[randi(0, pool.length - 1)];
+          let type = k === 0 ? first : pickType();
+          if (type === "roller") type = "spikes";
           const node = pooled("hazard_" + type, () => hazardFactory(type));
           node.getChildMeshes().forEach((m) => m.setEnabled(true));
           node.metadata.type = type; node.metadata.dead = false; node.metadata.passed = false;
+          node.metadata.iceState = null; node.metadata.anchorX = null; node.metadata.phase = rand(0, Math.PI * 2);
           const x = laneX(hz, lane);
           node.position.set(x, terrainY(x, hz), hz);
           rec.items.push({ kind: "hazard_" + type, node });
@@ -1235,17 +1291,15 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
     nextHazardZ += Math.max(every * rand(0.9, 1.3), reactGap);
   }
 
-  /* destructibles */
+  /* destructibles — each biome spawns its own exclusive variant pool */
   const count = Math.min(S.objectsPerChunkMax, Math.floor(S.objectsPerChunkBase + S.objectsRampPer1000m * dist / 1000));
-  const defs = CFG.objects.destructibles;
+  const defs = (CFG.objects.biomeVariants || {})[biome.id] || CFG.objects.destructibles;
+  const totalBW = defs.reduce((sum, d) => sum + d.weight, 0);
   for (let i = 0; i < count; i++) {
     const z = rand(z0 + 4, z1 - 4);
     if (nearGap(z, 6) || nearHazard(z, 9)) continue;
-    const fav = biome.objects || [];
-    const biomeW = (d) => d.weight * (fav.includes(d.id) ? 3 : 1);
-    const totalBW = defs.reduce((sum, d) => sum + biomeW(d), 0);
     let w = Math.random() * totalBW, def = defs[0];
-    for (const d of defs) { w -= biomeW(d); if (w <= 0) { def = d; break; } }
+    for (const d of defs) { w -= d.weight; if (w <= 0) { def = d; break; } }
     const node = pooled("obj_" + def.id, () => destructibleFactory(def));
     node.metadata.alive = true;
     node.getChildMeshes().forEach((m) => m.setEnabled(true));
@@ -1512,7 +1566,7 @@ function smashObject(node) {
   addScore(def.score, node.position, "", def.score >= 150 ? "big" : "");
   if (run.overdrive <= 0) run.speed = Math.max(CFG.balance.physics.minSpeed, run.speed - (def.slow || 1));
   chargeMeter(def.meter);
-  burstDebris(node.position.add(new BABYLON.Vector3(0, 1, 0)), hex3(def.color), 6 + Math.floor(def.size * 5), 7 + def.size * 3);
+  burstDebris(node.position.add(new BABYLON.Vector3(0, 1, 0)), hex3(def.tint || def.color || "#a08868"), 6 + Math.floor(def.size * 5), 7 + def.size * 3);
   AudioFX.smash(def.size);
   shake(0.12 + def.size * 0.08);
 }
@@ -1752,6 +1806,51 @@ function collide(dt, env) {
       const core = h.getChildMeshes().find((m) => m.name === "core");
       if (core) { const pl = 1 + 0.18 * Math.sin(performance.now() * 0.006 + h.position.z); core.scaling.set(pl, 1, pl); }
     }
+    md.passable = false;
+    if (md.type === "blade") {
+      if (md.anchorX == null) md.anchorX = h.position.x;
+      h.position.x = md.anchorX + Math.sin(performance.now() * 0.0019 + md.phase) * 3.1;
+      h.position.y = terrainY(h.position.x, h.position.z);
+      const dsc = h.getChildMeshes().find((m) => m.name === "dsc");
+      if (dsc) dsc.rotation.y += dt * 9;
+    }
+    if (md.type === "crusher") {
+      const up = Math.max(0, Math.sin(performance.now() * 0.0021 + md.phase)); // raised ~half the time
+      const blk = h.getChildMeshes().find((m) => m.name === "blk");
+      if (blk) blk.position.y = 1.0 + up * 2.6;
+      md.passable = up > 0.45; // slip under while the block is high
+    }
+    if (md.type === "geyser") {
+      const erupt = Math.sin(performance.now() * 0.0016 + md.phase) > 0.25;
+      const col = h.getChildMeshes().find((m) => m.name === "col");
+      if (col) col.scaling.y = lerp(col.scaling.y, erupt ? 1 : 0.05, 1 - Math.exp(-8 * dt));
+      md.passable = !erupt; // only the eruption kills
+      if (md.ring) md.ring.setEnabled(!md.passable);
+    }
+    if (md.type === "icicle") {
+      const ice = h.getChildMeshes().find((m) => m.name === "ice");
+      if (ice) {
+        if (md.iceState == null) { md.iceState = "hang"; md.iceY = 9; md.iceVy = 0; md.landT = 0; }
+        if (md.iceState === "hang") {
+          ice.position.y = md.iceY + 0.15 * Math.sin(performance.now() * 0.004 + md.phase);
+          if (h.position.z - bp.z > 0 && h.position.z - bp.z < 26) { md.iceState = "fall"; AudioFX.nearmiss(); }
+          md.passable = true; // safe until it actually drops to ground level
+        } else if (md.iceState === "fall") {
+          md.iceVy += 34 * dt; md.iceY -= md.iceVy * dt;
+          if (md.iceY <= 1.4) { md.iceY = 1.4; md.iceState = "land"; md.landT = 1.4; puffDust(h.position, 10); AudioFX.land(0.5); }
+          ice.position.y = md.iceY;
+          md.passable = md.iceY > 4.5; // deadly once near boulder height
+        } else {
+          md.landT -= dt;
+          md.passable = false;
+          if (md.landT <= 0) {
+            md.dead = true;
+            h.getChildMeshes().forEach((m) => m.setEnabled(false));
+            burstDebris(h.position.add(new BABYLON.Vector3(0, 1.4, 0)), hex3("#cfeaff"), 8, 6);
+          }
+        }
+      }
+    }
     const dz = h.position.z - bp.z;
     if (dz < -8) {
       if (!md.passed) {
@@ -1766,10 +1865,14 @@ function collide(dt, env) {
       continue;
     }
     if (dz > 8) continue;
+    if (md.passable) continue;
     const dx = h.position.x - bp.x;
     const hitR = r + md.radius * 0.8;
-    const overTop = bp.y - terrainY(bp.x, bp.z) - r > (md.type === "roller" ? 3.4 : md.type === "lava" ? 1.3 : 2.0);
-    if (dx * dx + dz * dz < hitR * hitR && !overTop) {
+    const overTop = bp.y - terrainY(bp.x, bp.z) - r > (md.type === "roller" ? 3.4 : (md.type === "lava" || md.type === "thorns") ? 1.3 : 2.0);
+    const hit = md.type === "thorns"
+      ? (Math.pow(dx / (md.radius + r * 0.5), 2) + Math.pow(dz / (1.4 + r), 2) < 1) // wide strip
+      : (dx * dx + dz * dz < hitR * hitR);
+    if (hit && !overTop) {
       if (run.overdrive > 0) { smashHazard(h); continue; }
       if (run.grace > 0) continue;
       if (run.shields > 0) {
@@ -1786,7 +1889,8 @@ function collide(dt, env) {
         continue;
       }
       if (md.type === "mine") { AudioFX.explosion(); burstDebris(h.position, hex3("#7a2a1a"), 16, 14); }
-      endRun(md.type === "mine" ? "Mine explosion" : md.type === "roller" ? "Hit by a rolling boulder" : md.type === "lava" ? "Lava pool" : md.type === "chaser" ? "Spiked stalker" : "Spikes");
+      endRun({ mine: "Mine explosion", roller: "Hit by a rolling boulder", lava: "Lava pool", chaser: "Spiked stalker",
+        thorns: "Thorn strip", blade: "Spinning blade", crusher: "Crusher", geyser: "Geyser eruption", icicle: "Falling icicle" }[md.type] || "Spikes");
       return;
     }
   }
@@ -2050,7 +2154,8 @@ function renderShop() {
 
 const HAZARD_INFO = {
   spikes: "Spike trap", mine: "Mine", roller: "Rolling boulder",
-  lava: "Lava pool", chaser: "Spiked stalker"
+  lava: "Lava pool", chaser: "Spiked stalker", thorns: "Thorn strip",
+  blade: "Spinning blade", crusher: "Crusher", geyser: "Geyser", icicle: "Falling icicle"
 };
 function renderEncy() {
   const list = $("encyList"); list.innerHTML = "";
@@ -2058,23 +2163,32 @@ function renderEncy() {
     const h = document.createElement("div"); h.className = "ency-head"; h.textContent = title;
     list.appendChild(h);
   };
-  let totalO = 0;
-  section("DESTRUCTIBLES");
-  for (const d of CFG.objects.destructibles) {
-    const c = SAVE.ency.objects[d.id] || 0; totalO += c;
+  const rowFor = (label, sub, c) => {
     const row = document.createElement("div"); row.className = "goal-row" + (c ? "" : " locked");
-    row.innerHTML = "<div class='up-info'><b>" + (c ? d.label : "???") + "</b><span>" + (c ? d.score + " pts · slows " + (d.slow || 1) + " m/s" : "not yet smashed") + "</span></div>" +
+    row.innerHTML = "<div class='up-info'><b>" + (c ? label : "???") + "</b><span>" + (c ? sub : "not yet discovered") + "</span></div>" +
       "<div class='goal-prog'>×" + fmt(c) + "</div>";
     list.appendChild(row);
+  };
+  let totalO = 0;
+  const BV = CFG.objects.biomeVariants || {};
+  for (const b of CFG.biomes.biomes) {
+    const vars = BV[b.id]; if (!vars) continue;
+    const seen = vars.reduce((n, d) => n + (SAVE.ency.objects[d.id] ? 1 : 0), 0);
+    section(b.label + " — " + seen + "/" + vars.length + " discovered (" + b.rarity + ")");
+    for (const d of vars) {
+      const c = SAVE.ency.objects[d.id] || 0; totalO += c;
+      rowFor(d.label, d.score + " pts · slows " + (d.slow || 1) + " m/s", c);
+    }
   }
+  // counts recorded before the biome-variant update
+  let legacy = 0;
+  for (const d of CFG.objects.destructibles) legacy += SAVE.ency.objects[d.id] || 0;
+  if (legacy) { section("EARLIER FINDS"); rowFor("Pre-expedition smashes", "from before the biome survey", legacy); totalO += legacy; }
   let totalH = 0;
   section("ENEMIES (destroyed in Overdrive or with a shield)");
   for (const id in HAZARD_INFO) {
     const c = SAVE.ency.hazards[id] || 0; totalH += c;
-    const row = document.createElement("div"); row.className = "goal-row" + (c ? "" : " locked");
-    row.innerHTML = "<div class='up-info'><b>" + (c ? HAZARD_INFO[id] : "???") + "</b><span>" + (c ? "destroyed" : "not yet destroyed") + "</span></div>" +
-      "<div class='goal-prog'>×" + fmt(c) + "</div>";
-    list.appendChild(row);
+    rowFor(HAZARD_INFO[id], "destroyed", c);
   }
   section("TOTAL: " + fmt(totalO) + " objects · " + fmt(totalH) + " enemies");
 }
