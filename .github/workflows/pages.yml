@@ -1,8 +1,8 @@
-name: Deploy static site to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main", "master", "work"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,32 +11,88 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: pages
+  cancel-in-progress: true
 
 jobs:
   deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Generate net-config.js from repository variables
+        run: |
+          cat > net-config.js <<EOF
+          window.__NET__ = {
+            host: "${{ vars.SPACETIME_HOST }}",
+            db: "${{ vars.SPACETIME_DB_NAME }}",
+            authUrl: "${{ vars.SPACETIME_AUTH_URL }}",
+            clientId: "${{ vars.SPACETIMEAUTH_CLIENT_ID }}"
+          };
+          EOF
+          echo "Generated net-config.js:" && cat net-config.js
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
-
-      - name: Prepare site artifact
-        run: |
-          mkdir -p _site
-          cp -r index.html gist.html style.css src data public package.json README.md _site/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: .
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  publish-module:
+    runs-on: ubuntu-latest
+    # Publishes the SpacetimeDB module. Skips silently when not configured.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check whether module publish is configured
+        id: gate
+        run: |
+          if [ -z "${{ secrets.SPACETIME_PUBLISH_TOKEN }}" ] || [ -z "${{ vars.SPACETIME_DB_NAME }}" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "SPACETIME_PUBLISH_TOKEN or SPACETIME_DB_NAME missing - skipping module publish."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install SpacetimeDB CLI
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          curl -sSf https://install.spacetimedb.com | sh -s -- --yes
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.spacetime/bin" >> "$GITHUB_PATH"
+
+      - name: Install module dependencies
+        if: steps.gate.outputs.enabled == 'true'
+        working-directory: spacetime-module
+        run: npm install
+
+      - name: Publish module
+        if: steps.gate.outputs.enabled == 'true'
+        working-directory: spacetime-module
+        env:
+          SPACETIME_PUBLISH_TOKEN: ${{ secrets.SPACETIME_PUBLISH_TOKEN }}
+          SPACETIME_HOST: ${{ vars.SPACETIME_HOST }}
+          SPACETIME_DB_NAME: ${{ vars.SPACETIME_DB_NAME }}
+        run: |
+          # NOTE: the login flag occasionally changes between CLI versions.
+          # If this step fails, run `spacetime login --help` locally and adjust.
+          spacetime login --token "$SPACETIME_PUBLISH_TOKEN"
+          spacetime publish "$SPACETIME_DB_NAME" --project-path . --server "$SPACETIME_HOST" --yes
+          
