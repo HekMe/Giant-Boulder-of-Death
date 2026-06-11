@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROCKFALL — Admin</title>
+<style>
+  body{background:#14110e;color:#e8e0d4;font-family:system-ui,sans-serif;max-width:860px;margin:24px auto;padding:0 16px}
+  h1{color:#ff9d45;letter-spacing:2px} h2{font-size:15px;color:#ff9d45;margin-top:28px}
+  button{background:#2a241e;border:1px solid #4a4036;color:#e8e0d4;padding:7px 14px;border-radius:8px;cursor:pointer;margin:2px}
+  button:hover{border-color:#ff9d45} input,select{background:#1d1a17;border:1px solid #3a342e;color:#e8e0d4;padding:7px;border-radius:8px}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+  td,th{border-bottom:1px solid #2a241e;padding:6px 8px;text-align:left}
+  .ok{color:#7ad87a}.err{color:#ff6a6a}.muted{color:#8a8276;font-size:12px}
+</style>
+<script src="net-config.js" onerror="this.remove()"></script>
+</head>
+<body>
+<h1>ROCKFALL ADMIN</h1>
+<p class="muted">Requires an admin account (the first player ever registered). Sign in inside the game first — this page reuses that session.</p>
+<div id="who" class="muted">checking session…</div>
+
+<h2>Players</h2>
+<div id="players">loading…</div>
+
+<h2>Recent runs</h2>
+<div id="runs">loading…</div>
+
+<h2>Actions</h2>
+<div>
+  <input id="target" placeholder="player name">
+  <select id="kind">
+    <option value="skin">grant skin</option>
+    <option value="goal">confirm goal</option>
+    <option value="coins">grant coins</option>
+    <option value="gems">grant gems</option>
+    <option value="note">note</option>
+  </select>
+  <input id="value" placeholder="value (e.g. skinGold / g42 / 500)">
+  <button onclick="grant()">Grant</button>
+  <button onclick="setAdmin(true)">Make admin</button>
+  <button onclick="setAdmin(false)">Remove admin</button>
+  <button onclick="wipeScores()">Delete player's scores</button>
+</div>
+<div id="log"></div>
+
+<script>
+"use strict";
+const NET = window.__NET__ || {};
+const base = (NET.host || "").replace(/\/$/, "") + "/v1/database/" + encodeURIComponent(NET.db || "");
+let auth = null;
+try { const a = JSON.parse(localStorage.getItem("rf_net_auth") || "null"); if (a && a.exp * 1000 > Date.now()) auth = a; } catch (e) {}
+document.getElementById("who").textContent = auth ? "Signed in as " + auth.name : "⚠ Not signed in — open the game, sign in, then reload this page.";
+
+const log = (m, cls) => { const d = document.createElement("div"); d.className = cls || "ok"; d.textContent = m; document.getElementById("log").prepend(d); };
+
+async function call(reducer, args) {
+  const r = await fetch(base + "/call/" + reducer, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + (auth && auth.token) },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) throw new Error(reducer + ": " + (await r.text()).slice(0, 200));
+}
+async function sql(q) {
+  const r = await fetch(base + "/sql", { method: "POST", headers: auth ? { Authorization: "Bearer " + auth.token } : {}, body: q });
+  if (!r.ok) throw new Error("sql " + r.status);
+  const out = await r.json();
+  const st = Array.isArray(out) ? out[0] : out;
+  const rows = (st && (st.rows || st.Rows)) || [];
+  const els = ((st && (st.schema || st.Schema)) || {}).elements || [];
+  const cols = els.map((e, i) => (e.name && (e.name.some || e.name.Some)) || (typeof e.name === "string" ? e.name : "c" + i));
+  return rows.map((row) => Array.isArray(row) ? Object.fromEntries(row.map((v, i) => [cols[i] || "c" + i, v])) : row);
+}
+function tableHtml(rows, keys) {
+  if (!rows.length) return "<div class='muted'>empty</div>";
+  return "<table><tr>" + keys.map((k) => "<th>" + k + "</th>").join("") + "</tr>" +
+    rows.map((r) => "<tr>" + keys.map((k) => "<td>" + String(r[k] ?? "") + "</td>").join("") + "</tr>").join("") + "</table>";
+}
+async function refresh() {
+  try {
+    const players = await sql("SELECT name, is_admin FROM player");
+    document.getElementById("players").innerHTML = tableHtml(players, ["name", "is_admin"]);
+    const runs = await sql("SELECT name, score, dist_m, duration_s FROM score_entry");
+    runs.sort((a, b) => Number(b.score) - Number(a.score));
+    document.getElementById("runs").innerHTML = tableHtml(runs.slice(0, 25), ["name", "score", "dist_m", "duration_s"]);
+  } catch (e) { log("load failed: " + e.message, "err"); }
+}
+const tgt = () => document.getElementById("target").value.trim();
+async function grant() {
+  try { await call("admin_grant", [tgt(), document.getElementById("kind").value, document.getElementById("value").value]); log("granted ✔"); } catch (e) { log(e.message, "err"); }
+}
+async function setAdmin(v) {
+  try { await call("admin_set_admin", [tgt(), v]); log("admin=" + v + " ✔"); refresh(); } catch (e) { log(e.message, "err"); }
+}
+async function wipeScores() {
+  if (!confirm("Delete ALL score entries of '" + tgt() + "'?")) return;
+  try { await call("admin_delete_scores", [tgt()]); log("scores deleted ✔"); refresh(); } catch (e) { log(e.message, "err"); }
+}
+refresh();
+</script>
+</body>
+</html>

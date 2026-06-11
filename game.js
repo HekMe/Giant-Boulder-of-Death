@@ -1596,6 +1596,7 @@ function startRun(continueRun) {
     run.hp = run.maxHp;
     run.chains = {}; run.chainsDone = 0;
     run.topSpeed = 0; run.bestAir = 0; run.airTime = 0; run.curseT = 0; run.time = 0;
+    run.ghostFrames = []; run.ghostAcc = 0;
     SAVE.runItems = { shield: 0, coinDoubler: 0, luckyCharm: 0, aegis: 0, storm: 0, midas: 0 };
     persistSave();
     nextHazardZ = run.startZ + CFG.balance.hazards.firstHazardAt;
@@ -1666,6 +1667,12 @@ function endRun(reason) {
   const goalsDoneNow = checkGoals();
   persistSave();
   showEndOverlay(coinGain, newBest, goalsDoneNow, reason, records);
+  try {
+    if (window.RFNet && window.RFNet.onRunEnd) window.RFNet.onRunEnd({
+      score: Math.floor(run.score), dist: Math.floor(run.dist),
+      duration: Math.floor(run.time || 0), ghost: run.ghostFrames || []
+    });
+  } catch (e) { console.warn(e); }
 }
 
 /* ---------- scoring ---------- */
@@ -1870,6 +1877,11 @@ function updateRun(dt) {
   run.z += run.speed * dt;
   run.dist = run.z - run.startZ;
   run.time = (run.time || 0) + dt;
+  run.ghostAcc = (run.ghostAcc || 0) + dt;
+  if (run.ghostAcc >= 0.08 && run.ghostFrames && run.ghostFrames.length < 15000) {
+    run.ghostAcc = 0;
+    run.ghostFrames.push([+run.time.toFixed(2), +run.x.toFixed(2), +run.y.toFixed(2), +run.z.toFixed(1)]);
+  }
   run.score += run.speed * dt * CFG.balance.scoring.distancePointsPerMeter;
 
   /* gaps + vertical */
@@ -2365,6 +2377,7 @@ function showMenu() {
   renderSkins();
   renderTrails();
   renderBoulders();
+  try { if (window.RFNet && window.RFNet.renderMenu) window.RFNet.renderMenu(); } catch (e) {}
   $("ovStart").classList.remove("hidden");
 }
 function renderSkins() {
@@ -2560,6 +2573,10 @@ function showEndOverlay(coinGain, newBest, goalsDoneNow, reason, records) {
   const hs = SAVE.highscores.map((h, i) => (i + 1) + ". <b>" + fmt(h.score) + "</b> · " + fmt(h.dist) + " m · " + h.date).join("<br>");
   rec += hs ? "<div class='hs-table'><b>Best runs</b><br>" + hs + "</div>" : "";
   $("endRecords").innerHTML = rec;
+  try {
+    if (window.RFNet && window.RFNet.fillGlobalRecords) window.RFNet.fillGlobalRecords($("endRecords"),
+      { score: Math.floor(run.score), dist: Math.floor(run.dist), duration: Math.floor(run.time || 0) });
+  } catch (e) {}
   setEndTab("Stats");
   // FANFARE for any new record
   if (records && records.length) {
@@ -2754,6 +2771,7 @@ function fanfare() {
   ov.classList.remove("hidden");
   setTimeout(() => ov.classList.add("hidden"), 3200);
 }
+window.__fanfare = fanfare;
 function setPause(p) {
   if (run.state !== "run" && run.state !== "intro") return;
   run.paused = p;

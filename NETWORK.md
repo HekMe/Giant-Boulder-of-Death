@@ -4,9 +4,22 @@ This document answers the setup questions and defines everything that must be pr
 before the online layer (accounts, leaderboards, ghosts, admin, multiplayer) can be wired in.
 The game itself stays a static GitHub Pages site; SpacetimeDB hosts all server logic.
 
-> Status: **not yet integrated.** The client currently runs fully offline. The integration
-> needs the values below filled in first, and it must be developed against your live
-> database — it cannot be built blind.
+> Status: **first integration shipped.** What exists now:
+> - `spacetime-module/` — TypeScript server module (player / score_entry / ghost / grant,
+>   first-user-becomes-admin, server-side run validation, per-player score pruning)
+> - `net.js` — OIDC PKCE login via SpacetimeAuth, run submission, global leaderboards in the
+>   end-screen Records tab, world-#1 fanfare, last-run ghost upload
+> - `admin.html` — players list, recent runs, grant/admin/wipe actions
+> - `pages.yml` — generates `net-config.js` from repo *variables* and publishes the module
+>   using the `SPACETIME_PUBLISH_TOKEN` secret
+>
+> Everything degrades gracefully: without `net-config.js` the game is fully offline.
+> **First live run will need debugging together** — the module API and CLI flags were written
+> against the 2.0 docs but could not be executed from this environment. Send me the first
+> errors from the Actions log and the browser DevConsole.
+>
+> Next iterations: ghost playback with timeline + speed control, grant delivery to clients,
+> live multiplayer boulders (WebSocket subscriptions).
 
 ## 1. What you need to set up in SpacetimeDB
 

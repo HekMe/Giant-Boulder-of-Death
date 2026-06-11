@@ -8,6 +8,8 @@
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <script src="config.fallback.js" defer></script>
 <script src="game.js" defer></script>
+<script src="net-config.js" defer onerror="this.remove()"></script>
+<script src="net.js" defer onerror="this.remove()"></script>
 </head>
 <body>
 <canvas id="renderCanvas"></canvas>
@@ -48,6 +50,11 @@
     <div class="logo"><span class="logo-rock"></span><h1>ROCK<em>FALL</em></h1></div>
     <p class="tag">Dropped from the sky. A mountain below. Smash everything in your path.</p>
     <div class="cur-row"><span class="ico coin"></span><span id="menuCoins">0</span><span class="ico gem"></span><span id="menuGems">0</span></div>
+    <div id="netRow" class="net-row hidden">
+      <button id="btnLogin" class="menu-btn">Sign in with Google</button>
+      <span id="netUser" class="net-user"></span>
+      <button id="btnLogout" class="menu-btn hidden">Sign out</button>
+    </div>
     <button id="btnPlay" class="big-btn">START RUN</button>
     <div class="menu-grid">
       <button id="btnUpgrades" class="menu-btn">Upgrades</button>
