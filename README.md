@@ -93,4 +93,8 @@ node build.js
 - Delta time is clamped, so a lag spike won't break the simulation.
 - If startup fails, an error overlay explains what went wrong instead of a black screen.
 
+## 🌍 Online features (planned)
+
+Accounts, global leaderboards, ghost replays, admin tools and live multiplayer are designed to run on **SpacetimeDB** — see `NETWORK.md` for the full setup checklist (OIDC via Google, GitHub secrets/variables, module tables and reducers). The game stays fully playable offline.
+
 Happy rolling! 🪨💨

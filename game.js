@@ -58,16 +58,43 @@ async function loadConfig() {
 
 /* ---------- persistent save ---------- */
 const SAVE_KEY = "rockfall_save_v1";
+const SAVE_MAGIC = "RFS1.";
+const SAVE_XKEY = "cliffside-ember-rockfall-7741";
+function saveChecksum(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h.toString(36);
+}
+function encodeSave(obj) {
+  const json = JSON.stringify(obj);
+  let x = "";
+  for (let i = 0; i < json.length; i++) x += String.fromCharCode(json.charCodeAt(i) ^ SAVE_XKEY.charCodeAt(i % SAVE_XKEY.length));
+  return SAVE_MAGIC + saveChecksum(json) + "." + btoa(unescape(encodeURIComponent(x)));
+}
+function decodeSave(str) {
+  if (typeof str !== "string" || !str.startsWith(SAVE_MAGIC)) return null;
+  const dot = str.indexOf(".", SAVE_MAGIC.length);
+  if (dot < 0) return null;
+  const sum = str.slice(SAVE_MAGIC.length, dot);
+  let x;
+  try { x = decodeURIComponent(escape(atob(str.slice(dot + 1)))); } catch (e) { return null; }
+  let json = "";
+  for (let i = 0; i < x.length; i++) json += String.fromCharCode(x.charCodeAt(i) ^ SAVE_XKEY.charCodeAt(i % SAVE_XKEY.length));
+  if (saveChecksum(json) !== sum) return null; // tampered
+  try { return JSON.parse(json); } catch (e) { return null; }
+}
 function defaultSave() {
   return {
     v: 1, coins: 0, gems: 5,
     upgrades: {}, goalIndex: 0, goalsDone: [],
     skins: ["skinRock"], activeSkin: "skinRock",
     trails: ["trailEmber"], activeTrail: "trailEmber",
-    runItems: { shield: 0, coinDoubler: 0, luckyCharm: 0 },
-    ency: { objects: {}, hazards: {} },
-    stats: { bestDist: 0, bestScore: 0, runs: 0, smashed: 0, overdrives: 0, gaps: 0, totalCoins: 0, totalDist: 0, powerups: 0, rings: 0, biomesSeen: [] },
-    settings: { sens: 1, volume: 0.7, music: true, quality: "high", gyro: false, gyroTouched: false, reducedMotion: false },
+    boulders: ["granite"], activeBoulder: "granite",
+    upgradeSet: {},
+    runItems: { shield: 0, coinDoubler: 0, luckyCharm: 0, aegis: 0, storm: 0, midas: 0 },
+    ency: { objects: {}, hazards: {}, currency: {}, biomes: {} },
+    stats: { bestDist: 0, bestScore: 0, runs: 0, smashed: 0, overdrives: 0, gaps: 0, totalCoins: 0, totalDist: 0, powerups: 0, rings: 0, chains: 0, biomesSeen: [] },
+    settings: { sens: 1, volume: 0.7, music: true, quality: "high", gyro: false, gyroTouched: false, reducedMotion: false, scheme: "auto" },
     highscores: []
   };
 }
@@ -76,26 +103,37 @@ function loadSave() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
-      const s = JSON.parse(raw);
+      let s = decodeSave(raw);
+      if (!s && raw[0] === "{") { try { s = JSON.parse(raw); } catch (e) { s = null; } } // migrate old plaintext saves
       if (validateSave(s)) SAVE = Object.assign(defaultSave(), s,
         { stats: Object.assign(defaultSave().stats, s.stats || {}),
           settings: Object.assign(defaultSave().settings, s.settings || {}),
           runItems: Object.assign(defaultSave().runItems, s.runItems || {}),
-          ency: { objects: Object.assign({}, (s.ency || {}).objects), hazards: Object.assign({}, (s.ency || {}).hazards) } });
+          upgradeSet: Object.assign({}, s.upgradeSet || {}),
+          ency: { objects: Object.assign({}, (s.ency || {}).objects), hazards: Object.assign({}, (s.ency || {}).hazards),
+                  currency: Object.assign({}, (s.ency || {}).currency), biomes: Object.assign({}, (s.ency || {}).biomes) } });
     }
   } catch (e) { console.warn("save load failed", e); }
   SAVE.settings.sens = 1; // sensitivity is governed by the Steering upgrade, not a setting
   if (!Array.isArray(SAVE.stats.biomesSeen)) SAVE.stats.biomesSeen = [];
 }
 function persistSave() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) { console.warn(e); }
+  try { localStorage.setItem(SAVE_KEY, encodeSave(SAVE)); } catch (e) { console.warn(e); }
 }
 function validateSave(s) {
   return s && typeof s === "object" && s.v === 1 &&
     typeof s.coins === "number" && typeof s.gems === "number" &&
     typeof s.upgrades === "object" && Array.isArray(s.skins);
 }
-function upLevel(id) { return SAVE.upgrades[id] || 0; }
+function upOwned(id) { return SAVE.upgrades[id] || 0; }
+function upLevel(id) {
+  const owned = upOwned(id);
+  const set = SAVE.upgradeSet[id];
+  return clamp(set == null ? owned : set, 0, owned);
+}
+function bodyDef() {
+  return (CFG.goals.boulders || []).find((b) => b.id === SAVE.activeBoulder) || { accel: 1, steer: 1, impact: 1, hp: 0 };
+}
 function upBonus(id) {
   const def = CFG.upgrades.upgrades.find((u) => u.id === id);
   return def ? upLevel(id) * def.bonus : 0;
@@ -249,6 +287,7 @@ function baseProfile(z) {
 function terrainY(x, z) {
   const dxn = (x - centerX(z)) / T.halfWidth;
   let y = baseProfile(z) + T.chuteDepth * dxn * dxn +
+    (T.crossAmp || 0) * Math.sin(z * (T.crossFreq || 0.011)) * clamp(dxn, -1, 1) +
     T.rippleAmp * Math.sin(x * T.rippleFreqX) * Math.sin(z * T.rippleFreqZ);
   // canyon walls: the ground itself climbs steeply beyond the track edge,
   // plateauing at wallHeight — the wall is real geometry, not just decoration
@@ -369,7 +408,7 @@ function pooled(kind, factory) {
   if (!pools[kind]) pools[kind] = new Pool(factory);
   return pools[kind].get();
 }
-function unpool(kind, node) { pools[kind].put(node); }
+function unpool(kind, node) { if (pools[kind]) pools[kind].put(node); else { node.setEnabled(false); node.parent = null; } }
 
 /* ---------- primitive shorthands ---------- */
 function box(name, w, h, d, m, parent) {
@@ -447,6 +486,17 @@ function applyTrail() {
   if (!tdef || !trailPS) return;
   trailPS.color1 = hex4(tdef.c1, 0.9); trailPS.color2 = hex4(tdef.c2, 0.7);
   if (auraPS) { auraPS.color1 = hex4(tdef.c1, 0.8); auraPS.color2 = hex4(tdef.c2, 0.5); }
+  if (boulderMat) { // trails leave their mark on the stone itself
+    boulderMat.alpha = tdef.alpha != null ? tdef.alpha : 1;
+    if (tdef.glow) boulderMat.emissiveColor = hex3(tdef.glow);
+    else applySkin();
+  }
+}
+function applyCrackVisual() {
+  if (!boulderMat) return;
+  const skin = CFG.goals.skins.find((sk) => sk.id === SAVE.activeSkin) || CFG.goals.skins[0];
+  const t = run.maxHp > 1 ? (run.maxHp - run.hp) / run.maxHp : 0;
+  boulderMat.diffuseColor = hex3(skin.color).scale(1 - 0.45 * t);
 }
 function applySkin() {
   const skin = CFG.goals.skins.find((s) => s.id === SAVE.activeSkin) || CFG.goals.skins[0];
@@ -562,8 +612,11 @@ const destructibleBuilders = {
     const n = root("cart"); const w = mat("cartM", "#8c5a30");
     box("b", 2.4, 0.8, 1.4, w, n).position.y = 1.0;
     const wh = mat("wheel", "#4a3a26");
-    const w1 = cyl("w1", 0.2, 1.0, 1.0, wh, n, 10); w1.rotation.z = Math.PI / 2; w1.position.set(0, 0.5, 0.75);
-    const w2 = cyl("w2", 0.2, 1.0, 1.0, wh, n, 10); w2.rotation.z = Math.PI / 2; w2.position.set(0, 0.5, -0.75);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const wl = cyl("w" + sx + sz, 0.2, 1.0, 1.0, wh, n, 10);
+      wl.rotation.z = Math.PI / 2; // axle along X — wheels sit on the cart's sides
+      wl.position.set(sx * 1.3, 0.5, sz * 0.65);
+    }
     const h = box("h", 1.4, 0.12, 0.12, w, n); h.position.set(-1.7, 1.0, 0); h.rotation.z = 0.2;
     return n;
   },
@@ -808,14 +861,14 @@ const hazardBuilders = {
   },
   blade() {
     const n = root("blade");
-    cyl("pole", 2.6, 0.14, 0.18, mat("iron", "#3c3c40"), n, 6).position.y = 1.3;
-    const disc = cyl("dsc", 0.14, 2.4, 2.4, mat("bladeM", "#b8c0c8", { emissive: "#3a4048" }), n, 14);
-    disc.rotation.x = Math.PI / 2; disc.position.y = 1.1;
-    for (let i = 0; i < 4; i++) {
-      const tooth = box("t", 0.5, 0.1, 0.24, mat("bladeT", "#e84a3a", { emissive: "#8a1408" }), n);
-      const a = (i / 4) * Math.PI * 2;
-      tooth.position.set(Math.cos(a) * 1.25, 1.1, Math.sin(a) * 1.25);
-      tooth.rotation.y = -a;
+    cyl("hub", 0.5, 0.5, 0.6, mat("iron", "#3c3c40"), n, 8).position.y = 0.7;
+    const disc = cyl("dsc", 0.08, 2.6, 2.6, mat("bladeM", "#6a7078", { emissive: "#14181e" }), n, 18);
+    disc.position.y = 0.95; // horizontal sawblade, spins flat above the ground
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const tooth = box("t", 0.55, 0.1, 0.3, mat("bladeT", "#e84a3a", { emissive: "#8a1408" }), n);
+      tooth.position.set(Math.cos(a) * 1.42, 0.95, Math.sin(a) * 1.42);
+      tooth.rotation.y = -a + Math.PI / 4;
     }
     return n;
   },
@@ -841,6 +894,18 @@ const hazardBuilders = {
     ice.position.y = 9; // hangs high, drops when you approach
     return n;
   },
+  lurer() {
+    const n = root("lurer");
+    const orb = sph("orb", 1.6, mat("lurerM", "#2a1838", { emissive: "#5a1a8a" }), n, 9);
+    orb.position.y = 1.4;
+    for (let i = 0; i < 2; i++) {
+      const ringL = cyl("lr" + i, 0.07, 2.6 + i * 0.7, 2.6 + i * 0.7, mat("lurerR", "#b86aff", { emissive: "#6a2aaa", alpha: 0.5 }), n, 16);
+      ringL.position.y = 1.4; ringL.rotation.x = 0.6 + i * 0.9;
+    }
+    const eye = sph("eye", 0.5, mat("lurerE", "#ff5aff", { emissive: "#c81ac8" }), n, 6);
+    eye.position.set(0, 1.4, 0.7);
+    return n;
+  },
   chaser() {
     const n = root("chaser");
     const body = sph("b", 1.7, mat("chaserM", "#4a2030", { emissive: "#5a0a1a" }), n, 8);
@@ -859,7 +924,7 @@ const hazardBuilders = {
 };
 const HAZARD_BODY = { // collision = enemy BODY only; the warning ring is safe to enter
   spikes: 1.3, mine: 1.1, roller: 1.5, lava: 1.9, chaser: 1.2,
-  thorns: 3.2, blade: 1.6, crusher: 1.7, geyser: 1.5, icicle: 1.1
+  thorns: 3.2, blade: 1.6, crusher: 1.7, geyser: 1.5, icicle: 1.1, lurer: 1.4
 };
 function hazardFactory(type) {
   const n = hazardBuilders[type]();
@@ -876,13 +941,23 @@ function hazardFactory(type) {
 }
 
 /* ----- pickups ----- */
-function coinFactory() {
+function coinFactory(ctype) {
+  const cd = (CFG.balance.spawning.coinTypes || []).find((c) => c.id === ctype) || { id: "coin", value: 1, color: "#f2c94c", em: "#6a5210" };
   const n = root("coin");
-  const c = cyl("c", 0.14, 0.9, 0.9, mat("coinM", "#f2c94c", { emissive: "#6a5210" }), n, 14);
+  const sizeM = 1 + (cd.value - 1) * 0.09;
+  const c = cyl("c", 0.14, 0.9 * sizeM, 0.9 * sizeM, mat("coinM_" + cd.id, cd.color, { emissive: cd.em }), n, 14);
   c.rotation.x = Math.PI / 2; c.position.y = 1.0;
-  n.metadata = { kind: "coin", radius: 1.2, taken: false };
+  n.metadata = { kind: "coin", ctype: cd.id, value: cd.value, radius: 1.2, taken: false, chain: null };
   return n;
 }
+function pickCoinType() {
+  const types = CFG.balance.spawning.coinTypes || [{ id: "coin", value: 1, weight: 1 }];
+  const tw = types.reduce((sum, c) => sum + c.weight, 0);
+  let w = Math.random() * tw;
+  for (const c of types) { w -= c.weight; if (w <= 0) return c.id; }
+  return types[0].id;
+}
+let chainSeq = 0;
 function gemFactory() {
   const n = root("gem");
   const g = BABYLON.MeshBuilder.CreatePolyhedron("g", { type: 1, size: 0.55 }, scene);
@@ -906,6 +981,19 @@ function powerFactory(ptype) {
   const halo = cyl("halo", 0.05, 2.2, 2.2, mat("pwHalo_" + ptype, d.color, { emissive: d.em, alpha: 0.4 }), n, 18);
   halo.position.y = 0.1;
   n.metadata = { kind: "power", ptype, radius: 1.8, taken: false };
+  return n;
+}
+function gateFactory(gtype) {
+  const n = root("gate");
+  const good = gtype === "launch";
+  const col = good ? "#3aff6a" : "#ff3a3a", em = good ? "#0a8a2a" : "#8a0a0a";
+  const m = mat("gateM_" + gtype, col, { emissive: em, alpha: 0.85 });
+  box("l", 0.3, 3.4, 0.3, m, n).position.set(-2.2, 1.7, 0);
+  box("r2", 0.3, 3.4, 0.3, m, n).position.set(2.2, 1.7, 0);
+  box("top", 4.7, 0.3, 0.3, m, n).position.y = 3.4;
+  const veil = box("veil", 4.1, 3.0, 0.06, mat("gateV_" + gtype, col, { emissive: em, alpha: 0.22 }), n);
+  veil.position.y = 1.7;
+  n.metadata = { kind: "gate", gtype, radius: 2.3, taken: false };
   return n;
 }
 function ringFactory() {
@@ -1237,13 +1325,15 @@ function laneX(z, lane) { return centerX(z) + (lane - 1) * T.halfWidth * 0.58; }
 function spawnGameplayContent(rec, z0, z1, env, biome) {
   const S = CFG.balance.spawning, H = CFG.balance.hazards;
   const dist = Math.max(0, z0 - run.startZ);
-  const hazardBuff = (run.buffs.fewerHazards ? 0.65 : 1) * (1 - upBonus("fewerHaz"));
+  const hazardBuff = (run.buffs.fewerHazards ? 0.65 : 1) * (1 - upBonus("fewerHaz")) * (1 + upBonus("hazardLevel"));
 
   /* hazards with guaranteed safe lane + reaction spacing */
   while (nextHazardZ < z1) {
     if (nextHazardZ < z0) { nextHazardZ = z0; }
     const hz = nextHazardZ;
-    if (hz - run.startZ >= H.firstHazardAt && !nearGap(hz, 14)) {
+    let hzv = hz;
+    for (let tries = 0; tries < 4 && hazardOccluded(hzv); tries++) hzv += 7; // shift past blind crests
+    if (hzv - run.startZ >= H.firstHazardAt && !nearGap(hzv, 14)) {
       // weighted pick from this biome's enemy roster, gated by distance
       const gates = H.gates || {};
       const roster = (biome.hazards || [{ type: "spikes", w: 1 }]).filter((e) => dist >= (gates[e.type] || 0));
@@ -1261,10 +1351,9 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
         node.getChildMeshes().forEach((m) => m.setEnabled(true));
         node.metadata.type = "roller"; node.metadata.dead = false; node.metadata.passed = false;
         node.metadata.dir = Math.random() < 0.5 ? -1 : 1;
-        node.position.set(laneX(hz, node.metadata.dir < 0 ? 2 : 0), terrainY(laneX(hz, 1), hz), hz);
+        node.position.set(laneX(hzv, node.metadata.dir < 0 ? 2 : 0), terrainY(laneX(hzv, 1), hzv), hzv);
         rec.items.push({ kind: "hazard_roller", node });
         run.hazards.push(node);
-        placeTelegraph(rec, hz);
       } else {
         // block 1–2 of 3 lanes, always leave at least one safe
         const lanes = [0, 1, 2];
@@ -1278,12 +1367,11 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
           node.getChildMeshes().forEach((m) => m.setEnabled(true));
           node.metadata.type = type; node.metadata.dead = false; node.metadata.passed = false;
           node.metadata.iceState = null; node.metadata.anchorX = null; node.metadata.phase = rand(0, Math.PI * 2);
-          const x = laneX(hz, lane);
-          node.position.set(x, terrainY(x, hz), hz);
+          const x = laneX(hzv, lane);
+          node.position.set(x, terrainY(x, hzv), hzv);
           rec.items.push({ kind: "hazard_" + type, node });
           run.hazards.push(node);
         }
-        placeTelegraph(rec, hz);
       }
     }
     const every = Math.max(H.minEvery, (H.baseEvery - H.shrinkPer1000m * dist / 1000) / (env.hazardMult * hazardBuff));
@@ -1310,26 +1398,54 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
     run.objects.push(node);
   }
 
-  /* coins + gems */
+  /* coins + gems — tiered values; whole line shares a tier */
   const coinRolls = Math.max(1, Math.round(S.coinsPerChunk * (env.coinMult || 1)));
   for (let i = 0; i < coinRolls; i++) {
     const z = rand(z0 + 3, z1 - 3);
     if (nearGap(z, 5)) continue;
     const lane = randi(0, 2);
+    const ctype = pickCoinType();
     for (let k = 0; k < 3; k++) {
       const cz = z + k * 2.4;
       if (nearGap(cz, 3)) break;
-      const node = pooled("coin", coinFactory);
-      node.metadata.taken = false;
+      const node = pooled("coin_" + ctype, () => coinFactory(ctype));
+      node.metadata.taken = false; node.metadata.chain = null;
       node.getChildMeshes().forEach((m) => m.setEnabled(true));
       const x = laneX(cz, lane);
       node.position.set(x, terrainY(x, cz), cz);
-      rec.items.push({ kind: "coin", node });
+      rec.items.push({ kind: "coin_" + ctype, node });
       run.pickups.push(node);
     }
   }
+  /* rare coin TRAIL — collect every coin in the row for a surprise reward */
+  if (Math.random() < (S.chainChance || 0)) {
+    const len = S.chainLength || 8;
+    const z = rand(z0 + 4, z1 - 4 - len * 2.6);
+    const lane = randi(0, 2);
+    let okTrail = true;
+    for (let k = 0; k < len; k++) if (nearGap(z + k * 2.6, 3) || nearHazard(z + k * 2.6, 4)) { okTrail = false; break; }
+    if (okTrail) {
+      const cid = ++chainSeq;
+      run.chains[cid] = { collected: 0, total: len, broken: false };
+      for (let k = 0; k < len; k++) {
+        const cz = z + k * 2.6;
+        const node = pooled("coin_trail", () => {
+          const nn = coinFactory("coin");
+          nn.getChildMeshes()[0].material = mat("coinTrailM", "#5affd8", { emissive: "#0a8a6a" });
+          return nn;
+        });
+        node.metadata.taken = false; node.metadata.value = 1; node.metadata.ctype = "coin";
+        node.metadata.chain = { id: cid, idx: k, total: len };
+        node.getChildMeshes().forEach((m) => m.setEnabled(true));
+        const x = laneX(cz, lane);
+        node.position.set(x, terrainY(x, cz), cz);
+        rec.items.push({ kind: "coin_trail", node });
+        run.pickups.push(node);
+      }
+    }
+  }
   const gemCh = S.gemChance * (run.buffs.gemRate ? 3 : 1) * (1 + upBonus("gemFind")) * (run.itemLucky ? 2 : 1);
-  if (Math.random() < gemCh * 10) { // per-chunk roll scaled
+  if (Math.random() < gemCh * 3.5) { // gems are precious
     const z = rand(z0 + 5, z1 - 5);
     if (!nearGap(z, 5)) {
       const node = pooled("gem", gemFactory);
@@ -1372,18 +1488,32 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
       run.pickups.push(node);
     }
   }
+  /* gates: green launches you skyward; red curses you toward enemies */
+  if (Math.random() < 0.10) {
+    const gtype = (dist > 600 && Math.random() < 0.4) ? "curse" : "launch";
+    const z = rand(z0 + 8, z1 - 8);
+    if (!nearGap(z, 6) && !nearHazard(z, 9)) {
+      const node = pooled("gate_" + gtype, () => gateFactory(gtype));
+      node.metadata.taken = false;
+      node.getChildMeshes().forEach((m) => m.setEnabled(true));
+      const x = laneX(z, randi(0, 2));
+      node.position.set(x, terrainY(x, z), z);
+      rec.items.push({ kind: "gate_" + gtype, node });
+      run.pickups.push(node);
+    }
+  }
 }
-function placeTelegraph(rec, hz) {
-  const wz = hz - 16;
-  const node = pooled("tele", () => {
-    const n = root("tele");
-    const m = mat("teleM", "#ffae3a", { emissive: "#c96d08" });
-    const b1 = box("t1", 1.6, 0.14, 0.7, m, n); b1.rotation.y = 0.6;
-    const b2 = box("t2", 1.6, 0.14, 0.7, m, n); b2.rotation.y = -0.6;
-    n.metadata = { kind: "tele" }; return n;
-  });
-  node.position.set(centerX(wz), terrainY(centerX(wz), wz) + 0.06, wz);
-  rec.items.push({ kind: "tele", node });
+function hazardOccluded(z) {
+  // line of sight from a typical chase-camera position to the hazard spot
+  const camZ = z - 28;
+  const camY = terrainY(centerX(camZ), camZ) + 6.5;
+  const tgtY = terrainY(centerX(z), z) + 1.2;
+  for (let sZ = camZ + 5; sZ < z - 3; sZ += 4) {
+    const t = (sZ - camZ) / (z - camZ);
+    const lineY = camY + (tgtY - camY) * t;
+    if (terrainY(centerX(sZ), sZ) + 0.6 > lineY) return true; // a crest blocks the view
+  }
+  return false;
 }
 function nearHazard(z, margin) {
   for (const h of run.hazards) if (Math.abs(h.position.z - z) < margin) return true;
@@ -1428,7 +1558,9 @@ const run = {
   buffs: {},
   power: { superjump: 0, multi: 0, steer: 0, magnet: 0 },
   boostT: 0, shields: 0, itemCoinDoubler: false, itemLucky: false,
-  powerups: 0, rings: 0, biomesSeen: [],
+  itemStorm: false, itemMidas: false,
+  hp: 2, maxHp: 2, chains: {},
+  powerups: 0, rings: 0, chainsDone: 0, biomesSeen: [],
   objects: [], hazards: [], pickups: [],
   lastGapId: -1, inGapAir: false,
   introT: 0,
@@ -1446,6 +1578,7 @@ function startRun(continueRun) {
     run.score = 0; run.coins = 0; run.gems = 0;
     run.meter = CFG.balance.overdrive.meterMax * upBonus("startMeter") + (run.buffs.headStart ? CFG.balance.overdrive.meterMax : 0);
     run.meter = Math.min(run.meter, CFG.balance.overdrive.meterMax);
+    if (run.__aegisFull) run.meter = CFG.balance.overdrive.meterMax;
     run.combo = 0; run.maxCombo = 0; run.overdrive = 0; run.grace = 0;
     run.smashed = 0; run.gapsCleared = 0; run.nearMisses = 0; run.overdrives = 0;
     run.continuesUsed = 0; run.lastGapId = -1;
@@ -1456,7 +1589,14 @@ function startRun(continueRun) {
     run.shields = SAVE.runItems.shield || 0;
     run.itemCoinDoubler = !!SAVE.runItems.coinDoubler;
     run.itemLucky = !!SAVE.runItems.luckyCharm;
-    SAVE.runItems = { shield: 0, coinDoubler: 0, luckyCharm: 0 };
+    run.itemStorm = !!SAVE.runItems.storm;
+    run.itemMidas = !!SAVE.runItems.midas;
+    if (SAVE.runItems.aegis) { run.shields += 2; run.__aegisFull = true; } else run.__aegisFull = false;
+    run.maxHp = Math.max(1, 2 + upLevel("durability") + (bodyDef().hp || 0));
+    run.hp = run.maxHp;
+    run.chains = {}; run.chainsDone = 0;
+    run.topSpeed = 0; run.bestAir = 0; run.airTime = 0; run.curseT = 0; run.time = 0;
+    SAVE.runItems = { shield: 0, coinDoubler: 0, luckyCharm: 0, aegis: 0, storm: 0, midas: 0 };
     persistSave();
     nextHazardZ = run.startZ + CFG.balance.hazards.firstHazardAt;
     run.speed = CFG.balance.physics.startSpeed;
@@ -1472,6 +1612,7 @@ function startRun(continueRun) {
     run.y = terrainY(run.x, run.z) + CFG.balance.physics.boulderRadius + 2;
     run.vy = 0; run.vx = 0; run.speed = CFG.balance.physics.startSpeed;
     run.grace = 2.2;
+    run.hp = run.maxHp; applyCrackVisual();
     run.state = "run";
   }
   run.active = true; run.paused = false;
@@ -1483,7 +1624,10 @@ function startRun(continueRun) {
   boulder.setEnabled(true);
   ensureChunks();
   hideAll(); $("hud").classList.remove("hidden");
-  if (isMobile) { $("joystick").classList.remove("hidden"); $("btnJump").classList.remove("hidden"); }
+  if (isMobile) {
+    $("btnJump").classList.remove("hidden");
+    $("joystick").classList.toggle("hidden", activeScheme() !== "joystick");
+  }
   updateHUD(true);
 }
 
@@ -1502,6 +1646,14 @@ function endRun(reason) {
   SAVE.stats.runs++; SAVE.stats.smashed += run.smashed;
   SAVE.stats.totalDist = (SAVE.stats.totalDist || 0) + run.dist;
   SAVE.stats.overdrives += run.overdrives; SAVE.stats.gaps += run.gapsCleared;
+  const records = [];
+  if (run.score > (SAVE.stats.bestScore || 0)) records.push("HIGH SCORE");
+  if (run.dist > (SAVE.stats.bestDist || 0)) records.push("LONGEST RUN");
+  if ((run.time || 0) > (SAVE.stats.bestTime || 0)) records.push("LONGEST SURVIVAL");
+  if ((run.topSpeed || 0) > (SAVE.stats.bestSpeed || 0)) records.push("TOP SPEED");
+  SAVE.stats.bestTime = Math.max(SAVE.stats.bestTime || 0, run.time || 0);
+  SAVE.stats.bestSpeed = Math.max(SAVE.stats.bestSpeed || 0, run.topSpeed || 0);
+  SAVE.stats.bestAirtime = Math.max(SAVE.stats.bestAirtime || 0, run.bestAir || 0);
   SAVE.stats.powerups = (SAVE.stats.powerups || 0) + run.powerups;
   SAVE.stats.rings = (SAVE.stats.rings || 0) + run.rings;
   for (const bid of run.biomesSeen) if (!SAVE.stats.biomesSeen.includes(bid)) SAVE.stats.biomesSeen.push(bid);
@@ -1511,17 +1663,18 @@ function endRun(reason) {
   SAVE.highscores.push({ score: Math.floor(run.score), dist: Math.floor(run.dist), date: new Date().toISOString().slice(0, 10) });
   SAVE.highscores.sort((a, b) => b.score - a.score);
   SAVE.highscores = SAVE.highscores.slice(0, 5);
-  const goalMsg = checkGoals();
+  const goalsDoneNow = checkGoals();
   persistSave();
-  showEndOverlay(coinGain, newBest, goalMsg, reason);
+  showEndOverlay(coinGain, newBest, goalsDoneNow, reason, records);
 }
 
 /* ---------- scoring ---------- */
 function meterMult() { return 1 + run.meter / CFG.balance.overdrive.meterMax; }
 function comboMult() { return Math.min(CFG.balance.scoring.comboMax, 1 + run.combo * CFG.balance.scoring.comboStep); }
 function addScore(base, pos, label, cls) {
-  let v = base * meterMult() * comboMult() * (1 + upBonus("scoreGain"));
+  let v = base * meterMult() * comboMult() * (1 + upBonus("scoreGain")) * (1 + upLevel("hazardLevel") * 0.05);
   if (run.power.multi > 0) v *= 2;
+  if (run.itemStorm) v *= 2;
   if (run.overdrive > 0) v *= CFG.balance.overdrive.scoreMult;
   v = Math.floor(v);
   run.score += v;
@@ -1537,7 +1690,22 @@ function chargeMeter(amount) {
     triggerOverdrive();
   }
 }
+function schemeHint() {
+  const sc = activeScheme();
+  return sc === "gyro" ? "tilt to steer · drag down to brake"
+    : sc === "drag" ? "drag to steer · drag down to brake"
+    : sc === "joystick" ? "joystick to steer · pull down to brake"
+    : "A/D steer · S brake · Space jump";
+}
+function activeScheme() {
+  const set = SAVE.settings.scheme || "auto";
+  if (set !== "auto") return set;
+  return isMobile ? "gyro" : "keys";
+}
 function triggerOverdrive() {
+  if (auraPS) { auraPS.emitRate = 220; auraPS.color1 = hex4("#ffc24a", 0.95); auraPS.color2 = hex4("#ff4a14", 0.8); }
+  if (trailPS) trailPS.emitRate = 260;
+  if (boulderMat) boulderMat.emissiveColor = hex3("#c2410a");
   run.overdrive = CFG.balance.overdrive.duration * (1 + upBonus("overdrive"));
   run.overdrives++;
   AudioFX.overdrive();
@@ -1547,6 +1715,8 @@ function triggerOverdrive() {
   shake(0.5);
 }
 function endOverdrive() {
+  if (auraPS) auraPS.emitRate = 40;
+  applyTrail(); applySkin(); applyCrackVisual();
   run.overdrive = 0;
   run.meter = 0;
   run.grace = Math.max(run.grace, CFG.balance.overdrive.graceTime);
@@ -1564,7 +1734,7 @@ function smashObject(node) {
   run.smashed++;
   SAVE.ency.objects[def.id] = (SAVE.ency.objects[def.id] || 0) + 1;
   addScore(def.score, node.position, "", def.score >= 150 ? "big" : "");
-  if (run.overdrive <= 0) run.speed = Math.max(CFG.balance.physics.minSpeed, run.speed - (def.slow || 1));
+  if (run.overdrive <= 0) run.speed = Math.max(CFG.balance.physics.minSpeed, run.speed - (def.slow || 1) * bodyDef().impact);
   chargeMeter(def.meter);
   burstDebris(node.position.add(new BABYLON.Vector3(0, 1, 0)), hex3(def.tint || def.color || "#a08868"), 6 + Math.floor(def.size * 5), 7 + def.size * 3);
   AudioFX.smash(def.size);
@@ -1659,7 +1829,7 @@ function updateRun(dt) {
 
   /* forward speed from slope */
   const s = slopeAt(run.z);
-  run.speed += (P.slopeAccel * s - P.drag * run.speed * run.speed * 0.018 - 0.4) * dt;
+  run.speed += (P.slopeAccel * bodyDef().accel * s - P.drag * run.speed * run.speed * 0.018 - 0.4) * dt;
   if (input.brake && run.speed > P.minSpeed) {
     run.speed -= P.brakeDecel * (1 + upBonus("brakePower")) * dt;
     run.brakeFxT = (run.brakeFxT || 0) - dt;
@@ -1680,22 +1850,46 @@ function updateRun(dt) {
   const steer = (input.axis || (input.left ? -1 : 0) + (input.right ? 1 : 0)) * SAVE.settings.sens;
   const grip = env.grip;
   const agility = clamp(run.speed / P.maxSpeed, P.lateralFloor, 1);
-  run.vx += steer * P.steerAccel * (1 + upBonus("steer")) * (run.power.steer > 0 ? 1.5 : 1) * grip * agility * dt;
+  run.vx += steer * P.steerAccel * bodyDef().steer * (1 + upBonus("steer")) * (run.power.steer > 0 ? 1.5 : 1) * grip * agility * dt;
+  if (run.curseT > 0) {
+    run.curseT -= dt;
+    let best = null, bd = 1e9;
+    for (const h of run.hazards) {
+      if (h.metadata.dead) continue;
+      const dzc = h.position.z - run.z;
+      if (dzc < 4 || dzc > 55) continue;
+      if (dzc < bd) { bd = dzc; best = h; }
+    }
+    if (best) run.vx += clamp(best.position.x - run.x, -1, 1) * 3.4 * dt;
+  }
+  const gx = (terrainY(run.x + 1.2, run.z) - terrainY(run.x - 1.2, run.z)) / 2.4;
+  if (!run.airborne) run.vx -= gx * 7.5 * dt; // gravity pulls toward the lower edge
   run.vx -= run.vx * P.steerFriction * grip * dt;
   run.vx = clamp(run.vx, -P.maxLateralSpeed * agility, P.maxLateralSpeed * agility);
   run.x += run.vx * dt;
   run.z += run.speed * dt;
   run.dist = run.z - run.startZ;
+  run.time = (run.time || 0) + dt;
   run.score += run.speed * dt * CFG.balance.scoring.distancePointsPerMeter;
 
   /* gaps + vertical */
-  const gap = gapAtZ(run.z);
+  const gap = gapAtZ(run.z) && run.overdrive <= 0; // Overdrive smashes across crevasses too
   const gy = terrainY(run.x, run.z) + r;
   run.vy -= P.gravity * dt;
   run.y += run.vy * dt;
+  const deepBelow = run.y < gy - 2.5; // fell inside a crevasse — can't pop up onto the far rim
 
-  if (!gap && run.y <= gy) {
-    if (run.airborne && run.vy < -6) { AudioFX.land(clamp(-run.vy / 25, 0, 1)); puffDust(new BABYLON.Vector3(run.x, gy - r, run.z), 18); shake(clamp(-run.vy * 0.02, 0, 0.5)); }
+  if (!gap && run.y <= gy && !deepBelow) {
+    if (run.airborne && run.vy < -6) {
+      AudioFX.land(clamp(-run.vy / 25, 0, 1)); puffDust(new BABYLON.Vector3(run.x, gy - r, run.z), 18); shake(clamp(-run.vy * 0.02, 0, 0.5));
+      // landing momentum: a smooth touch-down on a falling slope converts the dive into speed;
+      // slamming into a rising slope bleeds it off
+      const grad = (terrainY(run.x, run.z + 2.5) - terrainY(run.x, run.z - 2.5)) / 5; // <0 = downhill ahead
+      const dv = clamp(-grad, -1.2, 1.2) * Math.min(-run.vy, 26) * 0.5;
+      run.speed = Math.max(P.minSpeed, run.speed + dv);
+      if (dv > 2.5) { run.boostT = Math.max(run.boostT, 1.6); popScore(boulder.position, "CLEAN LANDING +" + dv.toFixed(0), "bonus"); }
+      else if (dv < -3) popScore(boulder.position, "HARD LANDING", "");
+    }
     // gap-clear bonus
     if (run.inGapAir) {
       run.inGapAir = false; run.gapsCleared++;
@@ -1704,18 +1898,21 @@ function updateRun(dt) {
     }
     run.y = gy; run.vy = 0;
     run.airborne = false; run.jumping = false; run.coyote = P.coyoteTime;
-  } else if (!gap && !run.jumping && run.vy <= 3 && run.y - gy < P.groundStick) {
+  } else if (!gap && !deepBelow && !run.jumping && run.vy <= 3 && run.y - gy < P.groundStick) {
     // terrain suction: small crests no longer launch the boulder into hops
     run.y = gy; run.vy = 0;
     run.airborne = false; run.coyote = P.coyoteTime;
   } else {
     run.coyote = Math.max(0, run.coyote - dt);
     run.airborne = true;
-    if (gap) {
-      run.inGapAir = true;
+    if (gap || deepBelow) {
+      run.inGapAir = run.inGapAir || gap;
       if (run.y < gy - P.fallDeathDepth) { endRun("Fell into a crevasse"); return; }
     }
   }
+  run.airTime = run.airborne ? (run.airTime || 0) + dt : 0;
+  if (run.airTime > (run.bestAir || 0)) run.bestAir = run.airTime;
+  if (run.speed > (run.topSpeed || 0)) run.topSpeed = run.speed;
 
   /* jump */
   if (input.jump) {
@@ -1790,6 +1987,14 @@ function collide(dt, env) {
       const lamp = h.getChildMeshes().find((m) => m.name === "l");
       if (lamp) lamp.scaling.setAll(1 + 0.55 * Math.sin(performance.now() * 0.012));
     }
+    if (md.type === "lurer") {
+      const ahead = h.position.z - bp.z;
+      if (ahead > 0 && ahead < 42 && run.grace <= 0) {
+        const pull = lerp(9, 2.2, ahead / 42) * dt;
+        run.vx += clamp(h.position.x - run.x, -1, 1) * pull;
+      }
+      h.getChildMeshes().forEach((m2, i2) => { if (m2.name.startsWith("lr")) m2.rotation.y += dt * (2 + i2); });
+    }
     if (md.type === "chaser") {
       // drifts toward the boulder's lane while it approaches
       const ahead = h.position.z - bp.z;
@@ -1811,8 +2016,7 @@ function collide(dt, env) {
       if (md.anchorX == null) md.anchorX = h.position.x;
       h.position.x = md.anchorX + Math.sin(performance.now() * 0.0019 + md.phase) * 3.1;
       h.position.y = terrainY(h.position.x, h.position.z);
-      const dsc = h.getChildMeshes().find((m) => m.name === "dsc");
-      if (dsc) dsc.rotation.y += dt * 9;
+      h.getChildMeshes()[0].parent.rotation && (h.rotation.y += dt * 7);
     }
     if (md.type === "crusher") {
       const up = Math.max(0, Math.sin(performance.now() * 0.0021 + md.phase)); // raised ~half the time
@@ -1888,9 +2092,25 @@ function collide(dt, env) {
         puffDust(h.position, 14);
         continue;
       }
+      const dmg = (CFG.balance.hazards.damage || {})[md.type] ?? 99;
+      if (dmg < run.hp) {
+        // the boulder CRACKS instead of dying — enemy is spent in the impact
+        run.hp -= dmg;
+        md.dead = true; h.getChildMeshes().forEach((m) => m.setEnabled(false));
+        run.grace = Math.max(run.grace, 1.1);
+        run.speed = Math.max(CFG.balance.physics.minSpeed, run.speed * 0.6);
+        burstDebris(bp.add(new BABYLON.Vector3(0, 1, 0)), boulderMat.diffuseColor, 9, 9);
+        AudioFX.smash(1.3); shake(0.8);
+        popScore(bp, "CRACKED! " + run.hp + "/" + run.maxHp, "big");
+        applyCrackVisual();
+        continue;
+      }
+      SAVE.stats.deathsBy = SAVE.stats.deathsBy || {};
+      SAVE.stats.deathsBy[md.type] = (SAVE.stats.deathsBy[md.type] || 0) + 1;
       if (md.type === "mine") { AudioFX.explosion(); burstDebris(h.position, hex3("#7a2a1a"), 16, 14); }
       endRun({ mine: "Mine explosion", roller: "Hit by a rolling boulder", lava: "Lava pool", chaser: "Spiked stalker",
-        thorns: "Thorn strip", blade: "Spinning blade", crusher: "Crusher", geyser: "Geyser eruption", icicle: "Falling icicle" }[md.type] || "Spikes");
+        thorns: "Thorn strip", blade: "Spinning blade", crusher: "Crusher", geyser: "Geyser eruption", icicle: "Falling icicle",
+        lurer: "Consumed by the Lurer" }[md.type] || "Spikes");
       return;
     }
   }
@@ -1901,22 +2121,65 @@ function collide(dt, env) {
     if (p.metadata.taken) continue;
     p.getChildMeshes()[0].rotation.y += dt * 3;
     const dz = p.position.z - bp.z;
+    if (dz < -4 && p.metadata.chain) {
+      const ch = run.chains[p.metadata.chain.id];
+      if (ch && !ch.broken && ch.collected < ch.total) ch.broken = true; // missed one — trail void
+    }
     if (dz < -4 || dz > 4) continue;
     const dx = p.position.x - bp.x;
     const dyP = p.metadata.kind === "ring" ? (p.position.y - bp.y) : 0;
+    if (p.metadata.kind === "gate" && Math.abs(p.position.z - bp.z) > 1.4) continue;
     if (dx * dx + dz * dz + dyP * dyP * 0.6 < Math.pow(r + p.metadata.radius, 2)) {
       p.metadata.taken = true;
       p.getChildMeshes().forEach((m) => m.setEnabled(false));
       if (p.metadata.kind === "coin") {
-        const gain = run.power.multi > 0 ? 2 : 1;
+        let gain = (p.metadata.value || 1) * (run.power.multi > 0 ? 2 : 1) * (run.itemMidas ? 3 : 1);
         run.coins += gain; AudioFX.coin(); popScore(p.position, "+" + gain, "big"); chargeMeter(1);
+        const cur = SAVE.ency.currency;
+        cur[p.metadata.ctype || "coin"] = (cur[p.metadata.ctype || "coin"] || 0) + 1;
+        const ch = p.metadata.chain && run.chains[p.metadata.chain.id];
+        if (ch && !ch.broken) {
+          ch.collected++;
+          if (ch.collected === ch.total) {
+            run.chainsDone++;
+            SAVE.stats.chains = (SAVE.stats.chains || 0) + 1;
+            const roll = Math.random();
+            if (roll < 0.4) {
+              const PU2 = CFG.balance.powerups;
+              run.boostT = PU2.boostTime + 1.5;
+              run.speed = Math.min(run.speed + PU2.ringBoost + 3, CFG.balance.physics.maxSpeed + PU2.boostExtra);
+              popScore(p.position, "TRAIL COMPLETE — MEGA BOOST!", "big");
+            } else if (roll < 0.75) {
+              run.gems++; SAVE.ency.currency.gem = (SAVE.ency.currency.gem || 0) + 1;
+              popScore(p.position, "TRAIL COMPLETE — +1 💎", "big");
+            } else {
+              const types = Object.keys(POWER_DEFS);
+              const pt = types[randi(0, types.length - 1)];
+              run.power[pt] = CFG.balance.powerups.duration + 4;
+              popScore(p.position, "TRAIL COMPLETE — " + POWER_DEFS[pt].label + "!", "big");
+            }
+            AudioFX.overdrive(); shake(0.3);
+          }
+        }
       } else if (p.metadata.kind === "gem") {
         run.gems++; AudioFX.gem(); popScore(p.position, "+1 💎", "bonus");
+        SAVE.ency.currency.gem = (SAVE.ency.currency.gem || 0) + 1;
       } else if (p.metadata.kind === "power") {
         const PU = CFG.balance.powerups;
         run.power[p.metadata.ptype] = PU.duration;
         run.powerups++;
         AudioFX.overdrive(); popScore(p.position, POWER_DEFS[p.metadata.ptype].label + "!", "big");
+      } else if (p.metadata.kind === "gate") {
+        if (p.metadata.gtype === "launch") {
+          run.vy = CFG.balance.physics.jumpPower * 1.75;
+          run.jumping = true; run.airborne = true;
+          popScore(p.position, "LAUNCHED!", "big");
+          AudioFX.jump(); shake(0.3);
+        } else {
+          run.curseT = 6;
+          popScore(p.position, "CURSED — pulled toward enemies!", "big");
+          AudioFX.death();
+        }
       } else if (p.metadata.kind === "ring") {
         const PU = CFG.balance.powerups;
         run.boostT = PU.boostTime;
@@ -1930,7 +2193,7 @@ function collide(dt, env) {
 }
 
 function magnet(dt) {
-  const range = upBonus("magnet") + (run.buffs.coinMagnet ? 5 : 0) + (run.power.magnet > 0 ? 6 : 0);
+  const range = upBonus("magnet") + (run.buffs.coinMagnet ? 5 : 0) + (run.power.magnet > 0 ? 6 : 0) + (run.itemMidas ? 6 : 0);
   if (range <= 0) return;
   const bp = boulder.position;
   for (const p of run.pickups) {
@@ -1938,7 +2201,7 @@ function magnet(dt) {
     const d = BABYLON.Vector3.Distance(p.position, bp);
     if (d < range + 2 && d > 0.1) {
       const dir = bp.subtract(p.position).normalize();
-      p.position.addInPlace(dir.scale(dt * 16));
+      p.position.addInPlace(dir.scale(dt * 16 * (1 + upBonus("magnetSpeed"))));
     }
   }
 }
@@ -1956,7 +2219,10 @@ function updateEnvironment() {
   AudioFX.setMood(env.t > 0.5 ? env.nxt.id : env.cur.id);
   if (run.active) {
     const bid = env.t > 0.5 ? env.nxt.id : env.cur.id;
-    if (!run.biomesSeen.includes(bid)) run.biomesSeen.push(bid);
+    if (!run.biomesSeen.includes(bid)) {
+      run.biomesSeen.push(bid);
+      SAVE.ency.biomes[bid] = (SAVE.ency.biomes[bid] || 0) + 1;
+    }
   }
 }
 
@@ -1970,7 +2236,16 @@ function updateHUD(force) {
   const pct = (run.meter / CFG.balance.overdrive.meterMax) * 100;
   $("meterFill").style.width = pct + "%";
   document.querySelector(".meter").classList.toggle("full", run.overdrive > 0);
-  if (run.state === "intro") $("hudState").textContent = "FREE FALL";
+  $("hudHp").textContent = run.maxHp > 0 ? "●".repeat(run.hp) + "○".repeat(Math.max(0, run.maxHp - run.hp)) : "";
+  const fx = $("fxOverlay");
+  fx.className = run.overdrive > 0 ? "fx fx-overdrive"
+    : run.curseT > 0 ? "fx fx-curse"
+    : run.power.multi > 0 ? "fx fx-multi"
+    : run.power.superjump > 0 ? "fx fx-jump"
+    : run.power.steer > 0 ? "fx fx-steer"
+    : run.power.magnet > 0 ? "fx fx-magnet"
+    : run.boostT > 0 ? "fx fx-boost" : "fx";
+  if (run.state === "intro") $("hudState").textContent = "FREE FALL — " + schemeHint();
   else if (run.overdrive > 0) $("hudState").textContent = "OVERDRIVE " + run.overdrive.toFixed(1) + "s";
   else {
     const tags = [];
@@ -2043,11 +2318,17 @@ function goalProgress(g) {
     case "runRings": return run.rings;
     case "totalRings": return SAVE.stats.rings || 0;
     case "biomesSeen": return (SAVE.stats.biomesSeen || []).length;
+    case "encyCurrency": return (SAVE.ency.currency || {})[g.key] || 0;
+    case "encyBiome": return (SAVE.ency.biomes || {})[g.key] || 0;
+    case "totalChains": return SAVE.stats.chains || 0;
+    case "pbSpeed": return Math.max(SAVE.stats.bestSpeed || 0, run.topSpeed || 0);
+    case "pbAir": return Math.max(SAVE.stats.bestAirtime || 0, run.bestAir || 0);
+    case "deathsBy": return ((SAVE.stats.deathsBy || {})[g.key]) || 0;
     default: return 0;
   }
 }
 function checkGoals() {
-  let msg = "", changed = true;
+  const done = []; let changed = true;
   while (changed) {
     changed = false;
     for (const g of activeGoals()) {
@@ -2055,13 +2336,13 @@ function checkGoals() {
         SAVE.coins += g.coins; SAVE.gems += g.gems;
         SAVE.goalsDone.push(g.id);
         if (g.unlock && !SAVE.skins.includes(g.unlock)) SAVE.skins.push(g.unlock);
-        msg += "✔ Goal complete: " + g.label + " (+" + g.coins + " coins" + (g.gems ? ", +" + g.gems + " 💎" : "") + (g.unlock ? ", new skin!" : "") + ")\n";
+        done.push(g);
         changed = true;
         break; // active set shifted — recompute
       }
     }
   }
-  return msg;
+  return done;
 }
 
 /* =========================================================================
@@ -2083,6 +2364,7 @@ function showMenu() {
     " · Overdrives: " + fmt(SAVE.stats.overdrives) + " · Crevasses cleared: " + fmt(SAVE.stats.gaps);
   renderSkins();
   renderTrails();
+  renderBoulders();
   $("ovStart").classList.remove("hidden");
 }
 function renderSkins() {
@@ -2102,6 +2384,28 @@ function renderSkins() {
   }
 }
 
+function renderBoulders() {
+  const row = $("boulderRow"); row.innerHTML = "";
+  for (const bd of (CFG.goals.boulders || [])) {
+    const owned = SAVE.boulders.includes(bd.id);
+    const d = document.createElement("button");
+    d.className = "skin trail" + (SAVE.activeBoulder === bd.id ? " active" : "") + (owned ? "" : " locked");
+    d.style.background = bd.id === "pebble" ? "linear-gradient(135deg,#c8b89a,#8a7a5a)"
+      : bd.id === "titan" ? "linear-gradient(135deg,#3a3a44,#14141c)"
+      : "linear-gradient(135deg,#8d8a86,#5a5852)";
+    d.title = bd.label + " — " + bd.desc + (owned ? "" : " (" + bd.cost + " coins)");
+    if (!owned) d.textContent = bd.cost + "🪙";
+    d.onclick = () => {
+      AudioFX.click();
+      if (owned) SAVE.activeBoulder = bd.id;
+      else if (SAVE.coins >= bd.cost) { SAVE.coins -= bd.cost; SAVE.boulders.push(bd.id); SAVE.activeBoulder = bd.id; }
+      else return;
+      persistSave(); renderBoulders();
+      $("menuCoins").textContent = fmt(SAVE.coins);
+    };
+    row.appendChild(d);
+  }
+}
 function renderTrails() {
   const row = $("trailRow"); row.innerHTML = "";
   for (const t of (CFG.goals.trails || [])) {
@@ -2124,21 +2428,25 @@ function renderTrails() {
 }
 
 function renderShop() {
-  $("shopCoins").textContent = fmt(SAVE.coins);
+  $("shopCoins").textContent = fmt(SAVE.coins) + "  ·  💎 " + fmt(SAVE.gems);
   const list = $("shopList"); list.innerHTML = "";
   for (const it of (CFG.upgrades.items || [])) {
     const have = SAVE.runItems[it.id] || 0;
-    const row = document.createElement("div"); row.className = "up-row";
-    row.innerHTML = "<div class='up-info'><b>" + it.label + (have ? " ×" + have : "") + "</b><span>" + it.desc + "</span></div>";
+    const gemPriced = it.currency === "gems";
+    const wallet = gemPriced ? SAVE.gems : SAVE.coins;
+    const row = document.createElement("div"); row.className = "up-row" + (it.rarity ? " rar-" + it.rarity : "");
+    row.innerHTML = "<div class='up-info'><b>" + it.label + (have ? " ×" + have : "") +
+      (it.rarity ? " <em class='rar-tag'>" + it.rarity.toUpperCase() + "</em>" : "") +
+      "</b><span>" + it.desc + "</span></div>";
     const btn = document.createElement("button");
     btn.className = "buy-btn";
     const maxed = have >= it.max;
-    btn.textContent = maxed ? "READY" : it.cost + " 🪙";
-    btn.disabled = maxed || SAVE.coins < it.cost;
+    btn.textContent = maxed ? "READY" : it.cost + (gemPriced ? " 💎" : " 🪙");
+    btn.disabled = maxed || wallet < it.cost;
     btn.onclick = () => {
       AudioFX.click();
-      if (SAVE.coins >= it.cost && !maxed) {
-        SAVE.coins -= it.cost;
+      if (wallet >= it.cost && !maxed) {
+        if (gemPriced) SAVE.gems -= it.cost; else SAVE.coins -= it.cost;
         SAVE.runItems[it.id] = have + 1;
         persistSave(); renderShop();
       }
@@ -2155,26 +2463,43 @@ function renderShop() {
 const HAZARD_INFO = {
   spikes: "Spike trap", mine: "Mine", roller: "Rolling boulder",
   lava: "Lava pool", chaser: "Spiked stalker", thorns: "Thorn strip",
-  blade: "Spinning blade", crusher: "Crusher", geyser: "Geyser", icicle: "Falling icicle"
+  blade: "Spinning blade", crusher: "Crusher", geyser: "Geyser", icicle: "Falling icicle",
+  lurer: "The Lurer"
 };
 function renderEncy() {
   const list = $("encyList"); list.innerHTML = "";
-  const section = (title) => {
-    const h = document.createElement("div"); h.className = "ency-head"; h.textContent = title;
-    list.appendChild(h);
+  let box = list;
+  const section = (title, collapsed) => {
+    const h = document.createElement("div"); h.className = "ency-head clickable"; h.textContent = (collapsed ? "▸ " : "▾ ") + title;
+    const body = document.createElement("div");
+    if (collapsed) body.classList.add("hidden");
+    h.onclick = () => {
+      const open = body.classList.contains("hidden");
+      body.classList.toggle("hidden", !open);
+      h.textContent = (open ? "▾ " : "▸ ") + title;
+    };
+    list.appendChild(h); list.appendChild(body);
+    box = body;
   };
   const rowFor = (label, sub, c) => {
     const row = document.createElement("div"); row.className = "goal-row" + (c ? "" : " locked");
     row.innerHTML = "<div class='up-info'><b>" + (c ? label : "???") + "</b><span>" + (c ? sub : "not yet discovered") + "</span></div>" +
       "<div class='goal-prog'>×" + fmt(c) + "</div>";
-    list.appendChild(row);
+    box.appendChild(row);
   };
+  // CURRENCY
+  section("CURRENCY COLLECTED", false);
+  const CTL = { coin: "Coin", gold: "Gold coin", ruby: "Ruby coin", gem: "Gem" };
+  for (const ct in CTL) rowFor(CTL[ct], ct === "gem" ? "lifetime gems picked up" : "lifetime pieces picked up", (SAVE.ency.currency || {})[ct] || 0);
+  // BIOMES
+  section("BIOMES TRAVERSED", false);
+  for (const b of CFG.biomes.biomes) rowFor(b.label, b.rarity + " biome · runs that reached it", (SAVE.ency.biomes || {})[b.id] || 0);
   let totalO = 0;
   const BV = CFG.objects.biomeVariants || {};
   for (const b of CFG.biomes.biomes) {
     const vars = BV[b.id]; if (!vars) continue;
     const seen = vars.reduce((n, d) => n + (SAVE.ency.objects[d.id] ? 1 : 0), 0);
-    section(b.label + " — " + seen + "/" + vars.length + " discovered (" + b.rarity + ")");
+    section(b.label + " — " + seen + "/" + vars.length + " discovered (" + b.rarity + ")", true);
     for (const d of vars) {
       const c = SAVE.ency.objects[d.id] || 0; totalO += c;
       rowFor(d.label, d.score + " pts · slows " + (d.slow || 1) + " m/s", c);
@@ -2183,29 +2508,65 @@ function renderEncy() {
   // counts recorded before the biome-variant update
   let legacy = 0;
   for (const d of CFG.objects.destructibles) legacy += SAVE.ency.objects[d.id] || 0;
-  if (legacy) { section("EARLIER FINDS"); rowFor("Pre-expedition smashes", "from before the biome survey", legacy); totalO += legacy; }
+  if (legacy) { section("EARLIER FINDS", true); rowFor("Pre-expedition smashes", "from before the biome survey", legacy); totalO += legacy; }
   let totalH = 0;
-  section("ENEMIES (destroyed in Overdrive or with a shield)");
+  section("ENEMIES (destroyed in Overdrive or with a shield)", false);
   for (const id in HAZARD_INFO) {
     const c = SAVE.ency.hazards[id] || 0; totalH += c;
     rowFor(HAZARD_INFO[id], "destroyed", c);
   }
-  section("TOTAL: " + fmt(totalO) + " objects · " + fmt(totalH) + " enemies");
+  const tot = document.createElement("div"); tot.className = "ency-head";
+  tot.textContent = "TOTAL: " + fmt(totalO) + " objects · " + fmt(totalH) + " enemies";
+  list.appendChild(tot);
 }
 
-function showEndOverlay(coinGain, newBest, goalMsg, reason) {
+function setEndTab(which) {
+  for (const t of ["Stats", "Goals", "Records"]) {
+    $("endTab" + t).classList.toggle("hidden", t !== which);
+    $("tabBtn" + t).classList.toggle("active", t === which);
+  }
+}
+function showEndOverlay(coinGain, newBest, goalsDoneNow, reason, records) {
   $("hud").classList.add("hidden");
   $("joystick").classList.add("hidden"); $("btnJump").classList.add("hidden");
   $("endTitle").textContent = "RUN OVER — " + reason;
+  // STATS tab
   $("endDist").textContent = fmt(run.dist) + " m";
   $("endScore").textContent = fmt(run.score);
   $("endCoins").textContent = "+" + fmt(coinGain);
   $("endGems").textContent = "+" + fmt(run.gems);
+  $("endStats2").innerHTML =
+    "<div><label>Top speed</label><b>" + (run.topSpeed || 0).toFixed(1) + " m/s</b></div>" +
+    "<div><label>Longest air</label><b>" + (run.bestAir || 0).toFixed(2) + " s</b></div>" +
+    "<div><label>Duration</label><b>" + Math.floor(run.time || 0) + " s</b></div>" +
+    "<div><label>Smashed</label><b>" + fmt(run.smashed) + "</b></div>" +
+    "<div><label>Best combo</label><b>×" + (run.maxCombo || 0) + "</b></div>" +
+    "<div><label>Trails done</label><b>" + (run.chainsDone || 0) + "</b></div>";
   $("endBest").classList.toggle("hidden", !newBest);
-  const eg = $("endGoal");
-  if (goalMsg) { eg.textContent = goalMsg; eg.classList.remove("hidden"); } else eg.classList.add("hidden");
+  // GOALS tab — a proper list
+  const gl = $("endGoalList"); gl.innerHTML = "";
+  if (goalsDoneNow && goalsDoneNow.length) {
+    for (const g of goalsDoneNow) {
+      const row = document.createElement("div"); row.className = "goal-row done";
+      row.innerHTML = "<div class='up-info'><b>✔ " + g.label + "</b><span>+" + g.coins + " coins" +
+        (g.gems ? " · +" + g.gems + " 💎" : "") + (g.unlock ? " · new skin!" : "") + "</span></div>";
+      gl.appendChild(row);
+    }
+  } else gl.innerHTML = "<div class='shop-note'>No goals completed this run.</div>";
+  // RECORDS tab — local placement per category
+  const scoreRank = 1 + SAVE.highscores.filter((h) => h.score > run.score).length;
+  const distRank = 1 + SAVE.highscores.filter((h) => h.dist > run.dist).length;
+  let rec = "<div class='goal-row'><div class='up-info'><b>This run placed</b><span>#" + scoreRank + " by score · #" + distRank + " by distance (local)</span></div></div>";
   const hs = SAVE.highscores.map((h, i) => (i + 1) + ". <b>" + fmt(h.score) + "</b> · " + fmt(h.dist) + " m · " + h.date).join("<br>");
-  $("hsTable").innerHTML = hs ? "<b>Best runs</b><br>" + hs : "";
+  rec += hs ? "<div class='hs-table'><b>Best runs</b><br>" + hs + "</div>" : "";
+  $("endRecords").innerHTML = rec;
+  setEndTab("Stats");
+  // FANFARE for any new record
+  if (records && records.length) {
+    $("endBest").classList.remove("hidden");
+    $("endBest").textContent = "🏆 " + records.join(" · ") + "!";
+    fanfare();
+  }
   const M = CFG.balance.meta;
   const freeLeft = upLevel("extraLives") - run.continuesUsed;
   const cost = freeLeft > 0 ? 0 : M.continueBaseCost + M.continueCostStep * (run.continuesUsed - upLevel("extraLives"));
@@ -2223,12 +2584,31 @@ function renderUpgrades() {
   $("upCoins").textContent = fmt(SAVE.coins);
   const list = $("upList"); list.innerHTML = "";
   for (const u of CFG.upgrades.upgrades) {
-    const lvl = upLevel(u.id);
-    const cost = Math.floor(u.baseCost * Math.pow(u.costMult, lvl));
-    const maxed = lvl >= u.maxLevel;
+    const owned = upOwned(u.id);
+    const active = upLevel(u.id);
+    const cost = Math.floor(u.baseCost * Math.pow(u.costMult, owned));
+    const maxed = owned >= u.maxLevel;
     const row = document.createElement("div"); row.className = "up-row";
-    row.innerHTML = "<div class='up-info'><b>" + u.label + "</b><span>" + u.desc + "</span></div>" +
-      "<div class='up-lvl'>lvl " + lvl + "/" + u.maxLevel + "</div>";
+    row.innerHTML = "<div class='up-info'><b>" + u.label + "</b><span>" + u.desc + "</span></div>";
+    if (owned > 0) { // active-level stepper: tune any owned upgrade from 0 to its owned level
+      const stp = document.createElement("div"); stp.className = "up-step";
+      const mk = (txt, d) => {
+        const b = document.createElement("button"); b.className = "step-btn"; b.textContent = txt;
+        b.disabled = d < 0 ? active <= 0 : active >= owned;
+        b.onclick = () => { AudioFX.click(); SAVE.upgradeSet[u.id] = clamp(active + d, 0, owned); persistSave(); renderUpgrades(); };
+        return b;
+      };
+      stp.appendChild(mk("−", -1));
+      const val = document.createElement("span"); val.className = "step-val";
+      val.textContent = active + "/" + owned;
+      val.title = "Active level (owned: " + owned + ")";
+      stp.appendChild(val);
+      stp.appendChild(mk("+", +1));
+      row.appendChild(stp);
+    } else {
+      const lv = document.createElement("div"); lv.className = "up-lvl"; lv.textContent = "lvl 0/" + u.maxLevel;
+      row.appendChild(lv);
+    }
     const btn = document.createElement("button");
     btn.className = "buy-btn";
     btn.textContent = maxed ? "MAX" : cost + " 🪙";
@@ -2237,7 +2617,8 @@ function renderUpgrades() {
       AudioFX.click();
       if (SAVE.coins >= cost && !maxed) {
         SAVE.coins -= cost;
-        SAVE.upgrades[u.id] = lvl + 1;
+        SAVE.upgrades[u.id] = owned + 1;
+        SAVE.upgradeSet[u.id] = owned + 1; // buying re-activates full strength
         persistSave(); renderUpgrades();
       }
     };
@@ -2298,6 +2679,12 @@ function applyBuff(b) {
 /* settings */
 function bindSettings() {
   const st = SAVE.settings;
+  $("setScheme").value = st.scheme || "auto";
+  $("setScheme").onchange = (e) => {
+    st.scheme = e.target.value;
+    st.gyro = activeScheme() === "gyro";
+    persistSave();
+  };
   $("setVol").value = st.volume;
   $("setMusic").checked = st.music; $("setQuality").value = st.quality;
   $("setGyro").checked = st.gyro; $("setMotion").checked = st.reducedMotion;
@@ -2316,7 +2703,7 @@ function bindSettings() {
 /* export / import */
 function exportSave() {
   AudioFX.click();
-  const blob = new Blob([JSON.stringify(SAVE, null, 2)], { type: "application/json" });
+  const blob = new Blob([encodeSave(SAVE)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "rockfall-save.json";
@@ -2327,8 +2714,8 @@ function importSave(file) {
   const rd = new FileReader();
   rd.onload = () => {
     try {
-      const s = JSON.parse(rd.result);
-      if (!validateSave(s)) throw new Error("Invalid save format.");
+      const s = decodeSave(String(rd.result).trim());
+      if (!s || !validateSave(s)) throw new Error("Invalid or tampered save file.");
       SAVE = Object.assign(defaultSave(), s,
         { stats: Object.assign(defaultSave().stats, s.stats || {}),
           settings: Object.assign(defaultSave().settings, s.settings || {}) });
@@ -2340,6 +2727,33 @@ function importSave(file) {
 }
 
 /* pause */
+function fanfare() {
+  AudioFX.resume();
+  if (AudioFX.ctx) {
+    [0, 4, 7, 12, 16].forEach((semi, i) => {
+      const t = AudioFX.ctx.currentTime + i * 0.11;
+      const o = AudioFX.ctx.createOscillator(), g = AudioFX.ctx.createGain();
+      o.type = "triangle"; o.frequency.value = 392 * Math.pow(2, semi / 12);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.connect(g); g.connect(AudioFX.master);
+      o.start(t); o.stop(t + 0.55);
+    });
+  }
+  const ov = $("confetti");
+  ov.innerHTML = "";
+  for (let i = 0; i < 36; i++) {
+    const p = document.createElement("i");
+    p.style.left = (Math.random() * 100) + "%";
+    p.style.background = ["#ffd23a", "#ff5a5a", "#5aff8a", "#5ab8ff", "#d87aff"][i % 5];
+    p.style.animationDelay = (Math.random() * 0.7) + "s";
+    p.style.animationDuration = (1.6 + Math.random()) + "s";
+    ov.appendChild(p);
+  }
+  ov.classList.remove("hidden");
+  setTimeout(() => ov.classList.add("hidden"), 3200);
+}
 function setPause(p) {
   if (run.state !== "run" && run.state !== "intro") return;
   run.paused = p;
@@ -2350,7 +2764,26 @@ function setPause(p) {
 /* =========================================================================
    CONTROLS
    ========================================================================= */
+function bindDrag() {
+  const cv = $("renderCanvas");
+  let dragging = false, sx = 0, sy = 0;
+  const usable = () => activeScheme() === "drag" || !isMobile; // mouse drag always available on desktop
+  const down = (x, y) => { if (!usable() || !run.active) return; dragging = true; sx = x; sy = y; input.joyActive = true; };
+  const move = (x, y) => {
+    if (!dragging) return;
+    input.axis = clamp((x - sx) / 75, -1, 1);
+    input.brake = (y - sy) / 90 > 0.5; // drag toward yourself to brake
+  };
+  const up = () => { if (!dragging) return; dragging = false; input.axis = 0; input.brake = false; input.joyActive = false; };
+  cv.addEventListener("mousedown", (e) => down(e.clientX, e.clientY));
+  window.addEventListener("mousemove", (e) => move(e.clientX, e.clientY));
+  window.addEventListener("mouseup", up);
+  cv.addEventListener("touchstart", (e) => { if (activeScheme() === "drag") { const t = e.changedTouches[0]; down(t.clientX, t.clientY); e.preventDefault(); } }, { passive: false });
+  cv.addEventListener("touchmove", (e) => { if (dragging) { const t = e.changedTouches[0]; move(t.clientX, t.clientY); e.preventDefault(); } }, { passive: false });
+  cv.addEventListener("touchend", up);
+}
 function bindControls() {
+  bindDrag();
   window.addEventListener("keydown", (e) => {
     if (e.code === "ArrowLeft" || e.code === "KeyA") input.left = true;
     if (e.code === "ArrowRight" || e.code === "KeyD") input.right = true;
@@ -2416,6 +2849,9 @@ function bindUI() {
   click("btnSettings", () => { hideAll(); $("ovSettings").classList.remove("hidden"); });
   click("btnShop", () => { hideAll(); renderShop(); $("ovShop").classList.remove("hidden"); });
   click("btnShopBack", showMenu);
+  click("tabBtnStats", () => setEndTab("Stats"));
+  click("tabBtnGoals", () => setEndTab("Goals"));
+  click("tabBtnRecords", () => setEndTab("Records"));
   click("btnEncy", () => { hideAll(); renderEncy(); $("ovEncy").classList.remove("hidden"); });
   click("btnEncyBack", showMenu);
   click("btnSetBack", showMenu);

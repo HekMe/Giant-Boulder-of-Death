@@ -140,3 +140,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 .skin.trail{border-radius:8px;font-size:9px;color:#fff;text-shadow:0 1px 2px #000;display:flex;align-items:center;justify-content:center}
 .ency-head{font-size:11px;letter-spacing:2px;color:var(--ember);margin:10px 0 4px;text-transform:uppercase}
 .shop-note{font-size:11px;color:var(--ink-dim);margin-top:8px;text-align:center}
+.hud-hp{font-size:13px;letter-spacing:3px;color:#ffb073;text-shadow:0 1px 3px #000}
+.tab-row{display:flex;gap:6px;justify-content:center;margin:8px 0}
+.tab-btn{background:#1d1a17;border:1px solid #3a342e;color:var(--ink-dim);padding:6px 14px;border-radius:8px;font-size:12px;cursor:pointer}
+.tab-btn.active{color:var(--ember);border-color:var(--ember)}
+.up-step{display:flex;align-items:center;gap:6px}
+.step-btn{width:26px;height:26px;border-radius:6px;background:#1d1a17;border:1px solid #3a342e;color:var(--ink);cursor:pointer}
+.step-btn:disabled{opacity:.35}
+.step-val{font-size:12px;color:var(--ember);min-width:34px;text-align:center}
+.rar-tag{font-size:9px;letter-spacing:1px;font-style:normal;padding:1px 6px;border-radius:6px;margin-left:6px;background:#3a342e}
+.rar-rare .rar-tag{background:#1a3a5a;color:#7ac8ff}
+.rar-epic .rar-tag{background:#3a1a5a;color:#d89aff}
+.rar-legendary .rar-tag{background:#5a4a0a;color:#ffd23a}
+.ency-head.clickable{cursor:pointer;user-select:none}
+#fxOverlay{position:fixed;inset:0;pointer-events:none;z-index:4;transition:box-shadow .35s}
+.fx-overdrive{box-shadow:inset 0 0 110px 24px rgba(255,90,20,.4)}
+.fx-curse{box-shadow:inset 0 0 110px 24px rgba(220,30,30,.42)}
+.fx-multi{box-shadow:inset 0 0 90px 18px rgba(255,210,58,.3)}
+.fx-jump{box-shadow:inset 0 0 90px 18px rgba(90,255,122,.3)}
+.fx-steer{box-shadow:inset 0 0 90px 18px rgba(90,184,255,.3)}
+.fx-magnet{box-shadow:inset 0 0 90px 18px rgba(216,122,255,.3)}
+.fx-boost{box-shadow:inset 0 0 90px 18px rgba(58,255,216,.28)}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+#confetti i{position:absolute;top:-12px;width:9px;height:14px;border-radius:2px;animation:confFall linear forwards}
+@keyframes confFall{to{transform:translateY(105vh) rotate(560deg)}}

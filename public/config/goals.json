@@ -607,6 +607,135 @@
       "coins": 400,
       "gems": 12,
       "unlock": "skinVoid"
+    },
+    {
+      "id": "g76",
+      "label": "Collect 25 gold coins",
+      "type": "encyCurrency",
+      "key": "gold",
+      "target": 25,
+      "coins": 60,
+      "gems": 2
+    },
+    {
+      "id": "g77",
+      "label": "Collect 10 ruby coins",
+      "type": "encyCurrency",
+      "key": "ruby",
+      "target": 10,
+      "coins": 80,
+      "gems": 3
+    },
+    {
+      "id": "g78",
+      "label": "Pick up 1,500 plain coins",
+      "type": "encyCurrency",
+      "key": "coin",
+      "target": 1500,
+      "coins": 120,
+      "gems": 4
+    },
+    {
+      "id": "g79",
+      "label": "Bank 30 gems lifetime",
+      "type": "encyCurrency",
+      "key": "gem",
+      "target": 30,
+      "coins": 100,
+      "gems": 3
+    },
+    {
+      "id": "g80",
+      "label": "Complete 3 coin trails",
+      "type": "totalChains",
+      "target": 3,
+      "coins": 70,
+      "gems": 2
+    },
+    {
+      "id": "g81",
+      "label": "Complete 15 coin trails",
+      "type": "totalChains",
+      "target": 15,
+      "coins": 160,
+      "gems": 6
+    },
+    {
+      "id": "g82",
+      "label": "Traverse the Volcanic Slope 3 times",
+      "type": "encyBiome",
+      "key": "volcanic",
+      "target": 3,
+      "coins": 90,
+      "gems": 3
+    },
+    {
+      "id": "g83",
+      "label": "Traverse the Frozen Plains 5 times",
+      "type": "encyBiome",
+      "key": "snow",
+      "target": 5,
+      "coins": 90,
+      "gems": 3
+    },
+    {
+      "id": "g84",
+      "label": "Reach the Crystal Caverns twice",
+      "type": "encyBiome",
+      "key": "crystal",
+      "target": 2,
+      "coins": 120,
+      "gems": 4
+    },
+    {
+      "id": "g85",
+      "label": "Witness the Aurora Fields",
+      "type": "encyBiome",
+      "key": "aurora",
+      "target": 1,
+      "coins": 150,
+      "gems": 5
+    },
+    {
+      "id": "g86",
+      "label": "Hit 55 m/s",
+      "type": "pbSpeed",
+      "target": 55,
+      "coins": 80,
+      "gems": 3
+    },
+    {
+      "id": "g87",
+      "label": "Hit 60 m/s",
+      "type": "pbSpeed",
+      "target": 60,
+      "coins": 160,
+      "gems": 6
+    },
+    {
+      "id": "g88",
+      "label": "Stay airborne for 2.5 s",
+      "type": "pbAir",
+      "target": 2.5,
+      "coins": 70,
+      "gems": 2
+    },
+    {
+      "id": "g89",
+      "label": "Stay airborne for 4 s",
+      "type": "pbAir",
+      "target": 4,
+      "coins": 150,
+      "gems": 5
+    },
+    {
+      "id": "g90",
+      "label": "Be consumed by the Lurer 3 times",
+      "type": "deathsBy",
+      "key": "lurer",
+      "target": 3,
+      "coins": 90,
+      "gems": 3
     }
   ],
   "skins": [
@@ -690,7 +819,72 @@
       "label": "Ghost",
       "cost": 600,
       "c1": "#ffffff",
-      "c2": "#a8c8d8"
+      "c2": "#a8c8d8",
+      "alpha": 0.62
+    },
+    {
+      "id": "trailInferno",
+      "label": "Inferno",
+      "cost": 800,
+      "c1": "#ff8a2a",
+      "c2": "#e01a0a",
+      "glow": "#5a1404"
+    },
+    {
+      "id": "trailFrost",
+      "label": "Frost",
+      "cost": 800,
+      "c1": "#bfe9ff",
+      "c2": "#4a9ae8",
+      "glow": "#102a40"
+    },
+    {
+      "id": "trailToxic",
+      "label": "Toxic",
+      "cost": 1000,
+      "c1": "#baff4a",
+      "c2": "#3a9a0a",
+      "glow": "#1a3a04"
+    },
+    {
+      "id": "trailNebula",
+      "label": "Nebula",
+      "cost": 1400,
+      "c1": "#ff7ae8",
+      "c2": "#5a2aff",
+      "glow": "#2a0a4a"
+    }
+  ],
+  "boulders": [
+    {
+      "id": "granite",
+      "label": "Granite Core",
+      "desc": "The balanced original.",
+      "cost": 0,
+      "accel": 1.0,
+      "steer": 1.0,
+      "impact": 1.0,
+      "hp": 0
+    },
+    {
+      "id": "pebble",
+      "label": "Pebbleheart",
+      "desc": "Light & nimble: +15% acceleration and steering, but impacts slow it 60% more and \u22121 integrity.",
+      "cost": 800,
+      "accel": 1.15,
+      "steer": 1.15,
+      "impact": 1.6,
+      "hp": -1
+    },
+    {
+      "id": "titan",
+      "label": "Titan Slab",
+      "desc": "Massive: impacts barely slow it (\u221245%), +1 integrity, but \u221210% acceleration and steering.",
+      "cost": 1500,
+      "accel": 0.9,
+      "steer": 0.9,
+      "impact": 0.55,
+      "hp": 1
     }
   ]
 }

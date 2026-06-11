@@ -47,7 +47,9 @@
     "wallOffset": 0.2,
     "wallHeight": 22,
     "wallSharpness": 5.0,
-    "meshExtra": 16
+    "meshExtra": 16,
+    "crossAmp": 1.6,
+    "crossFreq": 0.011
   },
   "gaps": {
     "firstGapAt": 220,
@@ -81,7 +83,21 @@
       "blade": 400,
       "crusher": 700,
       "geyser": 900,
-      "thorns": 0
+      "thorns": 0,
+      "lurer": 1500
+    },
+    "damage": {
+      "spikes": 1,
+      "thorns": 1,
+      "blade": 1,
+      "chaser": 1,
+      "icicle": 1,
+      "geyser": 2,
+      "lava": 2,
+      "mine": 3,
+      "roller": 3,
+      "crusher": 3,
+      "lurer": 2
     }
   },
   "spawning": {
@@ -90,7 +106,32 @@
     "objectsRampPer1000m": 3,
     "coinsPerChunk": 4,
     "gemChance": 0.045,
-    "decorPerChunk": 6
+    "decorPerChunk": 6,
+    "coinTypes": [
+      {
+        "id": "coin",
+        "value": 1,
+        "weight": 86,
+        "color": "#ffd23a",
+        "em": "#6a4a05"
+      },
+      {
+        "id": "gold",
+        "value": 3,
+        "weight": 11,
+        "color": "#ffae1a",
+        "em": "#8a4a00"
+      },
+      {
+        "id": "ruby",
+        "value": 5,
+        "weight": 3,
+        "color": "#ff3a5a",
+        "em": "#6a0a1a"
+      }
+    ],
+    "chainChance": 0.06,
+    "chainLength": 8
   },
   "scoring": {
     "comboWindow": 2.0,

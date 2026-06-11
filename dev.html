@@ -11,6 +11,8 @@
 </head>
 <body>
 <canvas id="renderCanvas"></canvas>
+<div id="fxOverlay" class="fx"></div>
+<div id="confetti" class="hidden"></div>
 <div id="popups"></div>
 
 <!-- HUD -->
@@ -22,6 +24,7 @@
   <div class="hud-tc">
     <div id="hudDist" class="hud-dist">0 m</div>
     <div id="hudBiome" class="hud-biome"></div>
+    <div id="hudHp" class="hud-hp"></div>
   </div>
   <div class="hud-tr">
     <div class="hud-cur"><span class="ico coin"></span><span id="hudCoins">0</span></div>
@@ -61,6 +64,8 @@
     <div id="skinRow" class="skin-row"></div>
     <div class="skin-label">Trail</div>
     <div id="trailRow" class="skin-row"></div>
+    <div class="skin-label">Boulder type</div>
+    <div id="boulderRow" class="skin-row"></div>
     <div id="startStats" class="start-stats"></div>
     <p class="controls-hint">A/D or arrows = steer · S/↓ = brake · Space = jump · Esc = pause<br>On mobile: tilt your device (gyro) or use the joystick (pull down = brake) · big button = jump</p>
   </div>
@@ -70,15 +75,23 @@
 <div id="ovEnd" class="overlay hidden">
   <div class="panel">
     <h2 id="endTitle">RUN OVER</h2>
-    <div class="end-grid">
-      <div><label>Distance</label><b id="endDist">0 m</b></div>
-      <div><label>Score</label><b id="endScore">0</b></div>
-      <div><label>Coins</label><b id="endCoins">0</b></div>
-      <div><label>Gems</label><b id="endGems">0</b></div>
+    <div class="tab-row">
+      <button id="tabBtnStats" class="tab-btn active">Stats</button>
+      <button id="tabBtnGoals" class="tab-btn">Goals</button>
+      <button id="tabBtnRecords" class="tab-btn">Records</button>
     </div>
-    <div id="endBest" class="end-best hidden">NEW RECORD!</div>
-    <div id="endGoal" class="end-goal hidden"></div>
-    <div id="hsTable" class="hs-table"></div>
+    <div id="endTabStats">
+      <div class="end-grid">
+        <div><label>Distance</label><b id="endDist">0 m</b></div>
+        <div><label>Score</label><b id="endScore">0</b></div>
+        <div><label>Coins</label><b id="endCoins">0</b></div>
+        <div><label>Gems</label><b id="endGems">0</b></div>
+      </div>
+      <div id="endStats2" class="end-grid"></div>
+      <div id="endBest" class="end-best hidden">NEW RECORD!</div>
+    </div>
+    <div id="endTabGoals" class="hidden"><div id="endGoalList" class="list"></div></div>
+    <div id="endTabRecords" class="hidden"><div id="endRecords"></div></div>
     <button id="btnContinue" class="big-btn alt">CONTINUE</button>
     <div class="row-btns">
       <button id="btnNewRun" class="menu-btn">New run</button>
@@ -138,6 +151,8 @@
     <div class="set-row"><label>Music / ambient</label><input type="checkbox" id="setMusic"></div>
     <div class="set-row"><label>Graphics quality</label>
       <select id="setQuality"><option value="high">High</option><option value="low">Low</option></select></div>
+    <div class="set-row"><label>Control scheme</label>
+      <select id="setScheme"><option value="auto">Auto</option><option value="gyro">Gyro (tilt)</option><option value="joystick">Joystick</option><option value="drag">Drag</option></select></div>
     <div class="set-row"><label>Gyroscope (mobile)</label><input type="checkbox" id="setGyro"></div>
     <div class="set-row"><label>Reduced camera motion</label><input type="checkbox" id="setMotion"></div>
     <button id="btnSetBack" class="menu-btn">Back</button>

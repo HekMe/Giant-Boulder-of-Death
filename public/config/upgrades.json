@@ -107,6 +107,33 @@
       "costMult": 2.6,
       "bonus": 1,
       "maxLevel": 3
+    },
+    {
+      "id": "magnetSpeed",
+      "label": "Magnet speed",
+      "desc": "+12% coin pull speed / level",
+      "baseCost": 30,
+      "costMult": 1.55,
+      "bonus": 0.12,
+      "maxLevel": 8
+    },
+    {
+      "id": "hazardLevel",
+      "label": "Danger pact",
+      "desc": "+8% enemy density AND +5% score / level",
+      "baseCost": 60,
+      "costMult": 1.7,
+      "bonus": 0.08,
+      "maxLevel": 6
+    },
+    {
+      "id": "durability",
+      "label": "Durability",
+      "desc": "+1 boulder integrity / level (enemies crack before they kill)",
+      "baseCost": 300,
+      "costMult": 2.2,
+      "bonus": 1,
+      "maxLevel": 4
     }
   ],
   "items": [
@@ -130,6 +157,33 @@
       "desc": "2\u00d7 gem spawn chance on your next run",
       "cost": 120,
       "max": 1
+    },
+    {
+      "id": "aegis",
+      "label": "Golden Aegis",
+      "desc": "Start with +2 shields and a full Overdrive meter",
+      "cost": 4,
+      "max": 1,
+      "currency": "gems",
+      "rarity": "rare"
+    },
+    {
+      "id": "storm",
+      "label": "Stormcall Sigil",
+      "desc": "\u00d72 score for the entire next run",
+      "cost": 7,
+      "max": 1,
+      "currency": "gems",
+      "rarity": "epic"
+    },
+    {
+      "id": "midas",
+      "label": "Midas Crown",
+      "desc": "\u00d73 coin pickups and a built-in mega magnet next run",
+      "cost": 12,
+      "max": 1,
+      "currency": "gems",
+      "rarity": "legendary"
     }
   ]
 }
