@@ -94,5 +94,5 @@ jobs:
           # NOTE: the login flag occasionally changes between CLI versions.
           # If this step fails, run `spacetime login --help` locally and adjust.
           spacetime login --token "$SPACETIME_PUBLISH_TOKEN"
-          spacetime publish "$SPACETIME_DB_NAME" --project-path . --server "$SPACETIME_HOST" --yes
+          spacetime publish "$SPACETIME_DB_NAME" --module-path . --server "$SPACETIME_HOST" --yes
           
