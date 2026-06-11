@@ -96,7 +96,7 @@ function cleanName(name: string): string {
 
 /* ============================== reducers ============================== */
 
-spacetimedb.reducer('register_player', { name: t.string() }, (ctx, { name }) => {
+export const register_player = spacetimedb.reducer({ name: t.string() }, (ctx, { name }) => {
   const existing = findPlayer(ctx);
   const display = cleanName(name);
   if (existing) {
@@ -114,14 +114,13 @@ spacetimedb.reducer('register_player', { name: t.string() }, (ctx, { name }) => 
   });
 });
 
-spacetimedb.reducer('set_name', { name: t.string() }, (ctx, { name }) => {
+export const set_name = spacetimedb.reducer({ name: t.string() }, (ctx, { name }) => {
   const me = findPlayer(ctx);
   if (!me) throw new Error('register first');
   ctx.db.player.identity.update({ ...me, name: cleanName(name) });
 });
 
-spacetimedb.reducer(
-  'submit_run',
+export const submit_run = spacetimedb.reducer(
   { score: t.u64(), dist_m: t.u32(), duration_s: t.u32() },
   (ctx, { score, dist_m, duration_s }) => {
     const me = findPlayer(ctx);
@@ -159,8 +158,7 @@ spacetimedb.reducer(
   }
 );
 
-spacetimedb.reducer(
-  'save_ghost',
+export const save_ghost = spacetimedb.reducer(
   { data: t.string(), score: t.u64(), dist_m: t.u32() },
   (ctx, { data, score, dist_m }) => {
     const me = findPlayer(ctx);
@@ -178,7 +176,7 @@ spacetimedb.reducer(
 
 /* ----------------------------- admin ----------------------------- */
 
-spacetimedb.reducer('admin_set_admin', { target_name: t.string(), value: t.bool() }, (ctx, { target_name, value }) => {
+export const admin_set_admin = spacetimedb.reducer({ target_name: t.string(), value: t.bool() }, (ctx, { target_name, value }) => {
   requireAdmin(ctx);
   for (const row of ctx.db.player.iter()) {
     if (row.name === target_name) {
@@ -189,14 +187,14 @@ spacetimedb.reducer('admin_set_admin', { target_name: t.string(), value: t.bool(
   throw new Error('player not found');
 });
 
-spacetimedb.reducer('admin_delete_scores', { target_name: t.string() }, (ctx, { target_name }) => {
+export const admin_delete_scores = spacetimedb.reducer({ target_name: t.string() }, (ctx, { target_name }) => {
   requireAdmin(ctx);
   const ids: any[] = [];
   for (const row of ctx.db.score_entry.iter()) if (row.name === target_name) ids.push(row.id);
   for (const id of ids) ctx.db.score_entry.id.delete(id);
 });
 
-spacetimedb.reducer('admin_grant', { target_name: t.string(), kind: t.string(), value: t.string() }, (ctx, { target_name, kind, value }) => {
+export const admin_grant = spacetimedb.reducer({ target_name: t.string(), kind: t.string(), value: t.string() }, (ctx, { target_name, kind, value }) => {
   const admin = requireAdmin(ctx);
   ctx.db.grant.insert({
     id: 0n,
