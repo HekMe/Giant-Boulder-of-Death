@@ -86,8 +86,35 @@
       name: claims.preferred_username || claims.name || (claims.email || "Boulder").split("@")[0],
     };
     localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
-    await call("register_player", [auth.name]).catch((e) => console.warn("[net] register", e));
+    await ensureRegistered();
     return true;
+  }
+
+  async function ensureRegistered() {
+    if (!auth) return false;
+    let name = localStorage.getItem("rf_net_user") || "";
+    for (let attempt = 0; attempt < 6; attempt++) {
+      if (!name) {
+        name = (prompt("Choose your unique player name (3-24 chars):", auth.name || "") || "").trim();
+        if (!name) return false; // user cancelled — stays signed in but unregistered
+      }
+      if (name.length < 3) { alert("Name must be at least 3 characters."); name = ""; continue; }
+      try {
+        await call("register_player", [name.slice(0, 24)]);
+        auth.name = name.slice(0, 24);
+        localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+        localStorage.setItem("rf_net_user", auth.name);
+        if (window.RFNet) window.RFNet.renderMenu();
+        return true;
+      } catch (e) {
+        const msg = String(e.message || e);
+        if (msg.includes("name taken")) { alert("'" + name + "' is already taken — pick another."); name = ""; continue; }
+        if (msg.includes("registration disabled")) { alert("Registration is currently disabled by the admin."); return false; }
+        console.warn("[net] register", e);
+        return false;
+      }
+    }
+    return false;
   }
 
   function logout() {
@@ -168,14 +195,19 @@
   async function presence(p) {
     if (!auth) return;
     const now = Date.now();
-    if (now - lastSend > 1200) {
+    const inLobby = !!p.lobby;
+    const sendEvery = inLobby ? 700 : 1200, pollEvery = inLobby ? 1500 : 2500;
+    if (now - lastSend > sendEvery) {
       lastSend = now;
-      call("update_pos", [p.x, p.y, p.z, Math.max(0, Math.floor(p.dist)), now]).catch(() => {});
+      if (inLobby) call("update_mp", [p.lobby, p.x, p.y, p.z, Math.max(0, Math.floor(p.dist)), now]).catch(() => {});
+      else call("update_pos", [p.x, p.y, p.z, Math.max(0, Math.floor(p.dist)), now]).catch(() => {});
     }
-    if (now - lastPoll > 2500) {
+    if (now - lastPoll > pollEvery) {
       lastPoll = now;
       try {
-        const rows = await sql("SELECT name, x, y, z, dist_m, at_ms FROM live_pos");
+        const rows = inLobby
+          ? await sql("SELECT name, x, y, z, dist_m, at_ms FROM mp_pos WHERE code = " + sqlStr(p.lobby))
+          : await sql("SELECT name, x, y, z, dist_m, at_ms FROM live_pos");
         const cut = now - 12_000;
         remotes = rows
           .map((r) => ({ name: String(r.name), x: num(r.x), y: num(r.y), z: num(r.z), dist: num(r.dist_m), at: num(r.at_ms) }))
@@ -184,9 +216,37 @@
     }
   }
 
+  /* ----------------------- lobby multiplayer ----------------------- */
+  const mp = {
+    async create() {
+      const code = Array.from({ length: 5 }, () => "ABCDEFGHJKMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 31)]).join("");
+      const seed = Math.floor(Math.random() * 1e6);
+      await call("create_lobby", [code, seed, Date.now()]);
+      return { code, seed };
+    },
+    async join(code) { await call("join_lobby", [String(code).toUpperCase(), Date.now()]); },
+    async start(code) { await call("start_lobby", [String(code).toUpperCase()]); },
+    async leave() { await call("leave_lobby", []).catch(() => {}); },
+    async state(code) {
+      const c = String(code).toUpperCase();
+      const lob = await sql("SELECT code, host, seed, state FROM lobby WHERE code = " + sqlStr(c));
+      if (!lob.length) return null;
+      const mem = await sql("SELECT name FROM lobby_member WHERE code = " + sqlStr(c));
+      return {
+        code: c,
+        host: String(lob[0].host),
+        seed: num(lob[0].seed),
+        state: String(lob[0].state),
+        members: mem.map((m) => String(m.name)),
+      };
+    },
+  };
+
   /* ------------------------- game hooks ------------------------- */
   window.RFNet = {
     loggedIn: () => !!auth,
+    userName: () => (auth ? auth.name : null),
+    mp,
     presence,
     getRemotes: () => remotes,
     leaveLive() { if (auth) call("leave_live", []).catch(() => {}); },
@@ -277,6 +337,7 @@
   }
   finishLogin().catch((e) => console.warn("[net] login finish", e)).finally(() => {
     if (auth && auth.exp * 1000 < Date.now()) logout();
+    if (auth && !localStorage.getItem("rf_net_user")) ensureRegistered().catch(() => {});
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindUI);
     else bindUI();
   });

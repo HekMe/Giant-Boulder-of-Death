@@ -63,6 +63,7 @@
       <button id="btnGoals" class="menu-btn">Goals</button>
       <button id="btnEncy" class="menu-btn">Encyclopedia</button>
       <button id="btnGhosts" class="menu-btn">Ghosts</button>
+      <button id="btnMulti" class="menu-btn">Multiplayer</button>
       <button id="btnSettings" class="menu-btn">Settings</button>
       <button id="btnExport" class="menu-btn">Export save</button>
       <button id="btnImport" class="menu-btn">Import save</button>
@@ -165,6 +166,27 @@
     <div class="set-row"><label>Reduced camera motion</label><input type="checkbox" id="setMotion"></div>
     <div class="set-row"><label>Show other players (online)</label><input type="checkbox" id="setRemotes"></div>
     <button id="btnSetBack" class="menu-btn">Back</button>
+  </div>
+</div>
+
+<!-- MULTIPLAYER LOBBY -->
+<div id="ovMulti" class="overlay hidden">
+  <div class="panel">
+    <h2>MULTIPLAYER</h2>
+    <div id="mpStatus" class="shop-note"></div>
+    <div id="mpCodeWrap" class="hidden" style="text-align:center;margin:10px 0">
+      <div class="skin-label">Lobby code</div>
+      <div id="mpCode" class="mp-code">·····</div>
+    </div>
+    <div id="mpJoinWrap" style="display:flex;gap:8px;justify-content:center;margin:8px 0">
+      <input id="mpCodeInput" class="mp-input" maxlength="8" placeholder="CODE">
+      <button id="btnMpJoin" class="menu-btn">Join</button>
+    </div>
+    <button id="btnMpHost" class="menu-btn">Host a new lobby</button>
+    <button id="btnMpStart" class="menu-btn primary hidden">▶ START RACE</button>
+    <div id="mpMembers" class="list"></div>
+    <button id="btnMpLeave" class="menu-btn hidden">Leave lobby</button>
+    <button id="btnMpBack" class="menu-btn">Back</button>
   </div>
 </div>
 

@@ -1323,6 +1323,7 @@ function spawnChunk(ci) {
 function laneX(z, lane) { return centerX(z) + (lane - 1) * T.halfWidth * 0.58; }
 
 function spawnGameplayContent(rec, z0, z1, env, biome) {
+  if (run.state === "ghost") return; // replay stage: terrain + decor only, events supply the action
   const S = CFG.balance.spawning, H = CFG.balance.hazards;
   const dist = Math.max(0, z0 - run.startZ);
   const hazardBuff = (run.buffs.fewerHazards ? 0.65 : 1) * (1 - upBonus("fewerHaz")) * (1 + upBonus("hazardLevel"));
@@ -1584,7 +1585,8 @@ function startRun(continueRun) {
     run.continuesUsed = 0; run.lastGapId = -1;
     run.power = { superjump: 0, multi: 0, steer: 0, magnet: 0 };
     run.boostT = 0; run.powerups = 0; run.rings = 0; run.biomesSeen = [];
-    runSeed = Math.floor(Math.random() * 1e6);
+    runSeed = window.__forcedRunSeed != null ? window.__forcedRunSeed : Math.floor(Math.random() * 1e6);
+    window.__forcedRunSeed = null;
     // consume next-run shop items
     run.shields = SAVE.runItems.shield || 0;
     run.itemCoinDoubler = !!SAVE.runItems.coinDoubler;
@@ -1596,7 +1598,7 @@ function startRun(continueRun) {
     run.hp = run.maxHp;
     run.chains = {}; run.chainsDone = 0;
     run.topSpeed = 0; run.bestAir = 0; run.airTime = 0; run.curseT = 0; run.time = 0;
-    run.ghostFrames = []; run.ghostAcc = 0;
+    run.ghostFrames = []; run.ghostAcc = 0; run.ghostEvents = [];
     SAVE.runItems = { shield: 0, coinDoubler: 0, luckyCharm: 0, aegis: 0, storm: 0, midas: 0 };
     persistSave();
     nextHazardZ = run.startZ + CFG.balance.hazards.firstHazardAt;
@@ -1667,12 +1669,16 @@ function endRun(reason) {
   const goalsDoneNow = checkGoals();
   persistSave();
   showEndOverlay(coinGain, newBest, goalsDoneNow, reason, records);
-  try { if (run.ghostFrames && run.ghostFrames.length > 20) localStorage.setItem("rf_last_ghost", JSON.stringify(run.ghostFrames)); } catch (e) {}
+  try {
+    if (run.ghostFrames && run.ghostFrames.length > 20)
+      localStorage.setItem("rf_last_ghost", JSON.stringify({ v: 2, frames: run.ghostFrames, events: run.ghostEvents || [] }));
+  } catch (e) {}
+  run.lobby = null;
   try { if (window.RFNet && window.RFNet.leaveLive) window.RFNet.leaveLive(); } catch (e) {}
   try {
     if (window.RFNet && window.RFNet.onRunEnd) window.RFNet.onRunEnd({
       score: Math.floor(run.score), dist: Math.floor(run.dist),
-      duration: Math.floor(run.time || 0), ghost: run.ghostFrames || []
+      duration: Math.floor(run.time || 0), ghost: { v: 2, frames: run.ghostFrames || [], events: run.ghostEvents || [] }
     });
   } catch (e) { console.warn(e); }
 }
@@ -1711,7 +1717,12 @@ function activeScheme() {
   if (set !== "auto") return set;
   return isMobile ? "gyro" : "keys";
 }
+function recGhost(code, pos, val, extra) {
+  if (!run.active || !run.ghostEvents || run.ghostEvents.length >= 3000) return;
+  run.ghostEvents.push([+(run.time || 0).toFixed(2), code, +pos.x.toFixed(1), +pos.y.toFixed(1), +pos.z.toFixed(1), val == null ? 0 : val, extra || 0]);
+}
 function triggerOverdrive() {
+  recGhost("od", boulder.position, 0);
   if (auraPS) { auraPS.emitRate = 220; auraPS.color1 = hex4("#ffc24a", 0.95); auraPS.color2 = hex4("#ff4a14", 0.8); }
   if (trailPS) trailPS.emitRate = 260;
   if (boulderMat) boulderMat.emissiveColor = hex3("#c2410a");
@@ -1741,6 +1752,7 @@ function smashObject(node) {
   run.combo++; run.comboT = CFG.balance.scoring.comboWindow;
   run.maxCombo = Math.max(run.maxCombo, run.combo);
   run.smashed++;
+  recGhost("sm", node.position, def.score, def.tint || def.color || "#a08868");
   SAVE.ency.objects[def.id] = (SAVE.ency.objects[def.id] || 0) + 1;
   addScore(def.score, node.position, "", def.score >= 150 ? "big" : "");
   if (run.overdrive <= 0) run.speed = Math.max(CFG.balance.physics.minSpeed, run.speed - (def.slow || 1) * bodyDef().impact);
@@ -1880,13 +1892,13 @@ function updateRun(dt) {
   run.dist = run.z - run.startZ;
   run.time = (run.time || 0) + dt;
   if (SAVE.settings.remotes !== false && window.RFNet && window.RFNet.presence) {
-    try { window.RFNet.presence({ x: run.x, y: run.y, z: run.z, dist: run.dist }); } catch (e) {}
+    try { window.RFNet.presence({ x: run.x, y: run.y, z: run.z, dist: run.dist, lobby: run.lobby || null }); } catch (e) {}
   }
   updateRemotes(dt);
   run.ghostAcc = (run.ghostAcc || 0) + dt;
   if (run.ghostAcc >= 0.08 && run.ghostFrames && run.ghostFrames.length < 15000) {
     run.ghostAcc = 0;
-    run.ghostFrames.push([+run.time.toFixed(2), +run.x.toFixed(2), +run.y.toFixed(2), +run.z.toFixed(1)]);
+    run.ghostFrames.push([+run.time.toFixed(2), +run.x.toFixed(2), +run.y.toFixed(2), +run.z.toFixed(1), Math.floor(run.score)]);
   }
   run.score += run.speed * dt * CFG.balance.scoring.distancePointsPerMeter;
 
@@ -1911,6 +1923,7 @@ function updateRun(dt) {
     // gap-clear bonus
     if (run.inGapAir) {
       run.inGapAir = false; run.gapsCleared++;
+      recGhost("gp", boulder.position, 0);
       addScore(CFG.balance.scoring.gapClearBonus, boulder.position, "CREVASSE!", "bonus");
       AudioFX.nearmiss();
     }
@@ -2119,6 +2132,7 @@ function collide(dt, env) {
         run.speed = Math.max(CFG.balance.physics.minSpeed, run.speed * 0.6);
         burstDebris(bp.add(new BABYLON.Vector3(0, 1, 0)), boulderMat.diffuseColor, 9, 9);
         AudioFX.smash(1.3); shake(0.8);
+        recGhost("cr", bp, run.hp);
         popScore(bp, "CRACKED! " + run.hp + "/" + run.maxHp, "big");
         applyCrackVisual();
         continue;
@@ -2153,6 +2167,7 @@ function collide(dt, env) {
       if (p.metadata.kind === "coin") {
         let gain = (p.metadata.value || 1) * (run.power.multi > 0 ? 2 : 1) * (run.itemMidas ? 3 : 1);
         run.coins += gain; AudioFX.coin(); popScore(p.position, "+" + gain, "big"); chargeMeter(1);
+        recGhost("co", p.position, gain);
         const cur = SAVE.ency.currency;
         cur[p.metadata.ctype || "coin"] = (cur[p.metadata.ctype || "coin"] || 0) + 1;
         const ch = p.metadata.chain && run.chains[p.metadata.chain.id];
@@ -2181,13 +2196,16 @@ function collide(dt, env) {
         }
       } else if (p.metadata.kind === "gem") {
         run.gems++; AudioFX.gem(); popScore(p.position, "+1 💎", "bonus");
+        recGhost("ge", p.position, 1);
         SAVE.ency.currency.gem = (SAVE.ency.currency.gem || 0) + 1;
       } else if (p.metadata.kind === "power") {
         const PU = CFG.balance.powerups;
         run.power[p.metadata.ptype] = PU.duration;
         run.powerups++;
+        recGhost("pw", p.position, POWER_DEFS[p.metadata.ptype].label);
         AudioFX.overdrive(); popScore(p.position, POWER_DEFS[p.metadata.ptype].label + "!", "big");
       } else if (p.metadata.kind === "gate") {
+        recGhost("ga", p.position, p.metadata.gtype);
         if (p.metadata.gtype === "launch") {
           run.vy = CFG.balance.physics.jumpPower * 1.75;
           run.jumping = true; run.airborne = true;
@@ -2203,6 +2221,7 @@ function collide(dt, env) {
         run.boostT = PU.boostTime;
         run.speed = Math.min(run.speed + PU.ringBoost, CFG.balance.physics.maxSpeed + PU.boostExtra);
         run.rings++;
+        recGhost("ri", p.position, 0);
         addScore(150, p.position, "BOOST!", "bonus");
         AudioFX.nearmiss(); shake(0.25);
       }
@@ -2370,7 +2389,7 @@ function checkGoals() {
    UI — overlays, menus, meta
    ========================================================================= */
 function hideAll() {
-  ["ovStart", "ovEnd", "ovPause", "ovUpgrades", "ovSpinner", "ovGoals", "ovSettings", "ovShop", "ovEncy", "ovGhosts"].forEach((id) => $(id).classList.add("hidden"));
+  ["ovStart", "ovEnd", "ovPause", "ovUpgrades", "ovSpinner", "ovGoals", "ovSettings", "ovShop", "ovEncy", "ovGhosts", "ovMulti"].forEach((id) => $(id).classList.add("hidden"));
 }
 function showMenu() {
   hideAll();
@@ -2830,12 +2849,16 @@ function updateRemotes(dt) {
 
 /* ===================== ghost playback (timeline) ===================== */
 const ghostPlay = { frames: null, t: 0, dur: 0, speed: 1, playing: true, uiAcc: 0 };
-function startGhost(frames) {
+function startGhost(payload) {
+  const frames = Array.isArray(payload) ? payload : payload && payload.frames;
+  const events = Array.isArray(payload) ? [] : (payload && payload.events) || [];
   if (!frames || frames.length < 2) { alert("Ghost has no data."); return; }
   hideAll();
   run.active = false; run.paused = false; run.state = "ghost";
   run.startZ = 0;
   ghostPlay.frames = frames;
+  ghostPlay.events = events;
+  ghostPlay.evIdx = 0;
   ghostPlay.dur = frames[frames.length - 1][0];
   ghostPlay.t = 0; ghostPlay.speed = 1; ghostPlay.playing = true;
   boulder.setEnabled(true);
@@ -2851,6 +2874,19 @@ function stopGhost() {
   $("ghostBar").classList.add("hidden");
   applyTrail(); // restores boulder alpha per trail
   showMenu();
+}
+function fireGhostEvent(ev) {
+  const pos = new BABYLON.Vector3(ev[2], ev[3] + 1, ev[4]);
+  const code = ev[1], val = ev[5];
+  if (code === "sm") { burstDebris(pos, hex3(typeof ev[6] === "string" ? ev[6] : "#a08868"), 8, 8); popScore(pos, "+" + val, "big"); AudioFX.smash(1); }
+  else if (code === "co") { popScore(pos, "+" + val, "big"); AudioFX.coin(); }
+  else if (code === "ge") { popScore(pos, "+1 💎", "bonus"); AudioFX.gem(); }
+  else if (code === "pw") { popScore(pos, val + "!", "big"); AudioFX.overdrive(); }
+  else if (code === "ri") { popScore(pos, "BOOST!", "bonus"); AudioFX.nearmiss(); }
+  else if (code === "ga") { popScore(pos, val === "launch" ? "LAUNCHED!" : "CURSED!", "big"); AudioFX.jump(); }
+  else if (code === "cr") { popScore(pos, "CRACKED! " + val, "big"); AudioFX.smash(1.3); shake(0.4); }
+  else if (code === "od") { popScore(pos, "OVERDRIVE!", "big"); AudioFX.overdrive(); }
+  else if (code === "gp") { popScore(pos, "CREVASSE!", "bonus"); AudioFX.nearmiss(); }
 }
 function ghostPos(t) {
   const f = ghostPlay.frames;
@@ -2876,6 +2912,12 @@ function updateGhost(dt) {
   const camT = new BABYLON.Vector3(centerX(p.z - C.back) * 0.6 + p.x * 0.4, p.y + C.height, p.z - C.back);
   camera.position = BABYLON.Vector3.Lerp(camera.position, camT, 1 - Math.exp(-4 * dt));
   camera.setTarget(new BABYLON.Vector3(p.x, p.y + 1, p.z + 14));
+  // replay recorded events (smashes, pickups, gates...) as full FX
+  const evs = ghostPlay.events || [];
+  while (ghostPlay.evIdx < evs.length && evs[ghostPlay.evIdx][0] <= ghostPlay.t) {
+    const ev = evs[ghostPlay.evIdx++];
+    if (ghostPlay.t - ev[0] < 0.6) fireGhostEvent(ev); // skip FX while seeking far
+  }
   // throttled UI sync
   ghostPlay.uiAcc += dt;
   if (ghostPlay.uiAcc > 0.12) {
@@ -2883,10 +2925,123 @@ function updateGhost(dt) {
     $("ghostSlider").value = String(Math.round(ghostPlay.t * 10));
     $("ghostTime").textContent = ghostPlay.t.toFixed(1) + "s / " + ghostPlay.dur.toFixed(1) + "s · " + ghostPlay.speed + "×";
     $("hudDist").textContent = fmt(Math.floor(p.z)) + " m";
+    const fr = ghostPlay.frames;
+    let lo2 = 0, hi2 = fr.length - 1;
+    while (lo2 < hi2 - 1) { const m2 = (lo2 + hi2) >> 1; if (fr[m2][0] <= ghostPlay.t) lo2 = m2; else hi2 = m2; }
+    if (fr[lo2].length > 4) $("hudScore").textContent = fmt(fr[lo2][4]);
     $("hudState").textContent = "GHOST REPLAY";
   }
   if (ghostPlay.t >= ghostPlay.dur) ghostPlay.playing = false;
 }
+/* =================== lobby multiplayer (host / join) =================== */
+const mpUI = { code: null, host: false, timer: null, starting: false };
+function mpStop() {
+  if (mpUI.timer) { clearInterval(mpUI.timer); mpUI.timer = null; }
+}
+function mpSetStatus(msg) { const el = $("mpStatus"); if (el) el.textContent = msg; }
+function mpRenderMembers(st) {
+  const list = $("mpMembers"); if (!list) return;
+  list.innerHTML = "";
+  for (const m of st.members) {
+    const row = document.createElement("div"); row.className = "goal-row";
+    row.innerHTML = "<div class='up-info'><b>" + (m === st.host ? "👑 " : "🪨 ") + m + "</b><span>" + (m === st.host ? "host" : "ready") + "</span></div>";
+    list.appendChild(row);
+  }
+}
+async function mpPoll() {
+  if (!mpUI.code || !window.RFNet) return;
+  try {
+    const st = await window.RFNet.mp.state(mpUI.code);
+    if (!st) { mpSetStatus("Lobby closed by the host."); mpStop(); $("btnMpStart").classList.add("hidden"); return; }
+    mpRenderMembers(st);
+    if (st.state === "running" && !mpUI.starting) {
+      mpUI.starting = true;
+      mpStop();
+      beginLobbyRun(st.code, st.seed);
+    }
+  } catch (e) {}
+}
+async function mpHost() {
+  if (!netReady()) return;
+  try {
+    mpSetStatus("Creating lobby…");
+    const { code } = await window.RFNet.mp.create();
+    mpUI.code = code; mpUI.host = true; mpUI.starting = false;
+    $("mpCode").textContent = code;
+    $("mpCodeWrap").classList.remove("hidden");
+    $("btnMpStart").classList.remove("hidden");
+    $("btnMpLeave").classList.remove("hidden");
+    $("mpJoinWrap").classList.add("hidden");
+    $("btnMpHost").classList.add("hidden");
+    mpSetStatus("Share this code. Start when everyone has joined.");
+    mpStop(); mpUI.timer = setInterval(mpPoll, 2000); mpPoll();
+  } catch (e) { mpSetStatus("Could not create lobby: " + e.message); }
+}
+async function mpJoin() {
+  if (!netReady()) return;
+  const code = ($("mpCodeInput").value || "").trim().toUpperCase();
+  if (code.length < 4) { mpSetStatus("Enter the code from your host."); return; }
+  try {
+    mpSetStatus("Joining " + code + "…");
+    await window.RFNet.mp.join(code);
+    mpUI.code = code; mpUI.host = false; mpUI.starting = false;
+    $("mpCode").textContent = code;
+    $("mpCodeWrap").classList.remove("hidden");
+    $("btnMpLeave").classList.remove("hidden");
+    $("mpJoinWrap").classList.add("hidden");
+    $("btnMpHost").classList.add("hidden");
+    mpSetStatus("Joined! Waiting for the host to start…");
+    mpStop(); mpUI.timer = setInterval(mpPoll, 1500); mpPoll();
+  } catch (e) {
+    mpSetStatus(String(e.message || e).includes("not found") ? "Lobby not found — check the code." : "Join failed: " + e.message);
+  }
+}
+async function mpLeave() {
+  mpStop();
+  if (window.RFNet && mpUI.code) try { await window.RFNet.mp.leave(); } catch (e) {}
+  mpUI.code = null; mpUI.host = false;
+  showMenu();
+}
+function netReady() {
+  if (!window.RFNet || !window.RFNet.loggedIn || !window.RFNet.loggedIn()) {
+    mpSetStatus("Sign in with Google first (main menu) to play multiplayer.");
+    return false;
+  }
+  return true;
+}
+function beginLobbyRun(code, seed) {
+  hideAll();
+  window.__forcedRunSeed = seed; // everyone races the SAME mountain
+  let n = 3;
+  $("hud").classList.remove("hidden");
+  $("hudState").textContent = "STARTING IN 3…";
+  AudioFX.resume(); AudioFX.click();
+  const iv = setInterval(() => {
+    n--;
+    if (n > 0) { $("hudState").textContent = "STARTING IN " + n + "…"; AudioFX.click(); }
+    else {
+      clearInterval(iv);
+      startRun(false);
+      run.lobby = code;
+    }
+  }, 900);
+}
+function showMulti() {
+  hideAll();
+  mpUI.code = null; mpUI.host = false; mpUI.starting = false;
+  mpStop();
+  $("mpCodeWrap").classList.add("hidden");
+  $("btnMpStart").classList.add("hidden");
+  $("btnMpLeave").classList.add("hidden");
+  $("mpJoinWrap").classList.remove("hidden");
+  $("btnMpHost").classList.remove("hidden");
+  $("mpMembers").innerHTML = "";
+  mpSetStatus(window.RFNet && window.RFNet.loggedIn && window.RFNet.loggedIn()
+    ? "Host a lobby or join with a friend's code."
+    : "Sign in with Google first (main menu) to play multiplayer.");
+  $("ovMulti").classList.remove("hidden");
+}
+
 async function showGhostList() {
   hideAll();
   const list = $("ghostList"); list.innerHTML = "";
@@ -3056,6 +3211,15 @@ function bindUI() {
   click("tabBtnGoals", () => setEndTab("Goals"));
   click("tabBtnRecords", () => setEndTab("Records"));
   click("btnGhosts", showGhostList);
+  click("btnMulti", showMulti);
+  click("btnMpHost", mpHost);
+  click("btnMpJoin", mpJoin);
+  click("btnMpLeave", mpLeave);
+  click("btnMpBack", () => { mpStop(); showMenu(); });
+  click("btnMpStart", async () => {
+    if (!mpUI.code || !window.RFNet) return;
+    try { await window.RFNet.mp.start(mpUI.code); } catch (e) { mpSetStatus("Start failed: " + e.message); }
+  });
   click("btnGhostBack", showMenu);
   click("btnGhostExit", stopGhost);
   click("btnGhostPause", () => { ghostPlay.playing = !ghostPlay.playing; $("btnGhostPause").textContent = ghostPlay.playing ? "⏸" : "▶"; });
@@ -3065,6 +3229,9 @@ function bindUI() {
   $("ghostSlider").addEventListener("input", (e) => {
     ghostPlay.t = (+e.target.value || 0) / 10;
     ghostPlay.playing = false;
+    const evs = ghostPlay.events || [];
+    let i = 0; while (i < evs.length && evs[i][0] <= ghostPlay.t) i++;
+    ghostPlay.evIdx = i;
     $("btnGhostPause").textContent = "▶";
   });
   click("btnEncy", () => { hideAll(); renderEncy(); $("ovEncy").classList.remove("hidden"); });

@@ -19,6 +19,15 @@
 <h1>ROCKFALL ADMIN</h1>
 <p class="muted">Requires an admin account (the first player ever registered). Sign in inside the game first — this page reuses that session.</p>
 <div id="who" class="muted">checking session…</div>
+<div id="gate" class="err" style="display:none">⛔ Not authorized — this page is for admins only.</div>
+<div id="adminBody" style="display:none">
+
+<h2>Registration</h2>
+<div>
+  <span id="regState" class="muted">loading…</span>
+  <button onclick="setRegistration(true)">Enable registration</button>
+  <button onclick="setRegistration(false)">Disable registration</button>
+</div>
 
 <h2>Players</h2>
 <div id="players">loading…</div>
@@ -50,6 +59,7 @@
   <button onclick="wipeScores()">Delete player's scores</button>
 </div>
 <div id="log"></div>
+</div><!-- /adminBody -->
 
 <script>
 "use strict";
@@ -149,11 +159,37 @@ async function refreshLive() {
       : "<div class='muted'>nobody live</div>";
   } catch (e) { document.getElementById("live").textContent = "load failed"; }
 }
-loadConfigOptions();
-refresh();
-refreshGhosts();
-refreshLive();
-setInterval(refreshLive, 5000);
+async function refreshRegistration() {
+  try {
+    const rows = await sql("SELECT allow_registration FROM app_settings");
+    const allowed = rows.length ? String(rows[0].allow_registration) !== "false" && rows[0].allow_registration !== false : true;
+    document.getElementById("regState").textContent = allowed
+      ? "✅ Registration is OPEN (default when never set)"
+      : "⛔ Registration is CLOSED — only existing players can sign in";
+  } catch (e) { document.getElementById("regState").textContent = "state unknown"; }
+}
+async function setRegistration(v) {
+  try { await call("admin_set_registration", [v]); log("registration " + (v ? "enabled" : "disabled") + " ✔"); refreshRegistration(); }
+  catch (e) { log(e.message, "err"); }
+}
+async function boot() {
+  if (!auth) { document.getElementById("gate").style.display = "block"; return; }
+  try {
+    await call("admin_ping", []); // throws for non-admins — nothing loads without it
+  } catch (e) {
+    document.getElementById("gate").style.display = "block";
+    document.getElementById("who").textContent += " — admin check failed";
+    return;
+  }
+  document.getElementById("adminBody").style.display = "block";
+  loadConfigOptions();
+  refresh();
+  refreshGhosts();
+  refreshLive();
+  refreshRegistration();
+  setInterval(refreshLive, 5000);
+}
+boot();
 </script>
 </body>
 </html>

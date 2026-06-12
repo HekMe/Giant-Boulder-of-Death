@@ -172,3 +172,5 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 .gh-btn.exit{color:#ff6a6a}
 .gh-time{font-size:11px;color:var(--ink-dim);min-width:110px;text-align:center}
 .remote-name{position:absolute;transform:translate(-50%,-100%);font-size:11px;color:#fff;text-shadow:0 1px 3px #000;background:rgba(20,17,14,.5);padding:1px 7px;border-radius:8px;pointer-events:none}
+.mp-code{font-size:34px;letter-spacing:10px;color:var(--ember);font-weight:bold;text-shadow:0 2px 8px rgba(255,157,69,.4)}
+.mp-input{background:#1d1a17;border:1px solid #3a342e;color:var(--ink);padding:8px 12px;border-radius:8px;font-size:18px;letter-spacing:4px;width:140px;text-align:center;text-transform:uppercase}
