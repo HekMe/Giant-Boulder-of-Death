@@ -62,6 +62,7 @@
       <button id="btnSpinner" class="menu-btn">Lucky Spin</button>
       <button id="btnGoals" class="menu-btn">Goals</button>
       <button id="btnEncy" class="menu-btn">Encyclopedia</button>
+      <button id="btnGhosts" class="menu-btn">Ghosts</button>
       <button id="btnSettings" class="menu-btn">Settings</button>
       <button id="btnExport" class="menu-btn">Export save</button>
       <button id="btnImport" class="menu-btn">Import save</button>
@@ -162,8 +163,30 @@
       <select id="setScheme"><option value="auto">Auto</option><option value="gyro">Gyro (tilt)</option><option value="joystick">Joystick</option><option value="drag">Drag</option></select></div>
     <div class="set-row"><label>Gyroscope (mobile)</label><input type="checkbox" id="setGyro"></div>
     <div class="set-row"><label>Reduced camera motion</label><input type="checkbox" id="setMotion"></div>
+    <div class="set-row"><label>Show other players (online)</label><input type="checkbox" id="setRemotes"></div>
     <button id="btnSetBack" class="menu-btn">Back</button>
   </div>
+</div>
+
+<!-- GHOSTS -->
+<div id="ovGhosts" class="overlay hidden">
+  <div class="panel">
+    <h2>GHOST REPLAYS</h2>
+    <div id="ghostList" class="list"></div>
+    <button id="btnGhostBack" class="menu-btn">Back</button>
+  </div>
+</div>
+
+<!-- GHOST PLAYBACK BAR -->
+<div id="ghostBar" class="hidden">
+  <button id="btnGhostPause" class="gh-btn">⏸</button>
+  <input type="range" id="ghostSlider" min="0" max="1000" value="0">
+  <span id="ghostTime" class="gh-time">0s</span>
+  <button id="btnGhSp0_5" class="gh-btn">½×</button>
+  <button id="btnGhSp1" class="gh-btn">1×</button>
+  <button id="btnGhSp2" class="gh-btn">2×</button>
+  <button id="btnGhSp4" class="gh-btn">4×</button>
+  <button id="btnGhostExit" class="gh-btn exit">✕</button>
 </div>
 
 <!-- SHOP -->

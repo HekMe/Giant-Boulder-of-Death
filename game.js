@@ -1667,6 +1667,8 @@ function endRun(reason) {
   const goalsDoneNow = checkGoals();
   persistSave();
   showEndOverlay(coinGain, newBest, goalsDoneNow, reason, records);
+  try { if (run.ghostFrames && run.ghostFrames.length > 20) localStorage.setItem("rf_last_ghost", JSON.stringify(run.ghostFrames)); } catch (e) {}
+  try { if (window.RFNet && window.RFNet.leaveLive) window.RFNet.leaveLive(); } catch (e) {}
   try {
     if (window.RFNet && window.RFNet.onRunEnd) window.RFNet.onRunEnd({
       score: Math.floor(run.score), dist: Math.floor(run.dist),
@@ -1877,6 +1879,10 @@ function updateRun(dt) {
   run.z += run.speed * dt;
   run.dist = run.z - run.startZ;
   run.time = (run.time || 0) + dt;
+  if (SAVE.settings.remotes !== false && window.RFNet && window.RFNet.presence) {
+    try { window.RFNet.presence({ x: run.x, y: run.y, z: run.z, dist: run.dist }); } catch (e) {}
+  }
+  updateRemotes(dt);
   run.ghostAcc = (run.ghostAcc || 0) + dt;
   if (run.ghostAcc >= 0.08 && run.ghostFrames && run.ghostFrames.length < 15000) {
     run.ghostAcc = 0;
@@ -2283,7 +2289,10 @@ function updateHUD(force) {
 let lastHud = 0;
 function tick() {
   const dt = Math.min(engine.getDeltaTime() / 1000, 1 / 20); // clamp slow frames
-  if (!run.paused && (run.state === "run" || run.state === "intro")) {
+  if (run.state === "ghost") {
+    updateGhost(dt);
+    updatePopups(dt);
+  } else if (!run.paused && (run.state === "run" || run.state === "intro")) {
     updateRun(dt);
     updateDebris(dt);
     updatePopups(dt);
@@ -2361,7 +2370,7 @@ function checkGoals() {
    UI — overlays, menus, meta
    ========================================================================= */
 function hideAll() {
-  ["ovStart", "ovEnd", "ovPause", "ovUpgrades", "ovSpinner", "ovGoals", "ovSettings", "ovShop", "ovEncy"].forEach((id) => $(id).classList.add("hidden"));
+  ["ovStart", "ovEnd", "ovPause", "ovUpgrades", "ovSpinner", "ovGoals", "ovSettings", "ovShop", "ovEncy", "ovGhosts"].forEach((id) => $(id).classList.add("hidden"));
 }
 function showMenu() {
   hideAll();
@@ -2705,6 +2714,8 @@ function bindSettings() {
   $("setVol").value = st.volume;
   $("setMusic").checked = st.music; $("setQuality").value = st.quality;
   $("setGyro").checked = st.gyro; $("setMotion").checked = st.reducedMotion;
+  $("setRemotes").checked = st.remotes !== false;
+  $("setRemotes").onchange = (e) => { st.remotes = e.target.checked; persistSave(); };
   $("setVol").oninput = (e) => { st.volume = +e.target.value; AudioFX.ensure(); AudioFX.setVolume(st.volume); persistSave(); };
   $("setMusic").onchange = (e) => { st.music = e.target.checked; persistSave(); if (!st.music) AudioFX.stopMusic(); else { AudioFX.ensure(); AudioFX.startMusic(); } };
   $("setQuality").onchange = (e) => { st.quality = e.target.value; persistSave(); applyQuality(); };
@@ -2771,7 +2782,181 @@ function fanfare() {
   ov.classList.remove("hidden");
   setTimeout(() => ov.classList.add("hidden"), 3200);
 }
+/* ============== remote players (multiplayer presence) ============== */
+const remoteMeshes = new Map(); // name -> { mesh, label, cur, tgt }
+function remoteColor(name) {
+  let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return "#" + ((h & 0x7f7f7f) + 0x404040).toString(16).padStart(6, "0");
+}
+function updateRemotes(dt) {
+  if (!window.RFNet || !window.RFNet.getRemotes) return;
+  const list = SAVE.settings.remotes === false ? [] : window.RFNet.getRemotes();
+  const names = new Set(list.map((r) => r.name));
+  for (const [name, rec] of remoteMeshes) {
+    if (!names.has(name)) {
+      rec.mesh.dispose();
+      if (rec.label && rec.label.parentNode) rec.label.parentNode.removeChild(rec.label);
+      remoteMeshes.delete(name);
+    }
+  }
+  for (const r of list) {
+    let rec = remoteMeshes.get(r.name);
+    if (!rec) {
+      const mesh = BABYLON.MeshBuilder.CreateSphere("rp_" + r.name, { diameter: 2.6, segments: 8 }, scene);
+      const m = new BABYLON.StandardMaterial("rpm_" + r.name, scene);
+      m.diffuseColor = hex3(remoteColor(r.name)); m.alpha = 0.55;
+      m.emissiveColor = hex3(remoteColor(r.name)).scale(0.3);
+      mesh.material = m; mesh.isPickable = false;
+      const label = document.createElement("div");
+      label.className = "remote-name"; label.textContent = r.name;
+      $("popups").appendChild(label);
+      rec = { mesh, label, cur: new BABYLON.Vector3(r.x, r.y, r.z), tgt: new BABYLON.Vector3(r.x, r.y, r.z) };
+      remoteMeshes.set(r.name, rec);
+    }
+    rec.tgt.set(r.x, r.y, r.z);
+    rec.cur = BABYLON.Vector3.Lerp(rec.cur, rec.tgt, 1 - Math.exp(-2.2 * dt));
+    rec.mesh.position.copyFrom(rec.cur);
+    // project the name tag
+    try {
+      const p = BABYLON.Vector3.Project(rec.cur.add(new BABYLON.Vector3(0, 2.6, 0)),
+        BABYLON.Matrix.Identity(), scene.getTransformMatrix(),
+        camera.viewport.toGlobal(engine.getRenderWidth(), engine.getRenderHeight()));
+      const vis = Math.abs(rec.cur.z - run.z) < 220;
+      rec.label.style.display = vis ? "block" : "none";
+      rec.label.style.left = p.x + "px"; rec.label.style.top = p.y + "px";
+    } catch (e) {}
+  }
+}
+
+/* ===================== ghost playback (timeline) ===================== */
+const ghostPlay = { frames: null, t: 0, dur: 0, speed: 1, playing: true, uiAcc: 0 };
+function startGhost(frames) {
+  if (!frames || frames.length < 2) { alert("Ghost has no data."); return; }
+  hideAll();
+  run.active = false; run.paused = false; run.state = "ghost";
+  run.startZ = 0;
+  ghostPlay.frames = frames;
+  ghostPlay.dur = frames[frames.length - 1][0];
+  ghostPlay.t = 0; ghostPlay.speed = 1; ghostPlay.playing = true;
+  boulder.setEnabled(true);
+  if (boulderMat) boulderMat.alpha = 0.55;
+  $("hud").classList.remove("hidden");
+  $("ghostBar").classList.remove("hidden");
+  $("ghostSlider").max = String(Math.ceil(ghostPlay.dur * 10));
+  AudioFX.resume();
+}
+function stopGhost() {
+  run.state = "menu";
+  ghostPlay.frames = null;
+  $("ghostBar").classList.add("hidden");
+  applyTrail(); // restores boulder alpha per trail
+  showMenu();
+}
+function ghostPos(t) {
+  const f = ghostPlay.frames;
+  let lo = 0, hi = f.length - 1;
+  while (lo < hi - 1) { const mid = (lo + hi) >> 1; if (f[mid][0] <= t) lo = mid; else hi = mid; }
+  const a = f[lo], b = f[hi];
+  const k = b[0] > a[0] ? clamp((t - a[0]) / (b[0] - a[0]), 0, 1) : 0;
+  return { x: lerp(a[1], b[1], k), y: lerp(a[2], b[2], k), z: lerp(a[3], b[3], k) };
+}
+function updateGhost(dt) {
+  if (!ghostPlay.frames) return;
+  if (ghostPlay.playing) ghostPlay.t = Math.min(ghostPlay.dur, ghostPlay.t + dt * ghostPlay.speed);
+  const prev = run.z;
+  const p = ghostPos(ghostPlay.t);
+  boulder.position.set(p.x, p.y, p.z);
+  run.x = p.x; run.y = p.y; run.z = p.z; run.dist = p.z;
+  const spd = Math.max(0.1, (p.z - prev) / Math.max(dt, 0.001));
+  boulder.rotation.x += (spd * dt) / CFG.balance.physics.boulderRadius;
+  ensureChunks();
+  updateEnvironment();
+  // chase camera
+  const C = CFG.balance.camera;
+  const camT = new BABYLON.Vector3(centerX(p.z - C.back) * 0.6 + p.x * 0.4, p.y + C.height, p.z - C.back);
+  camera.position = BABYLON.Vector3.Lerp(camera.position, camT, 1 - Math.exp(-4 * dt));
+  camera.setTarget(new BABYLON.Vector3(p.x, p.y + 1, p.z + 14));
+  // throttled UI sync
+  ghostPlay.uiAcc += dt;
+  if (ghostPlay.uiAcc > 0.12) {
+    ghostPlay.uiAcc = 0;
+    $("ghostSlider").value = String(Math.round(ghostPlay.t * 10));
+    $("ghostTime").textContent = ghostPlay.t.toFixed(1) + "s / " + ghostPlay.dur.toFixed(1) + "s · " + ghostPlay.speed + "×";
+    $("hudDist").textContent = fmt(Math.floor(p.z)) + " m";
+    $("hudState").textContent = "GHOST REPLAY";
+  }
+  if (ghostPlay.t >= ghostPlay.dur) ghostPlay.playing = false;
+}
+async function showGhostList() {
+  hideAll();
+  const list = $("ghostList"); list.innerHTML = "";
+  const mkRow = (title, sub, fn) => {
+    const row = document.createElement("div"); row.className = "goal-row";
+    row.innerHTML = "<div class='up-info'><b>" + title + "</b><span>" + sub + "</span></div>";
+    const b = document.createElement("button"); b.className = "buy-btn"; b.textContent = "▶ PLAY";
+    b.onclick = () => { AudioFX.click(); fn(); };
+    row.appendChild(b); list.appendChild(row);
+  };
+  let local = null;
+  try { local = JSON.parse(localStorage.getItem("rf_last_ghost") || "null"); } catch (e) {}
+  if (local && local.length > 2) mkRow("My last run (local)", Math.floor(local[local.length - 1][3]) + " m", () => startGhost(local));
+  if (window.RFNet && window.RFNet.loggedIn && window.RFNet.loggedIn()) {
+    const note = document.createElement("div"); note.className = "shop-note"; note.textContent = "Loading online ghosts…";
+    list.appendChild(note);
+    try {
+      const ghosts = await window.RFNet.listGhosts();
+      note.remove();
+      for (const g of ghosts) {
+        mkRow("👻 " + g.name, fmt(g.score) + " pts · " + fmt(g.dist) + " m", async () => {
+          const frames = await window.RFNet.fetchGhost(g.name);
+          if (frames) startGhost(frames); else alert("Could not load this ghost.");
+        });
+      }
+      if (!ghosts.length) { const n2 = document.createElement("div"); n2.className = "shop-note"; n2.textContent = "No online ghosts yet."; list.appendChild(n2); }
+    } catch (e) { note.textContent = "Online ghosts unavailable."; }
+  } else if (!local) {
+    const n = document.createElement("div"); n.className = "shop-note";
+    n.textContent = "Finish a run to record a ghost. Sign in to browse everyone's ghosts.";
+    list.appendChild(n);
+  }
+  $("ovGhosts").classList.remove("hidden");
+}
+
 window.__fanfare = fanfare;
+window.RFGame = {
+  applyGrants(list) {
+    const seen = SAVE.netGrantSeen || 0;
+    const applied = [];
+    for (const g of list) {
+      if (g.id <= seen) continue;
+      if (g.kind === "skin") {
+        const ok = (CFG.goals.skins || []).some((sk) => sk.id === g.value);
+        if (ok && !SAVE.skins.includes(g.value)) { SAVE.skins.push(g.value); applied.push("Skin: " + g.value); }
+      } else if (g.kind === "goal") {
+        const gd = (CFG.goals.goals || []).find((x) => x.id === g.value);
+        if (gd && !SAVE.goalsDone.includes(gd.id)) {
+          SAVE.goalsDone.push(gd.id);
+          SAVE.coins += gd.coins || 0; SAVE.gems += gd.gems || 0;
+          if (gd.unlock && !SAVE.skins.includes(gd.unlock)) SAVE.skins.push(gd.unlock);
+          applied.push("Goal confirmed: " + gd.label);
+        }
+      } else if (g.kind === "coins") {
+        const n = parseInt(g.value, 10); if (n > 0 && n <= 100000) { SAVE.coins += n; applied.push("+" + n + " coins"); }
+      } else if (g.kind === "gems") {
+        const n = parseInt(g.value, 10); if (n > 0 && n <= 1000) { SAVE.gems += n; applied.push("+" + n + " 💎"); }
+      }
+      SAVE.netGrantSeen = Math.max(SAVE.netGrantSeen || 0, g.id);
+    }
+    if (applied.length) {
+      persistSave();
+      renderSkins(); renderTrails(); renderBoulders();
+      $("menuCoins").textContent = fmt(SAVE.coins);
+      $("menuGems").textContent = fmt(SAVE.gems);
+      fanfare();
+      alert("🎁 Admin grant received:\n" + applied.join("\n"));
+    }
+  }
+};
 function setPause(p) {
   if (run.state !== "run" && run.state !== "intro") return;
   run.paused = p;
@@ -2870,6 +3055,18 @@ function bindUI() {
   click("tabBtnStats", () => setEndTab("Stats"));
   click("tabBtnGoals", () => setEndTab("Goals"));
   click("tabBtnRecords", () => setEndTab("Records"));
+  click("btnGhosts", showGhostList);
+  click("btnGhostBack", showMenu);
+  click("btnGhostExit", stopGhost);
+  click("btnGhostPause", () => { ghostPlay.playing = !ghostPlay.playing; $("btnGhostPause").textContent = ghostPlay.playing ? "⏸" : "▶"; });
+  for (const sp of [0.5, 1, 2, 4]) {
+    click("btnGhSp" + String(sp).replace(".", "_"), () => { ghostPlay.speed = sp; });
+  }
+  $("ghostSlider").addEventListener("input", (e) => {
+    ghostPlay.t = (+e.target.value || 0) / 10;
+    ghostPlay.playing = false;
+    $("btnGhostPause").textContent = "▶";
+  });
   click("btnEncy", () => { hideAll(); renderEncy(); $("ovEncy").classList.remove("hidden"); });
   click("btnEncyBack", showMenu);
   click("btnSetBack", showMenu);

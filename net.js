@@ -140,6 +140,7 @@
   }
 
   const num = (v) => (typeof v === "string" ? parseFloat(v) : typeof v === "bigint" ? Number(v) : Number(v) || 0);
+  const sqlStr = (x) => "'" + String(x).replace(/'/g, "''") + "'";
 
   async function leaderboards() {
     const rows = await sql("SELECT name, score, dist_m, duration_s FROM score_entry");
@@ -151,9 +152,55 @@
     return { score: by("score"), dist: by("dist"), dur: by("dur"), all: norm };
   }
 
+  /* ----------------------- grants delivery ----------------------- */
+  async function pullGrants() {
+    if (!auth || !window.RFGame || !window.RFGame.applyGrants) return;
+    try {
+      const rows = await sql("SELECT id, kind, value FROM grant WHERE target_name = " + sqlStr(auth.name));
+      const list = rows.map((r) => ({ id: num(r.id), kind: String(r.kind), value: String(r.value) }))
+        .sort((a, b) => a.id - b.id);
+      if (list.length) window.RFGame.applyGrants(list);
+    } catch (e) { console.warn("[net] grants", e); }
+  }
+
+  /* ----------------------- presence (multiplayer) ----------------------- */
+  let lastSend = 0, lastPoll = 0, remotes = [];
+  async function presence(p) {
+    if (!auth) return;
+    const now = Date.now();
+    if (now - lastSend > 1200) {
+      lastSend = now;
+      call("update_pos", [p.x, p.y, p.z, Math.max(0, Math.floor(p.dist)), now]).catch(() => {});
+    }
+    if (now - lastPoll > 2500) {
+      lastPoll = now;
+      try {
+        const rows = await sql("SELECT name, x, y, z, dist_m, at_ms FROM live_pos");
+        const cut = now - 12_000;
+        remotes = rows
+          .map((r) => ({ name: String(r.name), x: num(r.x), y: num(r.y), z: num(r.z), dist: num(r.dist_m), at: num(r.at_ms) }))
+          .filter((r) => r.name !== auth.name && r.at > cut);
+      } catch (e) {}
+    }
+  }
+
   /* ------------------------- game hooks ------------------------- */
   window.RFNet = {
     loggedIn: () => !!auth,
+    presence,
+    getRemotes: () => remotes,
+    leaveLive() { if (auth) call("leave_live", []).catch(() => {}); },
+
+    async listGhosts() {
+      const rows = await sql("SELECT name, score, dist_m FROM ghost");
+      return rows.map((r) => ({ name: String(r.name), score: num(r.score), dist: num(r.dist_m) }))
+        .sort((a, b) => b.score - a.score);
+    },
+    async fetchGhost(name) {
+      const rows = await sql("SELECT data FROM ghost WHERE name = " + sqlStr(name));
+      if (!rows.length) return null;
+      try { return JSON.parse(atob(String(rows[0].data))); } catch (e) { return null; }
+    },
 
     renderMenu() {
       const row = $("netRow"); if (!row) return;
@@ -161,6 +208,7 @@
       $("btnLogin").classList.toggle("hidden", !!auth);
       $("btnLogout").classList.toggle("hidden", !auth);
       $("netUser").textContent = auth ? "⛰ " + auth.name : "";
+      pullGrants();
     },
 
     async onRunEnd(p) {
@@ -173,10 +221,23 @@
             call("save_ghost", [data, Math.floor(p.score), Math.floor(p.dist)]).catch(() => {});
         }
         const lb = await leaderboards();
+        // overall = sum of category ranks (lower is better)
         const firsts = [];
         if (lb.score[0] && p.score >= lb.score[0].score && lb.score[0].name === auth.name) firsts.push("WORLD HIGH SCORE");
         if (lb.dist[0] && p.dist >= lb.dist[0].dist && lb.dist[0].name === auth.name) firsts.push("WORLD LONGEST RUN");
         if (lb.dur[0] && p.duration >= lb.dur[0].dur && lb.dur[0].name === auth.name) firsts.push("WORLD LONGEST SURVIVAL");
+        {
+          const rk = (arr, k, v) => 1 + arr.filter((r) => r[k] > v).length;
+          const overall = rk(lb.score, "score", p.score) + rk(lb.dist, "dist", p.dist) + rk(lb.dur, "dur", p.duration);
+          let best = Infinity;
+          const byName = {};
+          for (const r of lb.all) {
+            const o = rk(lb.score, "score", r.score) + rk(lb.dist, "dist", r.dist) + rk(lb.dur, "dur", r.dur);
+            if (!(r.name in byName) || o < byName[r.name]) byName[r.name] = o;
+          }
+          for (const n in byName) if (byName[n] < best) best = byName[n];
+          if (overall <= best) firsts.push("OVERALL #1");
+        }
         if (firsts.length) {
           const eb = $("endBest");
           if (eb) { eb.classList.remove("hidden"); eb.textContent = "🌍 " + firsts.join(" · ") + " — #1!"; }
@@ -200,7 +261,8 @@
           "#" + rank(lb.dist, "dist", summary.dist) + " by distance · " +
           "#" + rank(lb.dur, "dur", summary.duration) + " by survival<br><br>" +
           "<b>Top scores</b><br>" + top(lb.score, "score", "") + "<br><br>" +
-          "<b>Top distance</b><br>" + top(lb.dist, "dist", " m");
+          "<b>Top distance</b><br>" + top(lb.dist, "dist", " m") + "<br><br>" +
+          "<b>Overall</b><br>rank sum " + (rank(lb.score, "score", summary.score) + rank(lb.dist, "dist", summary.dist) + rank(lb.dur, "dur", summary.duration)) + " across score + distance + survival (lower = better)";
         container.appendChild(div);
       } catch (e) { console.warn("[net] leaderboard", e); }
     },

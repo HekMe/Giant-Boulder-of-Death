@@ -60,7 +60,20 @@ const grant = table(
   }
 );
 
-const spacetimedb = schema({ player, score_entry, ghost, grant });
+const live_pos = table(
+  { name: 'live_pos', public: true },
+  {
+    identity: t.identity().primaryKey(),
+    name: t.string(),
+    x: t.f32(),
+    y: t.f32(),
+    z: t.f32(),
+    dist_m: t.u32(),
+    at_ms: t.u64(), // client clock; used only for stale-row cleanup + display
+  }
+);
+
+const spacetimedb = schema({ player, score_entry, ghost, grant, live_pos });
 export default spacetimedb;
 
 /* ============================== helpers ============================== */
@@ -174,6 +187,34 @@ export const save_ghost = spacetimedb.reducer(
   }
 );
 
+/* --------------------------- multiplayer --------------------------- */
+
+export const update_pos = spacetimedb.reducer(
+  { x: t.f32(), y: t.f32(), z: t.f32(), dist_m: t.u32(), at_ms: t.u64() },
+  (ctx, { x, y, z, dist_m, at_ms }) => {
+    const me = findPlayer(ctx);
+    if (!me) throw new Error('register first');
+    const row = { identity: ctx.sender, name: me.name, x, y, z, dist_m, at_ms };
+    let exists = false;
+    for (const r of ctx.db.live_pos.iter()) { if (idEq(r.identity, ctx.sender)) { exists = true; break; } }
+    if (exists) ctx.db.live_pos.identity.update(row);
+    else ctx.db.live_pos.insert(row);
+    // prune rows stale for >30 s (by the freshest client clock we have)
+    const cutoff = at_ms - 30_000n;
+    const stale: any[] = [];
+    for (const r of ctx.db.live_pos.iter()) {
+      if (!idEq(r.identity, ctx.sender) && r.at_ms < cutoff) stale.push(r.identity);
+    }
+    for (const id of stale) ctx.db.live_pos.identity.delete(id);
+  }
+);
+
+export const leave_live = spacetimedb.reducer({}, (ctx, _args) => {
+  for (const r of ctx.db.live_pos.iter()) {
+    if (idEq(r.identity, ctx.sender)) { ctx.db.live_pos.identity.delete(r.identity); return; }
+  }
+});
+
 /* ----------------------------- admin ----------------------------- */
 
 export const admin_set_admin = spacetimedb.reducer({ target_name: t.string(), value: t.bool() }, (ctx, { target_name, value }) => {
@@ -192,6 +233,13 @@ export const admin_delete_scores = spacetimedb.reducer({ target_name: t.string()
   const ids: any[] = [];
   for (const row of ctx.db.score_entry.iter()) if (row.name === target_name) ids.push(row.id);
   for (const id of ids) ctx.db.score_entry.id.delete(id);
+});
+
+export const admin_delete_ghost = spacetimedb.reducer({ target_name: t.string() }, (ctx, { target_name }) => {
+  requireAdmin(ctx);
+  for (const row of ctx.db.ghost.iter()) {
+    if (row.name === target_name) { ctx.db.ghost.identity.delete(row.identity); return; }
+  }
 });
 
 export const admin_grant = spacetimedb.reducer({ target_name: t.string(), kind: t.string(), value: t.string() }, (ctx, { target_name, kind, value }) => {

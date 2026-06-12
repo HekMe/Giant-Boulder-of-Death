@@ -26,6 +26,12 @@
 <h2>Recent runs</h2>
 <div id="runs">loading…</div>
 
+<h2>Stored ghosts</h2>
+<div id="ghosts">loading…</div>
+
+<h2>Live players (now)</h2>
+<div id="live">loading…</div>
+
 <h2>Actions</h2>
 <div>
   <input id="target" placeholder="player name">
@@ -36,7 +42,8 @@
     <option value="gems">grant gems</option>
     <option value="note">note</option>
   </select>
-  <input id="value" placeholder="value (e.g. skinGold / g42 / 500)">
+  <select id="valueSel" class="hidden" style="display:none"></select>
+  <input id="value" placeholder="value (e.g. 500)">
   <button onclick="grant()">Grant</button>
   <button onclick="setAdmin(true)">Make admin</button>
   <button onclick="setAdmin(false)">Remove admin</button>
@@ -88,7 +95,7 @@ async function refresh() {
 }
 const tgt = () => document.getElementById("target").value.trim();
 async function grant() {
-  try { await call("admin_grant", [tgt(), document.getElementById("kind").value, document.getElementById("value").value]); log("granted ✔"); } catch (e) { log(e.message, "err"); }
+  try { await call("admin_grant", [tgt(), document.getElementById("kind").value, grantValue()]); log("granted ✔"); } catch (e) { log(e.message, "err"); }
 }
 async function setAdmin(v) {
   try { await call("admin_set_admin", [tgt(), v]); log("admin=" + v + " ✔"); refresh(); } catch (e) { log(e.message, "err"); }
@@ -97,7 +104,56 @@ async function wipeScores() {
   if (!confirm("Delete ALL score entries of '" + tgt() + "'?")) return;
   try { await call("admin_delete_scores", [tgt()]); log("scores deleted ✔"); refresh(); } catch (e) { log(e.message, "err"); }
 }
+async function loadConfigOptions() {
+  try {
+    const g = await (await fetch("config/goals.json")).json();
+    window.__skins = g.skins || []; window.__goals = g.goals || [];
+  } catch (e) { window.__skins = []; window.__goals = []; }
+  document.getElementById("kind").addEventListener("change", syncValueField);
+  syncValueField();
+}
+function syncValueField() {
+  const kind = document.getElementById("kind").value;
+  const sel = document.getElementById("valueSel"), inp = document.getElementById("value");
+  let opts = null;
+  if (kind === "skin") opts = (window.__skins || []).map((s) => [s.id, s.label]);
+  if (kind === "goal") opts = (window.__goals || []).map((g) => [g.id, g.id + " — " + g.label]);
+  if (opts && opts.length) {
+    sel.innerHTML = opts.map(([v, l]) => "<option value='" + v + "'>" + l + "</option>").join("");
+    sel.style.display = ""; inp.style.display = "none";
+  } else { sel.style.display = "none"; inp.style.display = ""; }
+}
+function grantValue() {
+  const sel = document.getElementById("valueSel");
+  return sel.style.display !== "none" ? sel.value : document.getElementById("value").value;
+}
+async function refreshGhosts() {
+  try {
+    const rows = await sql("SELECT name, score, dist_m FROM ghost");
+    const el = document.getElementById("ghosts");
+    if (!rows.length) { el.innerHTML = "<div class='muted'>no ghosts</div>"; return; }
+    el.innerHTML = "<table><tr><th>name</th><th>score</th><th>dist</th><th></th></tr>" +
+      rows.map((r) => "<tr><td>" + r.name + "</td><td>" + r.score + "</td><td>" + r.dist_m +
+        "</td><td><button onclick=\"delGhost('" + String(r.name).replace(/'/g, "") + "')\">delete</button></td></tr>").join("") + "</table>";
+  } catch (e) { document.getElementById("ghosts").textContent = "load failed"; }
+}
+async function delGhost(name) {
+  if (!confirm("Delete ghost of '" + name + "'?")) return;
+  try { await call("admin_delete_ghost", [name]); log("ghost deleted ✔"); refreshGhosts(); } catch (e) { log(e.message, "err"); }
+}
+async function refreshLive() {
+  try {
+    const rows = await sql("SELECT name, dist_m, at_ms FROM live_pos");
+    document.getElementById("live").innerHTML = rows.length
+      ? tableHtml(rows.map((r) => ({ name: r.name, dist_m: r.dist_m, last_seen: new Date(Number(r.at_ms)).toLocaleTimeString() })), ["name", "dist_m", "last_seen"])
+      : "<div class='muted'>nobody live</div>";
+  } catch (e) { document.getElementById("live").textContent = "load failed"; }
+}
+loadConfigOptions();
 refresh();
+refreshGhosts();
+refreshLive();
+setInterval(refreshLive, 5000);
 </script>
 </body>
 </html>

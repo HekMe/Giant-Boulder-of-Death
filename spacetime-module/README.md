@@ -13,4 +13,3 @@ Notes:
 - If the SDK's table accessor API differs from `ctx.db.<table>.identity.update(...)` /
   `.id.delete(...)` in your installed version, `spacetime publish` will fail with a clear
   type error — adjust those few call sites to match the scaffold from `spacetime init`.
-  
