@@ -119,6 +119,62 @@ function loadSave() {
 }
 function persistSave() {
   try { localStorage.setItem(SAVE_KEY, encodeSave(SAVE)); } catch (e) { console.warn(e); }
+  scheduleCloudPush();
+}
+let cloudTimer = null;
+function scheduleCloudPush() {
+  if (!window.RFNet || !window.RFNet.loggedIn || !window.RFNet.loggedIn()) return;
+  if (cloudTimer) clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(pushCloud, 2500);
+}
+function cloudUnlocks() {
+  return {
+    skins: SAVE.skins, trails: SAVE.trails, boulders: SAVE.boulders,
+    upgrades: SAVE.upgrades, upgradeSet: SAVE.upgradeSet,
+    goalsDone: SAVE.goalsDone, goalIndex: SAVE.goalIndex,
+    ency: SAVE.ency, runItems: SAVE.runItems, netGrantSeen: SAVE.netGrantSeen || 0,
+  };
+}
+function pushCloud() {
+  if (!window.RFNet || !window.RFNet.saveProfile) return;
+  SAVE.cloudRev = (SAVE.cloudRev || 0) + 1;
+  window.RFNet.saveProfile({ coins: SAVE.coins, gems: SAVE.gems, unlocks: cloudUnlocks(), rev: SAVE.cloudRev });
+}
+async function syncCloudOnLogin() {
+  if (!window.RFNet || !window.RFNet.loadProfile) return;
+  try {
+    const prof = await window.RFNet.loadProfile();
+    if (prof && (prof.rev || 0) >= (SAVE.cloudRev || 0)) {
+      // cloud is authoritative (newer or first sight on this device): take the higher currencies + union unlocks
+      SAVE.coins = Math.max(SAVE.coins, prof.coins);
+      SAVE.gems = Math.max(SAVE.gems, prof.gems);
+      const u = prof.unlocks || {};
+      const uni = (a, b) => Array.from(new Set([...(a || []), ...(b || [])]));
+      SAVE.skins = uni(SAVE.skins, u.skins);
+      SAVE.trails = uni(SAVE.trails, u.trails);
+      SAVE.boulders = uni(SAVE.boulders, u.boulders);
+      SAVE.goalsDone = uni(SAVE.goalsDone, u.goalsDone);
+      SAVE.goalIndex = Math.max(SAVE.goalIndex || 0, u.goalIndex || 0);
+      SAVE.netGrantSeen = Math.max(SAVE.netGrantSeen || 0, u.netGrantSeen || 0);
+      for (const k in (u.upgrades || {})) SAVE.upgrades[k] = Math.max(SAVE.upgrades[k] || 0, u.upgrades[k]);
+      if (u.upgradeSet) for (const k in u.upgradeSet) if (SAVE.upgradeSet[k] == null) SAVE.upgradeSet[k] = u.upgradeSet[k];
+      if (u.ency) {
+        for (const cat of ["objects", "hazards", "currency", "biomes"]) {
+          SAVE.ency[cat] = SAVE.ency[cat] || {};
+          for (const k in (u.ency[cat] || {})) SAVE.ency[cat][k] = Math.max(SAVE.ency[cat][k] || 0, u.ency[cat][k]);
+        }
+      }
+      SAVE.cloudRev = prof.rev || SAVE.cloudRev || 0;
+      persistSaveLocalOnly();
+      $("menuCoins").textContent = fmt(SAVE.coins);
+      $("menuGems").textContent = fmt(SAVE.gems);
+    } else {
+      pushCloud(); // local is ahead — upload it
+    }
+  } catch (e) { console.warn("cloud sync", e); }
+}
+function persistSaveLocalOnly() {
+  try { localStorage.setItem(SAVE_KEY, encodeSave(SAVE)); } catch (e) {}
 }
 function validateSave(s) {
   return s && typeof s === "object" && s.v === 1 &&
@@ -129,7 +185,9 @@ function upOwned(id) { return SAVE.upgrades[id] || 0; }
 function upLevel(id) {
   const owned = upOwned(id);
   const set = SAVE.upgradeSet[id];
-  return clamp(set == null ? owned : set, 0, owned);
+  let lvl = clamp(set == null ? owned : set, 0, owned);
+  if (run.upgradeCap) lvl = Math.min(lvl, run.upgradeCap[id] || 0); // fair race: everyone at the weakest racer's level
+  return lvl;
 }
 function bodyDef() {
   return (CFG.goals.boulders || []).find((b) => b.id === SAVE.activeBoulder) || { accel: 1, steer: 1, impact: 1, hp: 0 };
@@ -273,6 +331,22 @@ const AudioFX = {
 
 /* ---------- terrain mathematics (shared by mesh + physics + spawning) ---------- */
 let CFG = null;
+async function applyRemoteConfig() {
+  if (!window.RFNet || !window.RFNet.loadConfig) return;
+  try {
+    const rc = await window.RFNet.loadConfig();
+    if (rc && rc.cfg) deepMerge(CFG, rc.cfg);
+  } catch (e) {}
+}
+function deepMerge(dst, src) {
+  for (const k in src) {
+    if (src[k] && typeof src[k] === "object" && !Array.isArray(src[k])) {
+      if (!dst[k] || typeof dst[k] !== "object") dst[k] = {};
+      deepMerge(dst[k], src[k]);
+    } else dst[k] = src[k];
+  }
+  return dst;
+}
 let T = null, GP = null; // terrain params, gap params
 
 function centerX(z) {
@@ -293,6 +367,21 @@ function terrainY(x, z) {
   // plateauing at wallHeight — the wall is real geometry, not just decoration
   const over = Math.abs(dxn) - 1;
   if (over > 0) y += T.wallHeight * (1 - Math.exp(-T.wallSharpness * over * over));
+  // crevasse rim levelling: keep the far (landing) rim no higher than the near (take-off) rim,
+  // applied as a smooth, single-valued offset so terrainY stays continuous and self-consistent.
+  if (T.gapRimFlatten) {
+    const seg = Math.floor(z / GP.interval);
+    const g = gapForSegment(seg);
+    if (g && !g.lengthwise && z > g.end) {
+      const span = 14; // blend distance after the far rim
+      const t = clamp((z - g.end) / span, 0, 1);
+      const nearH = baseProfile(g.start);
+      const farH = baseProfile(g.end);
+      // if the natural far rim is higher than the near rim, lower it, easing back to natural over `span`
+      const excess = Math.max(0, farH - nearH);
+      if (excess > 0) y -= excess * (1 - t);
+    }
+  }
   return y;
 }
 /* downhill slope (positive = descending) along the centreline */
@@ -307,13 +396,29 @@ function gapForSegment(i) {
   if (segStart < GP.firstGapAt) return null;
   const chance = Math.min(0.88, GP.chance + segStart * 0.00004);
   if (hash01(i * 3 + 1) > chance) return null;
+  // a fraction of crevasses run ALONG the slope on one side, instead of straight across
+  if (hash01(i * 5 + 4) < (GP.longChance || 0)) {
+    const len = GP.longLength || 24;
+    const start = segStart + GP.interval * (0.25 + hash01(i * 7 + 2) * 0.35);
+    const side = hash01(i * 11 + 3) < 0.5 ? -1 : 1; // which side of the track it hugs
+    const w = GP.longWidth || 5;
+    // lateral band [loX, hiX] in normalised track space (−1..1) that is missing
+    const center = side * (0.32 + hash01(i * 13 + 6) * 0.3);
+    return { start, end: start + len, width: w, lengthwise: true, loN: center - 0.5 * (w / T.halfWidth), hiN: center + 0.5 * (w / T.halfWidth) };
+  }
   const width = Math.min(GP.maxWidth, GP.baseWidth + (segStart / 1000) * GP.widthPer1000m);
   const start = segStart + GP.interval * (0.3 + hash01(i * 7 + 2) * 0.3);
   return { start, end: start + width, width };
 }
-function gapAtZ(z) {
+function gapAtZ(z, x) {
   const g = gapForSegment(Math.floor(z / GP.interval));
-  return (g && z >= g.start && z <= g.end) ? g : null;
+  if (!g || z < g.start || z > g.end) return null;
+  if (g.lengthwise) {
+    if (x == null) return g; // presence check (e.g. spawning) treats the whole segment as occupied
+    const dxn = (x - centerX(z)) / T.halfWidth;
+    return (dxn >= g.loN && dxn <= g.hiN) ? g : null; // only the missing band is deadly
+  }
+  return g;
 }
 function gapsInRange(z0, z1) {
   const out = [];
@@ -333,6 +438,7 @@ function nearGap(z, margin) {
    ENGINE / SCENE
    ========================================================================= */
 let engine = null, scene = null, camera = null, sun = null, hemi = null, shadowGen = null;
+let skyDomeRef = null;
 let boulder = null, boulderMat = null, auraPS = null, trailPS = null;
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
@@ -340,31 +446,179 @@ function initEngine() {
   if (typeof BABYLON === "undefined" || !BABYLON.Engine)
     throw new Error("Babylon.js failed to load from the CDN. Check your connection / script blockers.");
   const canvas = $("renderCanvas");
-  engine = new BABYLON.Engine(canvas, true, { stencil: false, preserveDrawingBuffer: false });
+  engine = new BABYLON.Engine(canvas, true, { stencil: true, preserveDrawingBuffer: false });
   scene = new BABYLON.Scene(engine);
   scene.clearColor = new BABYLON.Color4(0.6, 0.78, 0.91, 1);
   scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
   scene.fogDensity = 0.007;
+  scene.ambientColor = new BABYLON.Color3(0.5, 0.5, 0.55);
+
+  // sky gradient dome — large box that follows the camera, vertex-coloured sky→horizon
+  buildSkyDome();
 
   hemi = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0.2, 1, 0.1), scene);
-  hemi.intensity = 0.75;
-  sun = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(-0.45, -0.8, 0.45), scene);
-  sun.intensity = 0.95;
+  hemi.intensity = 0.62;
+  hemi.groundColor = new BABYLON.Color3(0.32, 0.34, 0.38); // bounced light from the ground
+  sun = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(-0.45, -0.82, 0.42), scene);
+  sun.intensity = 1.15;
+  sun.specular = new BABYLON.Color3(0.5, 0.48, 0.42);
+
+  // soft warm rim/fill light from behind for shape separation
+  fillLight = new BABYLON.HemisphericLight("fill", new BABYLON.Vector3(-0.3, 0.4, -1), scene);
+  fillLight.intensity = 0.22;
+  fillLight.diffuse = new BABYLON.Color3(1, 0.85, 0.65);
+  fillLight.specular = new BABYLON.Color3(0, 0, 0);
+
+  // glow layer makes emissive things (lava, crystals, power-ups, overdrive) actually bloom
+  glow = new BABYLON.GlowLayer("glow", scene, { blurKernelSize: 32 });
+  glow.intensity = 0.7;
 
   camera = new BABYLON.UniversalCamera("cam", new BABYLON.Vector3(0, 40, -20), scene);
-  camera.minZ = 0.4; camera.maxZ = 900; camera.fov = CFG.balance.camera.fovBase;
+  camera.minZ = 0.4; camera.maxZ = 1100; camera.fov = CFG.balance.camera.fovBase;
 
+  setupPostProcess();
   applyQuality();
   window.addEventListener("resize", () => engine.resize());
+}
+
+let skyDome = null, skyMat = null, fillLight = null, glow = null, pipeline = null;
+function buildSkyDome() {
+  skyDome = BABYLON.MeshBuilder.CreateSphere("sky", { diameter: 1600, segments: 16, sideOrientation: BABYLON.Mesh.BACKSIDE }, scene);
+  skyMat = new BABYLON.StandardMaterial("skyMat", scene);
+  skyMat.backFaceCulling = false;
+  skyMat.disableLighting = true;
+  skyMat.useVertexColor = true;
+  skyDome.material = skyMat;
+  skyDome.infiniteDistance = true;
+  skyDome.applyFog = false;
+  // vertex colours: top = sky, bottom = horizon
+  const pos = skyDome.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+  const colors = [];
+  for (let i = 0; i < pos.length; i += 3) {
+    const ny = pos[i + 1] / 800; // -1..1
+    const t = clamp((ny + 0.2) / 1.0, 0, 1);
+    colors.push(t, t, t, 1); // overwritten per-frame with biome colours in updateEnvironment
+  }
+  skyDome.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
+  skyDome._skyCount = pos.length / 3;
+  skyDome._skyPos = pos; // cache positions; color updates must not re-read vertex data
+}
+function setSkyColors(skyHi, horizon) {
+  if (!skyDome || !skyDome._skyPos) return;
+  const pos = skyDome._skyPos;
+  const colors = [];
+  for (let i = 0; i < pos.length; i += 3) {
+    const ny = pos[i + 1] / 800;
+    const t = clamp((ny + 0.15) / 0.9, 0, 1);
+    const e = t * t * (3 - 2 * t); // smoothstep
+    colors.push(
+      horizon.r + (skyHi.r - horizon.r) * e,
+      horizon.g + (skyHi.g - horizon.g) * e,
+      horizon.b + (skyHi.b - horizon.b) * e,
+      1
+    );
+  }
+  skyDome.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
+}
+
+/* ---- drifting cloud layer: soft billboards high above the slope ---- */
+let clouds = [], cloudMat = null, cloudTex = null;
+const CLOUD_COUNT = 16;
+function makeCloudTexture() {
+  const sz = 128;
+  const tex = new BABYLON.DynamicTexture("cloudTex", { width: sz, height: sz }, scene, false);
+  const ctx = tex.getContext();
+  ctx.clearRect(0, 0, sz, sz);
+  // a few overlapping soft radial blobs -> fluffy puff
+  const blobs = [[64, 64, 52], [44, 70, 34], [86, 70, 36], [60, 50, 30], [78, 52, 26]];
+  for (const [cx, cy, r] of blobs) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, "rgba(255,255,255,0.9)");
+    g.addColorStop(0.5, "rgba(255,255,255,0.45)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, sz, sz);
+  }
+  tex.hasAlpha = true;
+  tex.update();
+  return tex;
+}
+function buildClouds() {
+  cloudTex = makeCloudTexture();
+  cloudMat = new BABYLON.StandardMaterial("cloudMat", scene);
+  cloudMat.diffuseTexture = cloudTex;
+  cloudMat.opacityTexture = cloudTex;
+  cloudMat.emissiveColor = new BABYLON.Color3(1, 1, 1); // lit by its own colour, not the sun (keeps them bright)
+  cloudMat.disableLighting = true;
+  cloudMat.backFaceCulling = false;
+  cloudMat.useAlphaFromDiffuseTexture = true;
+  for (let i = 0; i < CLOUD_COUNT; i++) {
+    const w = rand(40, 90), h = w * rand(0.4, 0.6);
+    const p = BABYLON.MeshBuilder.CreatePlane("cloud" + i, { width: w, height: h }, scene);
+    p.material = cloudMat;
+    p.billboardMode = BABYLON.Mesh.BILLBOARDMODE_Y; // face the camera around the vertical axis
+    p.applyFog = true;
+    p.isPickable = false;
+    p.rotation.x = 0;
+    p.position.set(rand(-140, 140), rand(48, 95), rand(0, 600));
+    p._cloudSpeed = rand(1.5, 4.5);
+    p._cloudPhase = rand(0, 100);
+    clouds.push(p);
+  }
+}
+function updateClouds(dt) {
+  if (!clouds.length) return;
+  const aheadBase = run.z;
+  for (const c of clouds) {
+    // gentle lateral drift
+    c.position.x += Math.sin(performance.now() * 0.0001 + c._cloudPhase) * c._cloudSpeed * dt;
+    // recycle clouds that fall behind the camera to far ahead, so the sky always has clouds
+    if (c.position.z < aheadBase - 120) {
+      c.position.z = aheadBase + rand(420, 680);
+      c.position.x = rand(-150, 150);
+      c.position.y = rand(48, 95);
+    } else if (c.position.z > aheadBase + 760) {
+      c.position.z = aheadBase + rand(200, 420);
+    }
+  }
+}
+function setCloudTint(skyHi, fogDensity) {
+  if (!cloudMat) return;
+  // clouds pick up a touch of the sky's high colour and brighten; denser fog hides them
+  const r = 0.82 + skyHi.r * 0.18, g = 0.82 + skyHi.g * 0.18, b = 0.85 + skyHi.b * 0.15;
+  cloudMat.emissiveColor.set(clamp(r, 0, 1), clamp(g, 0, 1), clamp(b, 0, 1));
+  const vis = clamp(1 - (fogDensity - 0.004) / 0.009, 0.12, 1); // fade out in heavy fog/caves
+  cloudMat.alpha = vis;
+}
+function setupPostProcess() {
+  try {
+    pipeline = new BABYLON.DefaultRenderingPipeline("rr", true, scene, [camera]);
+    pipeline.imageProcessingEnabled = true;
+    pipeline.imageProcessing.toneMappingEnabled = true;
+    pipeline.imageProcessing.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;
+    pipeline.imageProcessing.exposure = 1.05;
+    pipeline.imageProcessing.contrast = 1.12;
+    pipeline.imageProcessing.vignetteEnabled = true;
+    pipeline.imageProcessing.vignetteWeight = 1.6;
+    pipeline.imageProcessing.vignetteColor = new BABYLON.Color4(0, 0, 0, 0);
+    pipeline.bloomEnabled = true;
+    pipeline.bloomThreshold = 0.72;
+    pipeline.bloomWeight = 0.45;
+    pipeline.bloomKernel = 48;
+    pipeline.fxaaEnabled = true;
+    pipeline.samples = 2;
+  } catch (e) { console.warn("post-process unavailable", e); pipeline = null; }
 }
 
 function applyQuality() {
   const high = SAVE.settings.quality === "high";
   engine.setHardwareScalingLevel(high ? 1 : 1.5);
   if (high && !shadowGen) {
-    shadowGen = new BABYLON.ShadowGenerator(1024, sun);
-    shadowGen.usePercentageCloserFiltering = false;
-    shadowGen.useExponentialShadowMap = true;
+    shadowGen = new BABYLON.ShadowGenerator(2048, sun);
+    shadowGen.useBlurExponentialShadowMap = true;
+    shadowGen.blurKernel = 32;
+    shadowGen.darkness = 0.55;
+    sun.shadowMinZ = 1; sun.shadowMaxZ = 120;
     if (boulder) shadowGen.addShadowCaster(boulder);
   } else if (!high && shadowGen) {
     shadowGen.dispose(); shadowGen = null;
@@ -377,7 +631,9 @@ function mat(name, hex, opts = {}) {
   if (MATS[name]) return MATS[name];
   const m = new BABYLON.StandardMaterial(name, scene);
   m.diffuseColor = hex3(hex);
-  m.specularColor = new BABYLON.Color3(0.06, 0.06, 0.06);
+  m.ambientColor = hex3(hex).scale(0.6); // respond to scene.ambientColor for softer fills
+  m.specularColor = opts.spec != null ? new BABYLON.Color3(opts.spec, opts.spec, opts.spec) : new BABYLON.Color3(0.08, 0.08, 0.09);
+  m.specularPower = opts.shine || 32;
   if (opts.emissive) m.emissiveColor = hex3(opts.emissive);
   if (opts.alpha) m.alpha = opts.alpha;
   MATS[name] = m;
@@ -444,8 +700,9 @@ function buildBoulder() {
   boulder.setVerticesData(BABYLON.VertexBuffer.PositionKind, pos);
   boulder.convertToFlatShadedMesh(); // faceted, chiselled look
   boulderMat = new BABYLON.StandardMaterial("boulderMat", scene);
-  boulderMat.specularColor = new BABYLON.Color3(0.2, 0.19, 0.17);
-  boulderMat.specularPower = 24;
+  boulderMat.specularColor = new BABYLON.Color3(0.28, 0.26, 0.22);
+  boulderMat.specularPower = 40;
+  boulderMat.ambientColor = new BABYLON.Color3(0.5, 0.5, 0.5);
   boulder.material = boulderMat;
   applySkin();
   if (shadowGen) shadowGen.addShadowCaster(boulder);
@@ -746,6 +1003,56 @@ const destructibleBuilders = {
     const disc = cyl("disc", 0.12, 1.8, 1.8, mat("gongM", "#c8923a", { emissive: "#4a2c08" }), n, 16);
     disc.rotation.x = Math.PI / 2; disc.position.y = 1.3;
     return n;
+  },
+  /* ---- creatures (used by moving variants) ---- */
+  sheep() {
+    const n = root("sheep");
+    const wool = mat("wool", "#eef0ee"), face = mat("sheepFace", "#3a3636");
+    const body = sph("b", 1.5, wool, n, 8); body.position.y = 1.0; body.scaling.set(1.3, 1.0, 1.6);
+    const head = sph("h", 0.7, face, n, 7); head.position.set(0, 1.15, 1.05);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const leg = cyl("lg", 0.7, 0.16, 0.16, face, n, 5);
+      leg.position.set(sx * 0.5, 0.35, sz * 0.6);
+    }
+    return n;
+  },
+  deer() {
+    const n = root("deer");
+    const hide = mat("deerHide", "#9a6a3a"), dark = mat("deerDark", "#3a281a");
+    const body = sph("b", 1.3, hide, n, 8); body.position.y = 1.3; body.scaling.set(1.0, 0.9, 1.7);
+    cyl("neck", 1.0, 0.3, 0.4, hide, n, 6).position.set(0, 1.9, 0.9);
+    const head = sph("h", 0.55, hide, n, 6); head.position.set(0, 2.4, 1.15);
+    for (const sx of [-1, 1]) {
+      const antler = cyl("ant", 0.9, 0.04, 0.1, dark, n, 4); antler.position.set(sx * 0.2, 2.85, 1.1); antler.rotation.z = sx * 0.4;
+    }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const leg = cyl("lg", 1.3, 0.12, 0.14, dark, n, 5); leg.position.set(sx * 0.4, 0.65, sz * 0.65);
+    }
+    return n;
+  },
+  penguin() {
+    const n = root("peng");
+    const body = sph("b", 1.1, mat("pengBlack", "#2a2c34"), n, 8); body.position.y = 1.0; body.scaling.set(0.85, 1.2, 0.85);
+    const belly = sph("be", 0.85, mat("pengWhite", "#eef2f6"), n, 7); belly.position.set(0, 1.0, 0.35); belly.scaling.set(0.7, 1.05, 0.5);
+    const beak = cyl("bk", 0.4, 0.02, 0.22, mat("pengBeak", "#e8a83a", { emissive: "#6a4a08" }), n, 5); beak.position.set(0, 1.35, 0.7); beak.rotation.x = Math.PI / 2;
+    return n;
+  },
+  boar() {
+    const n = root("boar");
+    const hide = mat("boarHide", "#4a3a30");
+    const body = sph("b", 1.5, hide, n, 8); body.position.y = 1.0; body.scaling.set(1.2, 1.0, 1.7);
+    const head = sph("h", 0.8, hide, n, 6); head.position.set(0, 0.95, 1.2); head.scaling.set(0.9, 0.9, 1.1);
+    for (const sx of [-1, 1]) { const tusk = cyl("tk", 0.3, 0.02, 0.08, mat("tusk", "#e8e0d0"), n, 4); tusk.position.set(sx * 0.25, 0.8, 1.7); tusk.rotation.x = 0.6; }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const leg = cyl("lg", 0.6, 0.16, 0.18, hide, n, 5); leg.position.set(sx * 0.5, 0.3, sz * 0.6); }
+    return n;
+  },
+  critter() {
+    // small glowing zone-spirit (twilight/crystal/aurora) — hops
+    const n = root("critter");
+    const body = sph("b", 0.9, mat("critterB", "#9a7aff", { emissive: "#4a2aaa" }), n, 7); body.position.y = 0.7;
+    const eye1 = sph("e1", 0.16, mat("critterEye", "#ffffff", { emissive: "#aaaaaa" }), n, 5); eye1.position.set(-0.2, 0.9, 0.55);
+    const eye2 = sph("e2", 0.16, mat("critterEye", "#ffffff", { emissive: "#aaaaaa" }), n, 5); eye2.position.set(0.2, 0.9, 0.55);
+    return n;
   }
 };
 
@@ -756,7 +1063,7 @@ function destructibleFactory(def) {
     n.getChildMeshes().forEach((m, i) => { if (i % 2 === 0) m.material = tm; });
   }
   n.scaling.setAll(def.size);
-  n.metadata = { kind: "destructible", def, radius: 1.4 * def.size, alive: true };
+  n.metadata = { kind: "destructible", def, radius: 1.4 * def.size, alive: true, move: def.move || null };
   return n;
 }
 
@@ -1073,6 +1380,53 @@ function buildDust() {
   dustPS.direction2 = new BABYLON.Vector3(3, 5, 3);
   dustPS.start();
 }
+
+/* ---- biome atmosphere: a camera-following weather/particle layer per region ---- */
+let atmoPS = null, atmoBiome = "";
+const ATMO_DEFS = {
+  snow:     { rate: 160, c1: [1, 1, 1, 0.9], c2: [0.85, 0.92, 1, 0.7], size: [0.18, 0.5], life: [2.2, 3.6], grav: -3.2, drift: 2.2, blend: 0 },
+  aurora:   { rate: 90,  c1: [0.7, 1, 0.85, 0.7], c2: [0.6, 0.85, 1, 0.5], size: [0.2, 0.55], life: [2.4, 4], grav: -2, drift: 2.4, blend: 1 },
+  volcanic: { rate: 120, c1: [1, 0.5, 0.18, 0.85], c2: [0.5, 0.15, 0.05, 0.5], size: [0.16, 0.46], life: [1.8, 3.2], grav: 2.6, drift: 1.8, blend: 1 },
+  golden:   { rate: 70,  c1: [1, 0.86, 0.4, 0.7], c2: [1, 0.7, 0.25, 0.45], size: [0.12, 0.34], life: [2.4, 4.2], grav: 0.4, drift: 1.4, blend: 1 },
+  crystal:  { rate: 80,  c1: [0.7, 0.92, 1, 0.8], c2: [0.6, 1, 0.95, 0.5], size: [0.12, 0.38], life: [2.6, 4.4], grav: 0.2, drift: 1.2, blend: 1 },
+  twilight: { rate: 60,  c1: [0.75, 0.66, 1, 0.6], c2: [0.55, 0.5, 0.85, 0.4], size: [0.14, 0.4], life: [2.6, 4.6], grav: -0.6, drift: 1.6, blend: 1 },
+  desert:   { rate: 70,  c1: [0.9, 0.78, 0.5, 0.45], c2: [0.8, 0.66, 0.42, 0.3], size: [0.2, 0.6], life: [1.6, 2.8], grav: 0.2, drift: 3.4, blend: 0 },
+  swamp:    { rate: 55,  c1: [0.7, 0.85, 0.55, 0.4], c2: [0.55, 0.7, 0.4, 0.28], size: [0.1, 0.3], life: [2.8, 4.8], grav: -0.4, drift: 0.8, blend: 1 },
+  meadow:   { rate: 38,  c1: [1, 0.95, 0.7, 0.45], c2: [0.9, 1, 0.7, 0.3], size: [0.08, 0.22], life: [3, 5], grav: -0.3, drift: 1.2, blend: 1 },
+  forest:   { rate: 42,  c1: [0.85, 0.95, 0.6, 0.4], c2: [0.7, 0.85, 0.5, 0.28], size: [0.08, 0.24], life: [3, 5.2], grav: -0.2, drift: 1, blend: 1 },
+  canyon:   { rate: 60,  c1: [0.85, 0.6, 0.42, 0.4], c2: [0.75, 0.5, 0.36, 0.28], size: [0.18, 0.5], life: [1.8, 3], grav: 0.2, drift: 2.8, blend: 0 },
+  rocky:    { rate: 36,  c1: [0.82, 0.8, 0.74, 0.4], c2: [0.7, 0.68, 0.62, 0.26], size: [0.12, 0.34], life: [2.4, 4], grav: 0.1, drift: 1.4, blend: 0 },
+};
+function buildAtmosphere() {
+  atmoPS = new BABYLON.ParticleSystem("atmo", 600, scene);
+  atmoPS.particleTexture = makeFlareTexture();
+  atmoPS.emitter = new BABYLON.Vector3(0, 0, 0);
+  atmoPS.minEmitBox = new BABYLON.Vector3(-44, 8, -10);
+  atmoPS.maxEmitBox = new BABYLON.Vector3(44, 40, 70);
+  atmoPS.minSize = 0.1; atmoPS.maxSize = 0.4;
+  atmoPS.minLifeTime = 2; atmoPS.maxLifeTime = 4;
+  atmoPS.emitRate = 0;
+  atmoPS.direction1 = new BABYLON.Vector3(-1, -1, -1);
+  atmoPS.direction2 = new BABYLON.Vector3(1, -0.5, 1);
+  atmoPS.minEmitPower = 0.4; atmoPS.maxEmitPower = 1.2;
+  atmoPS.start();
+}
+function setAtmosphere(biomeId) {
+  if (!atmoPS || atmoBiome === biomeId) return;
+  atmoBiome = biomeId;
+  const d = ATMO_DEFS[biomeId] || ATMO_DEFS.meadow;
+  const q = SAVE.settings.quality === "low" ? 0.4 : 1;
+  atmoPS.emitRate = d.rate * q;
+  atmoPS.color1 = new BABYLON.Color4(...d.c1);
+  atmoPS.color2 = new BABYLON.Color4(...d.c2);
+  atmoPS.colorDead = new BABYLON.Color4(d.c2[0], d.c2[1], d.c2[2], 0);
+  atmoPS.minSize = d.size[0]; atmoPS.maxSize = d.size[1];
+  atmoPS.minLifeTime = d.life[0]; atmoPS.maxLifeTime = d.life[1];
+  atmoPS.gravity = new BABYLON.Vector3(0, d.grav, 0);
+  atmoPS.direction1 = new BABYLON.Vector3(-d.drift, -0.6, -d.drift * 0.5);
+  atmoPS.direction2 = new BABYLON.Vector3(d.drift, -0.2, d.drift * 0.5);
+  atmoPS.blendMode = d.blend === 1 ? BABYLON.ParticleSystem.BLENDMODE_ADD : BABYLON.ParticleSystem.BLENDMODE_STANDARD;
+}
 function puffDust(pos, amount) {
   if (SAVE.settings.quality === "low") amount = Math.floor(amount * 0.4);
   dustPS.emitter = pos.clone();
@@ -1145,6 +1499,7 @@ function blendedEnv(dist) {
     ground2: lerpC(cur.cGround2, nxt.cGround2, t),
     fog: lerpC(cur.cFog, nxt.cFog, t),
     sky: lerpC(cur.cSky, nxt.cSky, t),
+    skyHi: lerpC(cur.cSkyHi, nxt.cSkyHi, t),
     sun: lerpC(cur.cSun, nxt.cSun, t),
     ambient: lerpC(cur.cAmbient, nxt.cAmbient, t),
     fogDensity: lerp(cur.fogDensity, nxt.fogDensity, t),
@@ -1356,7 +1711,8 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
         rec.items.push({ kind: "hazard_roller", node });
         run.hazards.push(node);
       } else {
-        // block 1–2 of 3 lanes, always leave at least one safe
+        // block 1–2 of 3 lanes, always leave at least one safe — but scatter each
+        // hazard in Z and jitter it in X so they don't form a rigid straight line
         const lanes = [0, 1, 2];
         const blockedCount = (dist > H.twoLaneAfter && Math.random() < (dist > 3000 ? 0.62 : 0.45)) ? 2 : 1;
         for (let k = 0; k < blockedCount; k++) {
@@ -1368,8 +1724,11 @@ function spawnGameplayContent(rec, z0, z1, env, biome) {
           node.getChildMeshes().forEach((m) => m.setEnabled(true));
           node.metadata.type = type; node.metadata.dead = false; node.metadata.passed = false;
           node.metadata.iceState = null; node.metadata.anchorX = null; node.metadata.phase = rand(0, Math.PI * 2);
-          const x = laneX(hzv, lane);
-          node.position.set(x, terrainY(x, hzv), hzv);
+          const zJit = hzv + rand(-3.2, 3.2);                       // stagger along the slope
+          const xJit = laneX(zJit, lane) + rand(-0.45, 0.45) * T.halfWidth * 0.28; // nudge across the lane
+          const x = clamp(xJit, centerX(zJit) - T.halfWidth * 0.9, centerX(zJit) + T.halfWidth * 0.9);
+          if (nearGap(zJit, 5)) continue; // never strand a hazard over a crevasse
+          node.position.set(x, terrainY(x, zJit), zJit);
           rec.items.push({ kind: "hazard_" + type, node });
           run.hazards.push(node);
         }
@@ -1572,7 +1931,9 @@ let input = { left: false, right: false, jump: false, brake: false, axis: 0, joy
 
 function startRun(continueRun) {
   AudioFX.ensure(); AudioFX.resume(); AudioFX.startMusic();
+  if (continueRun && run.lastLobby) { run.lobby = run.lastLobby; run.upgradeCap = run.lastCap || null; }
   if (!continueRun) {
+    run.lastLobby = null; run.lastCap = null;
     for (const ci of [...chunks.keys()]) disposeChunk(ci);
     run.objects = []; run.hazards = []; run.pickups = [];
     run.z = 30; run.startZ = 30; run.dist = 0;
@@ -1596,6 +1957,11 @@ function startRun(continueRun) {
     if (SAVE.runItems.aegis) { run.shields += 2; run.__aegisFull = true; } else run.__aegisFull = false;
     run.maxHp = Math.max(1, 2 + upLevel("durability") + (bodyDef().hp || 0));
     run.hp = run.maxHp;
+    if (window.__mpPending) {
+      run.lobby = window.__mpPending.code;
+      run.upgradeCap = window.__mpPending.cap || null;
+      window.__mpPending = null;
+    } else { run.lobby = null; run.upgradeCap = null; }
     run.chains = {}; run.chainsDone = 0;
     run.topSpeed = 0; run.bestAir = 0; run.airTime = 0; run.curseT = 0; run.time = 0;
     run.ghostFrames = []; run.ghostAcc = 0; run.ghostEvents = [];
@@ -1673,8 +2039,17 @@ function endRun(reason) {
     if (run.ghostFrames && run.ghostFrames.length > 20)
       localStorage.setItem("rf_last_ghost", JSON.stringify({ v: 2, frames: run.ghostFrames, events: run.ghostEvents || [] }));
   } catch (e) {}
-  run.lobby = null;
+  const lobbyCode = run.lobby;
+  run.lastLobby = lobbyCode; run.lastCap = run.upgradeCap;
+  run.lobby = null; run.upgradeCap = null;
   try { if (window.RFNet && window.RFNet.leaveLive) window.RFNet.leaveLive(); } catch (e) {}
+  if (lobbyCode && window.RFNet) {
+    try {
+      window.RFNet.mp.submitResult(lobbyCode, Math.floor(run.dist), Math.floor(run.score), Math.floor(run.time || 0))
+        .then(() => maybeSpectate(lobbyCode))
+        .catch(() => showRaceResults(lobbyCode));
+    } catch (e) {}
+  }
   try {
     if (window.RFNet && window.RFNet.onRunEnd) window.RFNet.onRunEnd({
       score: Math.floor(run.score), dist: Math.floor(run.dist),
@@ -1903,7 +2278,7 @@ function updateRun(dt) {
   run.score += run.speed * dt * CFG.balance.scoring.distancePointsPerMeter;
 
   /* gaps + vertical */
-  const gap = gapAtZ(run.z) && run.overdrive <= 0; // Overdrive smashes across crevasses too
+  const gap = gapAtZ(run.z, run.x) && run.overdrive <= 0; // Overdrive smashes across crevasses too
   const gy = terrainY(run.x, run.z) + r;
   run.vy -= P.gravity * dt;
   run.y += run.vy * dt;
@@ -1987,10 +2362,30 @@ function collide(dt, env) {
   const r = CFG.balance.physics.boulderRadius;
   const bp = boulder.position;
 
-  /* destructibles */
+  /* destructibles — animate any that wander/sway, then collision-check */
   for (let i = run.objects.length - 1; i >= 0; i--) {
     const o = run.objects[i];
     if (!o.metadata.alive) continue;
+    const md = o.metadata;
+    if (md.move) {
+      const now = performance.now() * 0.001;
+      if (md.move === "graze") {
+        // grazing animals amble side to side and bob slightly
+        if (md.mphase == null) { md.mphase = Math.random() * 7; md.mox = o.position.x; }
+        const sway = Math.sin(now * 0.6 + md.mphase) * 2.2;
+        o.position.x = clamp(md.mox + sway, centerX(o.position.z) - T.halfWidth * 0.85, centerX(o.position.z) + T.halfWidth * 0.85);
+        o.position.y = terrainY(o.position.x, o.position.z) - 0.08 + Math.abs(Math.sin(now * 2 + md.mphase)) * 0.12;
+        o.rotation.y = Math.sin(now * 0.6 + md.mphase) > 0 ? 0.4 : -0.4 + Math.PI;
+      } else if (md.move === "sway") {
+        o.rotation.z = Math.sin(now * 1.4 + (md.mphase || 0)) * 0.12; // flags, reeds
+      } else if (md.move === "spin") {
+        o.rotation.y += dt * 1.5; // windmills, prayer wheels
+      } else if (md.move === "hop") {
+        if (md.mphase == null) md.mphase = Math.random() * 5;
+        const hop = Math.max(0, Math.sin(now * 3 + md.mphase));
+        o.position.y = terrainY(o.position.x, o.position.z) - 0.08 + hop * 0.6;
+      }
+    }
     const dz = o.position.z - bp.z;
     if (dz < -6 || dz > 6) continue;
     const dx = o.position.x - bp.x, dy = o.position.y - bp.y;
@@ -2252,28 +2647,126 @@ function updateEnvironment() {
   sun.diffuse = env.sun;
   hemi.diffuse = env.ambient;
   hemi.groundColor = env.ground.scale(0.5);
+  setSkyColors(env.skyHi, env.sky); // gradient sky from horizon (fog colour) to zenith
+  if (skyDome) skyDome.position.copyFrom(camera.position);
+  setCloudTint(env.skyHi, env.fogDensity);
+  const ab = env.t > 0.5 ? env.nxt.id : env.cur.id;
+  setAtmosphere(ab);
+  if (atmoPS) atmoPS.emitter = new BABYLON.Vector3(run.x, run.y + 6, run.z); // weather follows the boulder
   $("hudBiome").textContent = env.label;
   AudioFX.setMood(env.t > 0.5 ? env.nxt.id : env.cur.id);
   if (run.active) {
     const bid = env.t > 0.5 ? env.nxt.id : env.cur.id;
+    if (bid !== run.curBiome) {
+      run.curBiome = bid;
+      showRegionBanner(env.t > 0.5 ? env.nxt : env.cur);
+    }
     if (!run.biomesSeen.includes(bid)) {
       run.biomesSeen.push(bid);
       SAVE.ency.biomes[bid] = (SAVE.ency.biomes[bid] || 0) + 1;
     }
   }
 }
+function showRegionBanner(biome) {
+  const el = $("regionBanner");
+  if (!el) return;
+  const rar = biome.rarity || "common";
+  el.className = "region-banner rar-" + rar;
+  el.innerHTML = "<span class='rb-rar'>" + rar.toUpperCase() + " REGION</span><span class='rb-name'>" + biome.label + "</span>";
+  el.classList.remove("hidden");
+  // restart the CSS animation
+  void el.offsetWidth;
+  el.classList.add("show");
+  clearTimeout(window.__regionT);
+  window.__regionT = setTimeout(() => { el.classList.remove("show"); }, 2600);
+  if (rar === "epic" || rar === "legendary") { AudioFX.overdrive(); shake(0.2); }
+}
 
 /* ---------- HUD ---------- */
+/* Active timed effects: each renders an icon with a ring that shrinks as it expires. */
+const EFFECT_DEFS = {
+  superjump: { icon: "⤴", color: "#5aff7a", max: () => CFG.balance.powerups.duration },
+  multi:     { icon: "×2", color: "#ffd23a", max: () => CFG.balance.powerups.duration },
+  steer:     { icon: "⚡", color: "#5ab8ff", max: () => CFG.balance.powerups.duration },
+  magnet:    { icon: "🧲", color: "#d87aff", max: () => CFG.balance.powerups.duration },
+  boost:     { icon: "»",  color: "#3affd8", max: () => CFG.balance.powerups.boostTime + 1.5 },
+  curse:     { icon: "☠", color: "#ff3a3a", max: () => 6 },
+  grace:     { icon: "✦", color: "#ffffff", max: () => 2.2 },
+};
+function activeEffectList() {
+  const out = [];
+  for (const k of ["superjump", "multi", "steer", "magnet"]) if (run.power[k] > 0) out.push({ id: k, t: run.power[k] });
+  if (run.boostT > 0) out.push({ id: "boost", t: run.boostT });
+  if (run.curseT > 0) out.push({ id: "curse", t: run.curseT });
+  if (run.grace > 0 && run.shields === 0) out.push({ id: "grace", t: run.grace });
+  return out;
+}
+function renderEffectIcons() {
+  const wrap = $("fxIcons");
+  const list = activeEffectList();
+  const seen = new Set();
+  for (const e of list) {
+    seen.add(e.id);
+    const def = EFFECT_DEFS[e.id];
+    const frac = clamp(e.t / def.max(), 0, 1);
+    let el = wrap.querySelector('[data-fx="' + e.id + '"]');
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "fx-icon"; el.dataset.fx = e.id;
+      el.innerHTML = '<svg viewBox="0 0 40 40"><circle class="bg" cx="20" cy="20" r="17"/><circle class="ring" cx="20" cy="20" r="17"/></svg><span class="gl"></span>';
+      el.querySelector(".gl").textContent = def.icon;
+      el.style.setProperty("--c", def.color);
+      wrap.appendChild(el);
+    }
+    const ring = el.querySelector(".ring");
+    const circ = 2 * Math.PI * 17;
+    ring.style.strokeDasharray = circ;
+    ring.style.strokeDashoffset = circ * (1 - frac);
+    el.querySelector(".gl").textContent = Math.ceil(e.t) + "";
+    el.title = e.id + " — " + e.t.toFixed(1) + "s";
+  }
+  // shields shown as a static badge (no timer)
+  let sh = wrap.querySelector('[data-fx="shield"]');
+  if (run.shields > 0) {
+    if (!sh) {
+      sh = document.createElement("div"); sh.className = "fx-icon static"; sh.dataset.fx = "shield";
+      sh.innerHTML = '<svg viewBox="0 0 40 40"><circle class="bg" cx="20" cy="20" r="17"/></svg><span class="gl"></span>';
+      sh.style.setProperty("--c", "#9ad8ff");
+      wrap.appendChild(sh);
+    }
+    sh.querySelector(".gl").textContent = "🛡" + run.shields;
+    seen.add("shield");
+  }
+  for (const el of [...wrap.children]) if (!seen.has(el.dataset.fx)) el.remove();
+}
+
 function updateHUD(force) {
   $("hudScore").textContent = fmt(run.score);
   $("hudDist").textContent = fmt(run.dist) + " m";
   $("hudCoins").textContent = fmt(run.coins);
   $("hudGems").textContent = fmt(run.gems);
   $("hudCombo").textContent = run.combo > 1 ? "COMBO ×" + comboMult().toFixed(2) : "";
-  const pct = (run.meter / CFG.balance.overdrive.meterMax) * 100;
-  $("meterFill").style.width = pct + "%";
-  document.querySelector(".meter").classList.toggle("full", run.overdrive > 0);
   $("hudHp").textContent = run.maxHp > 0 ? "●".repeat(run.hp) + "○".repeat(Math.max(0, run.maxHp - run.hp)) : "";
+
+  // ---- Overdrive bar (left): charge fills up, then drains while active ----
+  const odMax = CFG.balance.overdrive.duration || 6;
+  const meterMax = CFG.balance.overdrive.meterMax;
+  const odWrap = $("odBar");
+  if (run.overdrive > 0) {
+    odWrap.classList.add("active");
+    $("odFill").style.height = (run.overdrive / odMax * 100) + "%";
+    $("odLabel").textContent = run.overdrive.toFixed(1) + "s";
+  } else {
+    odWrap.classList.remove("active");
+    $("odFill").style.height = (run.meter / meterMax * 100) + "%";
+    $("odLabel").textContent = run.meter >= meterMax ? "READY!" : Math.floor(run.meter / meterMax * 100) + "%";
+  }
+  odWrap.classList.toggle("ready", run.overdrive <= 0 && run.meter >= meterMax);
+
+  // ---- Effect icons (right) with shrinking duration rings ----
+  renderEffectIcons();
+
+  // ---- screen-edge tint ----
   const fx = $("fxOverlay");
   fx.className = run.overdrive > 0 ? "fx fx-overdrive"
     : run.curseT > 0 ? "fx fx-curse"
@@ -2282,19 +2775,10 @@ function updateHUD(force) {
     : run.power.steer > 0 ? "fx fx-steer"
     : run.power.magnet > 0 ? "fx fx-magnet"
     : run.boostT > 0 ? "fx fx-boost" : "fx";
+
   if (run.state === "intro") $("hudState").textContent = "FREE FALL — " + schemeHint();
-  else if (run.overdrive > 0) $("hudState").textContent = "OVERDRIVE " + run.overdrive.toFixed(1) + "s";
-  else {
-    const tags = [];
-    if (run.grace > 0) tags.push("INVULNERABLE");
-    if (run.shields > 0) tags.push("🛡×" + run.shields);
-    if (run.power.superjump > 0) tags.push("⤴ JUMP " + Math.ceil(run.power.superjump) + "s");
-    if (run.power.multi > 0) tags.push("×2 " + Math.ceil(run.power.multi) + "s");
-    if (run.power.steer > 0) tags.push("⚡ STEER " + Math.ceil(run.power.steer) + "s");
-    if (run.power.magnet > 0) tags.push("🧲 " + Math.ceil(run.power.magnet) + "s");
-    if (run.boostT > 0) tags.push("BOOST");
-    $("hudState").textContent = tags.join("  ");
-  }
+  else if (run.overdrive > 0) $("hudState").textContent = "";
+  else $("hudState").textContent = "";
   const act = activeGoals();
   if (act.length) {
     const i = Math.floor(performance.now() / 4000) % act.length;
@@ -2311,16 +2795,18 @@ function tick() {
   if (run.state === "ghost") {
     updateGhost(dt);
     updatePopups(dt);
+    updateClouds(dt);
   } else if (!run.paused && (run.state === "run" || run.state === "intro")) {
     updateRun(dt);
     updateDebris(dt);
     updatePopups(dt);
     updateCamera(dt);
     updateEnvironment();
+    updateClouds(dt);
     lastHud += dt;
     if (lastHud > 0.07) { updateHUD(); lastHud = 0; }
   } else if (run.state === "over") {
-    updateDebris(dt); updatePopups(dt); updateCamera(dt);
+    updateDebris(dt); updatePopups(dt); updateCamera(dt); updateClouds(dt);
   }
   scene.render();
 }
@@ -2389,7 +2875,10 @@ function checkGoals() {
    UI — overlays, menus, meta
    ========================================================================= */
 function hideAll() {
-  ["ovStart", "ovEnd", "ovPause", "ovUpgrades", "ovSpinner", "ovGoals", "ovSettings", "ovShop", "ovEncy", "ovGhosts", "ovMulti"].forEach((id) => $(id).classList.add("hidden"));
+  ["ovStart", "ovEnd", "ovPause", "ovSpinner", "ovGoals", "ovSettings", "ovEncy", "ovGhosts", "ovMulti", "ovMore", "ovShopMain", "ovStats", "ovTutorial"].forEach((id) => { const e = $(id); if (e) e.classList.add("hidden"); });
+  stopRaceResults();
+  const mpr = $("mpResults"); if (mpr) { mpr.classList.add("hidden"); mpr.innerHTML = ""; }
+  const sb = $("spectateBar"); if (sb) sb.classList.add("hidden");
 }
 function showMenu() {
   hideAll();
@@ -2398,13 +2887,6 @@ function showMenu() {
   $("joystick").classList.add("hidden"); $("btnJump").classList.add("hidden");
   $("menuCoins").textContent = fmt(SAVE.coins);
   $("menuGems").textContent = fmt(SAVE.gems);
-  $("startStats").innerHTML =
-    "Best distance: <b>" + fmt(SAVE.stats.bestDist) + " m</b> · Best score: <b>" + fmt(SAVE.stats.bestScore) + "</b><br>" +
-    "Runs: " + fmt(SAVE.stats.runs) + " · Objects smashed: " + fmt(SAVE.stats.smashed) +
-    " · Overdrives: " + fmt(SAVE.stats.overdrives) + " · Crevasses cleared: " + fmt(SAVE.stats.gaps);
-  renderSkins();
-  renderTrails();
-  renderBoulders();
   try { if (window.RFNet && window.RFNet.renderMenu) window.RFNet.renderMenu(); } catch (e) {}
   $("ovStart").classList.remove("hidden");
 }
@@ -2468,8 +2950,56 @@ function renderTrails() {
   }
 }
 
+function setShopTab(which) {
+  for (const t of ["Upgrades", "Temp", "Custom"]) {
+    const pane = $("shPane" + t), btn = $("shTab" + t);
+    if (pane) pane.classList.toggle("hidden", t !== which);
+    if (btn) btn.classList.toggle("active", t === which);
+  }
+}
+function renderStats() {
+  const b = $("statsBody");
+  const st = SAVE.stats;
+  const row = (label, val) => "<div class='goal-row'><div class='up-info'><b>" + label + "</b></div><div class='goal-prog'>" + val + "</div></div>";
+  b.innerHTML =
+    "<div class='ency-head'>YOUR STATS</div>" +
+    row("Best distance", fmt(st.bestDist) + " m") +
+    row("Best score", fmt(st.bestScore)) +
+    row("Top speed", (st.bestSpeed || 0).toFixed(1) + " m/s") +
+    row("Longest airtime", (st.bestAirtime || 0).toFixed(2) + " s") +
+    row("Total runs", fmt(st.runs)) +
+    row("Objects smashed", fmt(st.smashed)) +
+    row("Overdrives", fmt(st.overdrives)) +
+    row("Crevasses cleared", fmt(st.gaps)) +
+    row("Coin trails completed", fmt(st.chains || 0)) +
+    row("Biomes seen", (st.biomesSeen || []).length + "/" + CFG.biomes.biomes.length);
+  const r = $("ranksBody");
+  r.innerHTML = "<div class='ency-head'>GLOBAL LEADERBOARD</div><div class='shop-note'>Loading…</div>";
+  if (window.RFNet && window.RFNet.loggedIn && window.RFNet.loggedIn() && window.RFNet.fillGlobalRecords) {
+    window.RFNet.fillGlobalRecords(r, { score: st.bestScore || 0, dist: st.bestDist || 0, duration: st.bestTime || 0 });
+    setTimeout(() => { const note = r.querySelector(".shop-note"); if (note) note.remove(); }, 1500);
+  } else {
+    r.innerHTML = "<div class='ency-head'>GLOBAL LEADERBOARD</div><div class='shop-note'>Sign in (More → or main menu) to see global ranks.</div>";
+  }
+}
+const TUTORIAL_SECTIONS = [
+  ["Goal", "Roll downhill as far as you can, smashing everything. The longer you survive, the higher your score and the rarer the regions you reach."],
+  ["Steering & braking", "A/D or arrows steer; S or ↓ brakes. On mobile pick a control scheme in Settings: tilt (gyro), an on-screen joystick, or drag. Pull down / drag toward yourself to brake."],
+  ["Jumping", "Space jumps. Clearing a crevasse gives a bonus. A clean landing on a downhill slope converts your dive into speed — chain big jumps for distance."],
+  ["Boulder integrity (♥)", "Most enemies crack your boulder instead of killing it outright. Each crack costs integrity; lose it all and the run ends. The Durability upgrade and the Titan boulder add integrity."],
+  ["Overdrive (left bar)", "Smashing fills the bar on the left. When full you ignite: invincible, smashing enemies and bridging crevasses. The bar then drains as Overdrive runs out."],
+  ["Effects (right icons)", "Power-ups stack on the right with a ring that shrinks as they expire: ⤴ Super Jump, ×2 score & coins, ⚡ Steer boost, 🧲 Magnet. Boost rings give a speed burst; green gates launch you, red gates curse you toward enemies."],
+  ["Coins & gems", "Coins buy upgrades, trails and boulders. Gold (×3) and ruby (×5) coins are worth more. Rare coin TRAILS reward a boost, a gem or a power-up if you grab the whole line. Gems are precious — used for premium items and the Lucky Spin."],
+  ["Shop", "Upgrades are permanent and tunable (set any owned upgrade lower for a challenge). Temporary items apply to your next run only. Customize changes your skin, trail and boulder type."],
+  ["Multiplayer", "Host a lobby for a code, friends join with it. Everyone races the SAME mountain, and upgrades are levelled down to the weakest racer for fairness. Die and you can spectate the rest. Final standings show who got furthest."],
+  ["Ghosts", "Every run records a full replay — your path plus every smash and pickup. Replay your last run or anyone's online ghost, with a timeline you can scrub and speed up."],
+];
+function renderTutorial() {
+  $("tutorialBody").innerHTML = TUTORIAL_SECTIONS.map(([h, t]) =>
+    "<div class='goal-row'><div class='up-info'><b>" + h + "</b><span>" + t + "</span></div></div>").join("");
+}
 function renderShop() {
-  $("shopCoins").textContent = fmt(SAVE.coins) + "  ·  💎 " + fmt(SAVE.gems);
+  if ($("shopMainCoins")) { $("shopMainCoins").textContent = fmt(SAVE.coins); $("shopMainGems").textContent = fmt(SAVE.gems); }
   const list = $("shopList"); list.innerHTML = "";
   for (const it of (CFG.upgrades.items || [])) {
     const have = SAVE.runItems[it.id] || 0;
@@ -2626,7 +3156,7 @@ function showEndOverlay(coinGain, newBest, goalsDoneNow, reason, records) {
 }
 
 function renderUpgrades() {
-  $("upCoins").textContent = fmt(SAVE.coins);
+  if ($("shopMainCoins")) $("shopMainCoins").textContent = fmt(SAVE.coins);
   const list = $("upList"); list.innerHTML = "";
   for (const u of CFG.upgrades.upgrades) {
     const owned = upOwned(u.id);
@@ -2965,7 +3495,7 @@ async function mpHost() {
   if (!netReady()) return;
   try {
     mpSetStatus("Creating lobby…");
-    const { code } = await window.RFNet.mp.create();
+    const { code } = await window.RFNet.mp.create(SAVE.upgrades);
     mpUI.code = code; mpUI.host = true; mpUI.starting = false;
     $("mpCode").textContent = code;
     $("mpCodeWrap").classList.remove("hidden");
@@ -2983,7 +3513,7 @@ async function mpJoin() {
   if (code.length < 4) { mpSetStatus("Enter the code from your host."); return; }
   try {
     mpSetStatus("Joining " + code + "…");
-    await window.RFNet.mp.join(code);
+    await window.RFNet.mp.join(code, SAVE.upgrades);
     mpUI.code = code; mpUI.host = false; mpUI.starting = false;
     $("mpCode").textContent = code;
     $("mpCodeWrap").classList.remove("hidden");
@@ -3009,9 +3539,22 @@ function netReady() {
   }
   return true;
 }
-function beginLobbyRun(code, seed) {
+async function beginLobbyRun(code, seed) {
   hideAll();
   window.__forcedRunSeed = seed; // everyone races the SAME mountain
+  // FAIR RACE: cap every upgrade at the weakest racer's owned level
+  let cap = null;
+  try {
+    const louts = await window.RFNet.mp.loadouts(code);
+    if (louts.length) {
+      cap = {};
+      for (const u of CFG.upgrades.upgrades) {
+        let mn = Infinity;
+        for (const lo of louts) mn = Math.min(mn, (lo && lo[u.id]) || 0);
+        cap[u.id] = mn === Infinity ? 0 : mn;
+      }
+    }
+  } catch (e) {}
   let n = 3;
   $("hud").classList.remove("hidden");
   $("hudState").textContent = "STARTING IN 3…";
@@ -3021,10 +3564,58 @@ function beginLobbyRun(code, seed) {
     if (n > 0) { $("hudState").textContent = "STARTING IN " + n + "…"; AudioFX.click(); }
     else {
       clearInterval(iv);
+      window.__mpPending = { code, cap };
       startRun(false);
-      run.lobby = code;
+      if (cap) popScore(boulder.position, "FAIR RACE — upgrades matched to the weakest racer", "bonus");
     }
   }, 900);
+}
+let raceTimer = null;
+function stopRaceResults() {
+  if (raceTimer) { clearInterval(raceTimer); raceTimer = null; }
+}
+function showRaceResults(code) {
+  const box = $("mpResults");
+  if (!box) return;
+  box.classList.remove("hidden");
+  box.innerHTML = "<div class='ency-head'>🏁 RACE " + code + " — collecting results…</div>";
+  let ticks = 0;
+  stopRaceResults();
+  const renderRace = async () => {
+    ticks++;
+    if (ticks > 80) { stopRaceResults(); return; } // ~3.5 min max
+    try {
+      const [results, st, poss] = await Promise.all([
+        window.RFNet.mp.results(code),
+        window.RFNet.mp.state(code),
+        window.RFNet.mp.positions(code),
+      ]);
+      const finished = new Set(results.map((r) => r.name));
+      const members = st ? st.members : [];
+      const racing = members.filter((m) => !finished.has(m));
+      const posBy = {};
+      for (const p of poss) posBy[p.name] = p.dist;
+      const medal = (i) => (i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1) + ".");
+      let html = "<div class='ency-head'>🏁 RACE " + code + (racing.length ? " — still rolling: " + racing.length : " — FINAL") + "</div>";
+      results.forEach((r, i) => {
+        const me = window.RFNet.userName && window.RFNet.userName() === r.name;
+        html += "<div class='goal-row" + (me ? " done" : "") + "'><div class='up-info'><b>" + medal(i) + " " + r.name + (me ? " (you)" : "") +
+          "</b><span>" + fmt(r.dist) + " m · " + fmt(r.score) + " pts · " + r.dur + " s</span></div></div>";
+      });
+      for (const m of racing) {
+        html += "<div class='goal-row locked'><div class='up-info'><b>⏳ " + m + "</b><span>still rolling" +
+          (posBy[m] != null ? " — " + fmt(posBy[m]) + " m…" : "…") + "</span></div></div>";
+      }
+      box.innerHTML = html;
+      if (!racing.length && results.length >= Math.max(1, members.length)) {
+        stopRaceResults(); // everyone is in — final standings stay on screen
+        const mine = results.findIndex((r) => window.RFNet.userName && window.RFNet.userName() === r.name);
+        if (mine === 0 && results.length > 1) fanfare();
+      }
+    } catch (e) {}
+  };
+  raceTimer = setInterval(renderRace, 2500);
+  renderRace();
 }
 function showMulti() {
   hideAll();
@@ -3078,6 +3669,7 @@ async function showGhostList() {
 }
 
 window.__fanfare = fanfare;
+window.__rfSyncCloud = () => { try { syncCloudOnLogin(); } catch (e) {} };
 window.RFGame = {
   applyGrants(list) {
     const seen = SAVE.netGrantSeen || 0;
@@ -3112,11 +3704,90 @@ window.RFGame = {
     }
   }
 };
+/* =================== spectator mode (after dying in a race) =================== */
+const spectate = { code: null, target: null, timer: null };
+function stopSpectate() {
+  if (spectate.timer) { clearInterval(spectate.timer); spectate.timer = null; }
+  spectate.code = null; spectate.target = null;
+  run.state = "menu";
+}
+async function maybeSpectate(code) {
+  // are others still racing?
+  let alive = [];
+  try {
+    const [st, results] = await Promise.all([window.RFNet.mp.state(code), window.RFNet.mp.results(code)]);
+    const done = new Set(results.map((r) => r.name));
+    const me = window.RFNet.userName && window.RFNet.userName();
+    alive = (st ? st.members : []).filter((m) => m !== me && !done.has(m));
+  } catch (e) {}
+  if (!alive.length) { showRaceResults(code); return; }
+  // enter spectate
+  spectate.code = code; spectate.target = alive[0]; spectateLast = code;
+  run.state = "spectate"; run.active = false; run.paused = false;
+  boulder.setEnabled(false);
+  hideAll();
+  $("hud").classList.remove("hidden");
+  $("spectateBar").classList.remove("hidden");
+  $("ovEnd").classList.add("hidden");
+  if (spectate.timer) clearInterval(spectate.timer);
+  spectate.timer = setInterval(updateSpectateTarget, 1500);
+  updateSpectateTarget();
+}
+async function updateSpectateTarget() {
+  if (!spectate.code) return;
+  try {
+    const [poss, results, st] = await Promise.all([
+      window.RFNet.mp.positions(spectate.code),
+      window.RFNet.mp.results(spectate.code),
+      window.RFNet.mp.state(spectate.code),
+    ]);
+    const done = new Set(results.map((r) => r.name));
+    const me = window.RFNet.userName && window.RFNet.userName();
+    const alive = (st ? st.members : []).filter((m) => m !== me && !done.has(m));
+    if (!alive.length) { // race over — show standings
+      $("spectateBar").classList.add("hidden");
+      stopSpectate();
+      showRaceResults(spectate.code || spectate._lastCode || spectateLast);
+      return;
+    }
+    if (!alive.includes(spectate.target)) spectate.target = alive[0];
+    $("spectateName").textContent = "👁 Spectating " + spectate.target;
+    const opts = $("spectatePick");
+    if (opts && opts.dataset.names !== alive.join(",")) {
+      opts.dataset.names = alive.join(",");
+      opts.innerHTML = alive.map((n) => "<option" + (n === spectate.target ? " selected" : "") + ">" + n + "</option>").join("");
+    }
+    const p = poss.find((r) => r.name === spectate.target);
+    if (p) {
+      const z = p.dist + 30;
+      const x = centerX(z);
+      run.z = z; run.dist = p.dist;
+      ensureChunks(); updateEnvironment();
+      const C = CFG.balance.camera;
+      camera.position = new BABYLON.Vector3(x, terrainY(x, z) + C.height, z - C.back);
+      camera.setTarget(new BABYLON.Vector3(x, terrainY(x, z) + 1, z + 14));
+      $("hudDist").textContent = fmt(Math.floor(p.dist)) + " m";
+      $("hudState").textContent = "SPECTATING";
+    }
+  } catch (e) {}
+}
+let spectateLast = null;
+
 function setPause(p) {
   if (run.state !== "run" && run.state !== "intro") return;
+  if (p && run.lobby) { popScore(boulder.position, "No pausing during a race!", ""); return; }
   run.paused = p;
   $("ovPause").classList.toggle("hidden", !p);
-  if (p) AudioFX.suspend(); else { AudioFX.resume(); }
+  if (p) {
+    AudioFX.suspend();
+    const list = activeEffectList();
+    const box = $("pauseEffects");
+    if (list.length) {
+      box.innerHTML = "<div class='pause-fx-h'>Active effects</div>" + list.map((e) =>
+        "<div class='pause-fx-row'><b>" + (EFFECT_DEFS[e.id].icon) + " " + e.id + "</b><span>" + e.t.toFixed(1) + "s left</span></div>").join("");
+      if (run.shields > 0) box.innerHTML += "<div class='pause-fx-row'><b>🛡 shields</b><span>×" + run.shields + "</span></div>";
+    } else box.innerHTML = "";
+  } else { AudioFX.resume(); }
 }
 
 /* =========================================================================
@@ -3197,16 +3868,30 @@ function bindControls() {
 function bindUI() {
   const click = (id, fn) => $(id).addEventListener("click", () => { AudioFX.ensure(); AudioFX.resume(); AudioFX.click(); fn(); });
   click("btnPlay", () => startRun(false));
-  click("btnUpgrades", () => { hideAll(); renderUpgrades(); $("ovUpgrades").classList.remove("hidden"); });
-  click("btnUpBack", showMenu);
+  // Shop (tabbed)
+  const openShop = (tab) => { hideAll(); renderUpgrades(); renderShop(); renderSkins(); renderTrails(); renderBoulders();
+    $("shopMainCoins").textContent = fmt(SAVE.coins); $("shopMainGems").textContent = fmt(SAVE.gems);
+    setShopTab(tab || "Upgrades"); $("ovShopMain").classList.remove("hidden"); };
+  click("btnShopMain", () => openShop("Upgrades"));
+  click("btnShopMainBack", showMenu);
+  click("shTabUpgrades", () => setShopTab("Upgrades"));
+  click("shTabTemp", () => setShopTab("Temp"));
+  click("shTabCustom", () => setShopTab("Custom"));
+  // More menu
+  click("btnMoreMain", () => { hideAll(); $("ovMore").classList.remove("hidden"); });
+  click("btnMoreBack", showMenu);
+  // Stats & Ranks
+  click("btnStatsMain", () => { hideAll(); renderStats(); $("ovStats").classList.remove("hidden"); });
+  click("btnStatsBack", showMenu);
+  // Tutorial
+  click("btnTutorial", () => { hideAll(); renderTutorial(); $("ovTutorial").classList.remove("hidden"); });
+  click("btnTutorialBack", showMenu);
   click("btnSpinner", () => { hideAll(); $("spGems").textContent = fmt(SAVE.gems); $("spCost").textContent = CFG.spinner.cost; $("spinResult").textContent = "A buff applies to your next run."; $("ovSpinner").classList.remove("hidden"); });
   click("btnSpin", doSpin);
   click("btnSpBack", showMenu);
   click("btnGoals", () => { hideAll(); renderGoals(); $("ovGoals").classList.remove("hidden"); });
   click("btnGoalBack", showMenu);
   click("btnSettings", () => { hideAll(); $("ovSettings").classList.remove("hidden"); });
-  click("btnShop", () => { hideAll(); renderShop(); $("ovShop").classList.remove("hidden"); });
-  click("btnShopBack", showMenu);
   click("tabBtnStats", () => setEndTab("Stats"));
   click("tabBtnGoals", () => setEndTab("Goals"));
   click("tabBtnRecords", () => setEndTab("Records"));
@@ -3216,6 +3901,9 @@ function bindUI() {
   click("btnMpJoin", mpJoin);
   click("btnMpLeave", mpLeave);
   click("btnMpBack", () => { mpStop(); showMenu(); });
+  click("btnSpectateExit", () => { const c = spectate.code; stopSpectate(); $("spectateBar").classList.add("hidden"); if (c) showRaceResults(c); else showMenu(); });
+  const sp = $("spectatePick");
+  if (sp) sp.addEventListener("change", (e) => { spectate.target = e.target.value; updateSpectateTarget(); });
   click("btnMpStart", async () => {
     if (!mpUI.code || !window.RFNet) return;
     try { await window.RFNet.mp.start(mpUI.code); } catch (e) { mpSetStatus("Start failed: " + e.message); }
@@ -3236,11 +3924,16 @@ function bindUI() {
   });
   click("btnEncy", () => { hideAll(); renderEncy(); $("ovEncy").classList.remove("hidden"); });
   click("btnEncyBack", showMenu);
-  click("btnSetBack", showMenu);
+  click("btnSetBack", () => {
+    $("ovSettings").classList.add("hidden");
+    if (window.__settingsFromPause) { window.__settingsFromPause = false; $("ovPause").classList.remove("hidden"); }
+    else showMenu();
+  });
   click("btnExport", exportSave);
   click("btnImport", () => $("fileImport").click());
   $("fileImport").addEventListener("change", (e) => { if (e.target.files[0]) importSave(e.target.files[0]); e.target.value = ""; });
   click("btnPause", () => setPause(true));
+  click("btnPauseSettings", () => { window.__settingsFromPause = true; $("ovPause").classList.add("hidden"); bindSettings(); $("ovSettings").classList.remove("hidden"); });
   click("btnResume", () => setPause(false));
   click("btnRestart", () => { setPause(false); run.buffs = {}; startRun(false); });
   click("btnQuitMenu", () => { run.paused = false; showMenu(); });
@@ -3264,6 +3957,7 @@ async function boot() {
     loadSave();
     if (isMobile && !SAVE.settings.gyroTouched) SAVE.settings.gyro = true;
     CFG = await loadConfig();
+    await applyRemoteConfig();
     T = CFG.balance.terrain;
     GP = CFG.balance.gaps;
     initEngine();
@@ -3274,6 +3968,8 @@ async function boot() {
     applyTrail();
     buildDebrisPool();
     buildDust();
+    buildAtmosphere();
+    buildClouds();
     bindUI();
     bindSettings();
     bindControls();

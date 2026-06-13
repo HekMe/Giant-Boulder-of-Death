@@ -35,6 +35,17 @@
 <h2>Recent runs</h2>
 <div id="runs">loading…</div>
 
+<h2>Game config (live tuning)</h2>
+<p class="muted">Edit spawn rates, scores, rarity, hazard density… as JSON. This is deep-merged over the built-in config for ALL players on their next load. Leave empty / reset to use defaults.</p>
+<div>
+  <button onclick="loadCfgDefaults()">Insert common knobs</button>
+  <button onclick="loadCfgCurrent()">Load current override</button>
+  <button onclick="saveCfg()">Publish config</button>
+  <button onclick="clearCfg()">Reset to defaults</button>
+</div>
+<textarea id="cfgBox" spellcheck="false" style="width:100%;height:220px;background:#1d1a17;border:1px solid #3a342e;color:#cfe;border-radius:8px;padding:8px;font-family:monospace;font-size:12px;margin-top:6px"></textarea>
+<div id="cfgMsg" class="muted"></div>
+
 <h2>Stored ghosts</h2>
 <div id="ghosts">loading…</div>
 
@@ -172,6 +183,43 @@ async function setRegistration(v) {
   try { await call("admin_set_registration", [v]); log("registration " + (v ? "enabled" : "disabled") + " ✔"); refreshRegistration(); }
   catch (e) { log(e.message, "err"); }
 }
+const CFG_TEMPLATE = {
+  balance: {
+    spawning: {
+      objectsPerChunkBase: 7, objectsPerChunkMax: 14, objectsRampPer1000m: 3,
+      coinsPerChunk: 4, gemChance: 0.045, chainChance: 0.06, chainLength: 8
+    },
+    powerups: { chunkChance: 0.10, ringChance: 0.16, duration: 10 },
+    hazards: { firstHazardAt: 60, baseEvery: 34, minEvery: 12, shrinkPer1000m: 3 },
+    scoring: { },
+    overdrive: { duration: 6, meterMax: 100 }
+  },
+  biomes: { rarityWeights: { common: 1.0, rare: 0.35, epic: 0.12, legendary: 0.05 } }
+};
+function loadCfgDefaults() {
+  document.getElementById("cfgBox").value = JSON.stringify(CFG_TEMPLATE, null, 2);
+  document.getElementById("cfgMsg").textContent = "Template inserted — edit and Publish. Only the keys you keep are overridden.";
+}
+async function loadCfgCurrent() {
+  try {
+    const rows = await sql("SELECT json FROM game_config");
+    document.getElementById("cfgBox").value = rows.length ? JSON.stringify(JSON.parse(rows[0].json), null, 2) : "";
+    document.getElementById("cfgMsg").textContent = rows.length ? "Loaded current published override." : "No override published yet (using defaults).";
+  } catch (e) { document.getElementById("cfgMsg").textContent = "load failed: " + e.message; }
+}
+async function saveCfg() {
+  const txt = document.getElementById("cfgBox").value.trim();
+  let json;
+  try { json = txt ? JSON.stringify(JSON.parse(txt)) : "{}"; }
+  catch (e) { document.getElementById("cfgMsg").textContent = "❌ Invalid JSON: " + e.message; return; }
+  try { await call("admin_set_config", [json]); document.getElementById("cfgMsg").textContent = "✅ Published. Players get it on next load."; }
+  catch (e) { document.getElementById("cfgMsg").textContent = "❌ " + e.message; }
+}
+async function clearCfg() {
+  if (!confirm("Reset to built-in defaults?")) return;
+  try { await call("admin_set_config", ["{}"]); document.getElementById("cfgBox").value = ""; document.getElementById("cfgMsg").textContent = "✅ Reset to defaults."; }
+  catch (e) { document.getElementById("cfgMsg").textContent = "❌ " + e.message; }
+}
 async function boot() {
   if (!auth) { document.getElementById("gate").style.display = "block"; return; }
   try {
@@ -183,6 +231,7 @@ async function boot() {
   }
   document.getElementById("adminBody").style.display = "block";
   loadConfigOptions();
+  loadCfgCurrent();
   refresh();
   refreshGhosts();
   refreshLive();

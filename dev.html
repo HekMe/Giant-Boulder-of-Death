@@ -19,6 +19,9 @@
 
 <!-- HUD -->
 <div id="hud" class="hidden">
+  <div id="odBar"><div id="odTrack"><div id="odFill"></div></div><div id="odLabel">0%</div></div>
+  <div id="fxIcons"></div>
+  <div id="regionBanner" class="region-banner hidden"></div>
   <div class="hud-tl">
     <div id="hudScore" class="hud-big">0</div>
     <div id="hudCombo" class="hud-combo"></div>
@@ -36,7 +39,6 @@
   <div class="hud-bc">
     <div id="hudGoal" class="hud-goal"></div>
     <div id="hudState" class="hud-state"></div>
-    <div class="meter"><div id="meterFill"></div></div>
   </div>
 </div>
 
@@ -47,7 +49,7 @@
 <!-- START -->
 <div id="ovStart" class="overlay">
   <div class="panel start-panel">
-    <div class="logo"><span class="logo-rock"></span><h1>ROCK<em>FALL</em></h1></div>
+    <div class="logo"><span class="logo-rock"></span><h1>ROCK<em>&amp;ROLL</em></h1></div>
     <p class="tag">Dropped from the sky. A mountain below. Smash everything in your path.</p>
     <div class="cur-row"><span class="ico coin"></span><span id="menuCoins">0</span><span class="ico gem"></span><span id="menuGems">0</span></div>
     <div id="netRow" class="net-row hidden">
@@ -56,27 +58,72 @@
       <button id="btnLogout" class="menu-btn hidden">Sign out</button>
     </div>
     <button id="btnPlay" class="big-btn">START RUN</button>
-    <div class="menu-grid">
-      <button id="btnUpgrades" class="menu-btn">Upgrades</button>
-      <button id="btnShop" class="menu-btn">Shop</button>
-      <button id="btnSpinner" class="menu-btn">Lucky Spin</button>
-      <button id="btnGoals" class="menu-btn">Goals</button>
-      <button id="btnEncy" class="menu-btn">Encyclopedia</button>
-      <button id="btnGhosts" class="menu-btn">Ghosts</button>
-      <button id="btnMulti" class="menu-btn">Multiplayer</button>
-      <button id="btnSettings" class="menu-btn">Settings</button>
-      <button id="btnExport" class="menu-btn">Export save</button>
-      <button id="btnImport" class="menu-btn">Import save</button>
+    <div class="menu-grid compact">
+      <button id="btnShopMain" class="menu-btn">🛒 Shop</button>
+      <button id="btnMulti" class="menu-btn">🌍 Multiplayer</button>
+      <button id="btnStatsMain" class="menu-btn">🏆 Stats &amp; Ranks</button>
+      <button id="btnMoreMain" class="menu-btn">⋯ More</button>
     </div>
     <input type="file" id="fileImport" accept="application/json" hidden>
-    <div class="skin-label">Boulder skin</div>
-    <div id="skinRow" class="skin-row"></div>
-    <div class="skin-label">Trail</div>
-    <div id="trailRow" class="skin-row"></div>
-    <div class="skin-label">Boulder type</div>
-    <div id="boulderRow" class="skin-row"></div>
-    <div id="startStats" class="start-stats"></div>
-    <p class="controls-hint">A/D or arrows = steer · S/↓ = brake · Space = jump · Esc = pause<br>On mobile: tilt your device (gyro) or use the joystick (pull down = brake) · big button = jump</p>
+    <p class="controls-hint">A/D or arrows = steer · S/↓ = brake · Space = jump · Esc = pause<br>On mobile: tilt your device (gyro) or use the joystick · big button = jump</p>
+  </div>
+</div>
+
+<!-- MORE MENU (secondary actions) -->
+<div id="ovMore" class="overlay hidden">
+  <div class="panel">
+    <h2>MORE</h2>
+    <div class="menu-grid compact">
+      <button id="btnGoals" class="menu-btn">🎯 Goals</button>
+      <button id="btnSpinner" class="menu-btn">🎰 Lucky Spin</button>
+      <button id="btnEncy" class="menu-btn">📖 Encyclopedia</button>
+      <button id="btnGhosts" class="menu-btn">👻 Ghosts</button>
+      <button id="btnTutorial" class="menu-btn">❓ Tutorial</button>
+      <button id="btnSettings" class="menu-btn">⚙ Settings</button>
+      <button id="btnExport" class="menu-btn">⬇ Export save</button>
+      <button id="btnImport" class="menu-btn">⬆ Import save</button>
+    </div>
+    <button id="btnMoreBack" class="menu-btn">Back</button>
+  </div>
+</div>
+
+<!-- SHOP (tabbed: Upgrades / Temporary / Customization) -->
+<div id="ovShopMain" class="overlay hidden">
+  <div class="panel">
+    <h2>SHOP</h2>
+    <div class="cur-row"><span class="ico coin"></span><span id="shopMainCoins">0</span><span class="ico gem"></span><span id="shopMainGems">0</span></div>
+    <div class="tab-row">
+      <button id="shTabUpgrades" class="tab-btn active">Upgrades</button>
+      <button id="shTabTemp" class="tab-btn">Temporary</button>
+      <button id="shTabCustom" class="tab-btn">Customize</button>
+    </div>
+    <div id="shPaneUpgrades"><div id="upList" class="list"></div></div>
+    <div id="shPaneTemp" class="hidden"><div id="shopList" class="list"></div></div>
+    <div id="shPaneCustom" class="hidden">
+      <div class="skin-label">Boulder skin</div><div id="skinRow" class="skin-row"></div>
+      <div class="skin-label">Trail</div><div id="trailRow" class="skin-row"></div>
+      <div class="skin-label">Boulder type</div><div id="boulderRow" class="skin-row"></div>
+    </div>
+    <button id="btnShopMainBack" class="menu-btn">Back</button>
+  </div>
+</div>
+
+<!-- STATS & RANKS -->
+<div id="ovStats" class="overlay hidden">
+  <div class="panel">
+    <h2>STATS &amp; RANKS</h2>
+    <div id="statsBody" class="list"></div>
+    <div id="ranksBody" class="list"></div>
+    <button id="btnStatsBack" class="menu-btn">Back</button>
+  </div>
+</div>
+
+<!-- TUTORIAL -->
+<div id="ovTutorial" class="overlay hidden">
+  <div class="panel">
+    <h2>HOW TO PLAY</h2>
+    <div id="tutorialBody" class="list"></div>
+    <button id="btnTutorialBack" class="menu-btn">Back</button>
   </div>
 </div>
 
@@ -84,6 +131,7 @@
 <div id="ovEnd" class="overlay hidden">
   <div class="panel">
     <h2 id="endTitle">RUN OVER</h2>
+    <div id="mpResults" class="list hidden"></div>
     <div class="tab-row">
       <button id="tabBtnStats" class="tab-btn active">Stats</button>
       <button id="tabBtnGoals" class="tab-btn">Goals</button>
@@ -113,8 +161,10 @@
 <div id="ovPause" class="overlay hidden">
   <div class="panel small">
     <h2>PAUSED</h2>
+    <div id="pauseEffects" class="pause-fx"></div>
     <button id="btnResume" class="big-btn">Resume</button>
     <div class="row-btns">
+      <button id="btnPauseSettings" class="menu-btn">Settings</button>
       <button id="btnRestart" class="menu-btn">Restart</button>
       <button id="btnQuitMenu" class="menu-btn">Menu</button>
     </div>
@@ -122,15 +172,6 @@
 </div>
 
 <!-- UPGRADES -->
-<div id="ovUpgrades" class="overlay hidden">
-  <div class="panel">
-    <h2>UPGRADES</h2>
-    <div class="cur-row"><span class="ico coin"></span><span id="upCoins">0</span></div>
-    <div id="upList" class="list"></div>
-    <button id="btnUpBack" class="menu-btn">Back</button>
-  </div>
-</div>
-
 <!-- SPINNER -->
 <div id="ovSpinner" class="overlay hidden">
   <div class="panel">
@@ -199,6 +240,13 @@
   </div>
 </div>
 
+<!-- SPECTATE BAR -->
+<div id="spectateBar" class="hidden">
+  <span id="spectateName" class="gh-time">👁 Spectating</span>
+  <select id="spectatePick" class="mp-input" style="width:auto;letter-spacing:0"></select>
+  <button id="btnSpectateExit" class="gh-btn exit">Leave</button>
+</div>
+
 <!-- GHOST PLAYBACK BAR -->
 <div id="ghostBar" class="hidden">
   <button id="btnGhostPause" class="gh-btn">⏸</button>
@@ -212,15 +260,6 @@
 </div>
 
 <!-- SHOP -->
-<div id="ovShop" class="overlay hidden">
-  <div class="panel">
-    <h2>SHOP — next run</h2>
-    <div class="cur-row"><span class="ico coin"></span><span id="shopCoins">0</span></div>
-    <div id="shopList" class="list"></div>
-    <button id="btnShopBack" class="menu-btn">Back</button>
-  </div>
-</div>
-
 <!-- ENCYCLOPEDIA -->
 <div id="ovEncy" class="overlay hidden">
   <div class="panel">

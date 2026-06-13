@@ -224,13 +224,35 @@
   "biomeVariants": {
     "meadow": [
       {
+        "id": "meadow_filler1",
+        "base": "crates",
+        "label": "Mushroom ring",
+        "tint": "#d8b84a",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "meadow_filler0",
+        "base": "hay",
+        "label": "Tuft of flowers",
+        "tint": "#e89ac8",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
+      {
         "id": "meadow_fence_0",
         "base": "fence",
         "label": "Painted fence",
         "tint": "#7aa85a",
         "score": 20,
         "meter": 2,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.42
       },
@@ -241,7 +263,7 @@
         "tint": "#c9a84c",
         "score": 25,
         "meter": 3,
-        "weight": 9,
+        "weight": 26,
         "size": 1.0,
         "slow": 0.5
       },
@@ -252,7 +274,7 @@
         "tint": "#a8c87a",
         "score": 34,
         "meter": 4,
-        "weight": 4,
+        "weight": 26,
         "size": 1.2,
         "slow": 0.6
       },
@@ -263,7 +285,7 @@
         "tint": "#7aa85a",
         "score": 28,
         "meter": 3,
-        "weight": 14,
+        "weight": 26,
         "size": 0.94,
         "slow": 0.34
       },
@@ -274,7 +296,7 @@
         "tint": "#c9a84c",
         "score": 35,
         "meter": 4,
-        "weight": 9,
+        "weight": 26,
         "size": 1.1,
         "slow": 0.4
       },
@@ -285,7 +307,7 @@
         "tint": "#a8c87a",
         "score": 47,
         "meter": 5,
-        "weight": 4,
+        "weight": 6,
         "size": 1.32,
         "slow": 0.48
       },
@@ -296,7 +318,7 @@
         "tint": "#7aa85a",
         "score": 72,
         "meter": 7,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.53
       },
@@ -307,7 +329,7 @@
         "tint": "#c9a84c",
         "score": 90,
         "meter": 9,
-        "weight": 9,
+        "weight": 6,
         "size": 1.3,
         "slow": 1.8
       },
@@ -318,7 +340,7 @@
         "tint": "#a8c87a",
         "score": 122,
         "meter": 12,
-        "weight": 4,
+        "weight": 6,
         "size": 1.56,
         "slow": 2.16
       },
@@ -329,7 +351,7 @@
         "tint": "#a8c87a",
         "score": 68,
         "meter": 6,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.36
       },
@@ -340,7 +362,7 @@
         "tint": "#7aa85a",
         "score": 85,
         "meter": 8,
-        "weight": 9,
+        "weight": 6,
         "size": 1.3,
         "slow": 1.6
       },
@@ -351,7 +373,7 @@
         "tint": "#c9a84c",
         "score": 115,
         "meter": 10,
-        "weight": 4,
+        "weight": 6,
         "size": 1.56,
         "slow": 1.92
       },
@@ -362,7 +384,7 @@
         "tint": "#7aa85a",
         "score": 28,
         "meter": 3,
-        "weight": 14,
+        "weight": 26,
         "size": 0.94,
         "slow": 0.42
       },
@@ -373,7 +395,7 @@
         "tint": "#c9a84c",
         "score": 35,
         "meter": 4,
-        "weight": 9,
+        "weight": 26,
         "size": 1.1,
         "slow": 0.5
       },
@@ -384,7 +406,7 @@
         "tint": "#a8c87a",
         "score": 47,
         "meter": 5,
-        "weight": 4,
+        "weight": 6,
         "size": 1.32,
         "slow": 0.6
       },
@@ -395,7 +417,7 @@
         "tint": "#7aa85a",
         "score": 36,
         "meter": 4,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.59
       },
@@ -406,7 +428,7 @@
         "tint": "#c9a84c",
         "score": 45,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.7
       },
@@ -417,7 +439,7 @@
         "tint": "#a8c87a",
         "score": 61,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.84
       },
@@ -428,7 +450,7 @@
         "tint": "#c9a84c",
         "score": 48,
         "meter": 5,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 0.94
       },
@@ -439,7 +461,7 @@
         "tint": "#a8c87a",
         "score": 60,
         "meter": 6,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 1.1
       },
@@ -450,7 +472,7 @@
         "tint": "#7aa85a",
         "score": 81,
         "meter": 8,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 1.32
       },
@@ -461,7 +483,7 @@
         "tint": "#7aa85a",
         "score": 32,
         "meter": 3,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.51
       },
@@ -472,7 +494,7 @@
         "tint": "#c9a84c",
         "score": 40,
         "meter": 4,
-        "weight": 9,
+        "weight": 26,
         "size": 1.0,
         "slow": 0.6
       },
@@ -483,7 +505,7 @@
         "tint": "#a8c87a",
         "score": 54,
         "meter": 5,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -494,7 +516,7 @@
         "tint": "#7aa85a",
         "score": 60,
         "meter": 6,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 1.87
       },
@@ -505,7 +527,7 @@
         "tint": "#c9a84c",
         "score": 75,
         "meter": 7,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 2.2
       },
@@ -516,12 +538,82 @@
         "tint": "#a8c87a",
         "score": 101,
         "meter": 9,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 2.64
+      },
+      {
+        "id": "meadow_yeti_sheep",
+        "base": "sheep",
+        "label": "Prize ram",
+        "tint": "#e8e0d0",
+        "score": 680,
+        "meter": 8,
+        "weight": 1,
+        "size": 1.6,
+        "slow": 2.6,
+        "trophy": true
+      },
+      {
+        "id": "meadow_hay_tractor",
+        "base": "statue",
+        "label": "Hay tractor",
+        "tint": "#c83a2a",
+        "score": 1100,
+        "meter": 12,
+        "weight": 1,
+        "size": 2.0,
+        "slow": 3.4,
+        "trophy": true
+      },
+      {
+        "id": "meadow_sheep",
+        "base": "sheep",
+        "label": "Grazing sheep",
+        "tint": "#eef0ee",
+        "score": 55,
+        "meter": 3,
+        "weight": 5,
+        "size": 1.0,
+        "slow": 0.7,
+        "move": "graze"
+      },
+      {
+        "id": "meadow_ram",
+        "base": "sheep",
+        "label": "Prize ram",
+        "tint": "#e0d8c8",
+        "score": 90,
+        "meter": 5,
+        "weight": 3,
+        "size": 1.2,
+        "slow": 1.0,
+        "move": "graze"
       }
     ],
     "forest": [
+      {
+        "id": "forest_filler1",
+        "base": "crates",
+        "label": "Toadstool",
+        "tint": "#c83a3a",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "forest_filler0",
+        "base": "hay",
+        "label": "Fern cluster",
+        "tint": "#3a6a2a",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
       {
         "id": "forest_tree_0",
         "base": "tree",
@@ -529,7 +621,7 @@
         "tint": "#4a7a3e",
         "score": 44,
         "meter": 4,
-        "weight": 14,
+        "weight": 6,
         "size": 1.19,
         "slow": 1.36
       },
@@ -540,7 +632,7 @@
         "tint": "#6e5436",
         "score": 55,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.4,
         "slow": 1.6
       },
@@ -551,7 +643,7 @@
         "tint": "#8aa86a",
         "score": 74,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.68,
         "slow": 1.92
       },
@@ -562,7 +654,7 @@
         "tint": "#6e5436",
         "score": 96,
         "meter": 10,
-        "weight": 14,
+        "weight": 6,
         "size": 1.44,
         "slow": 2.89
       },
@@ -573,7 +665,7 @@
         "tint": "#8aa86a",
         "score": 120,
         "meter": 12,
-        "weight": 9,
+        "weight": 6,
         "size": 1.7,
         "slow": 3.4
       },
@@ -584,7 +676,7 @@
         "tint": "#4a7a3e",
         "score": 162,
         "meter": 16,
-        "weight": 4,
+        "weight": 2,
         "size": 2.04,
         "slow": 4.08
       },
@@ -595,7 +687,7 @@
         "tint": "#4a7a3e",
         "score": 60,
         "meter": 6,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 1.87
       },
@@ -606,7 +698,7 @@
         "tint": "#6e5436",
         "score": 75,
         "meter": 7,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 2.2
       },
@@ -617,7 +709,7 @@
         "tint": "#8aa86a",
         "score": 101,
         "meter": 9,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 2.64
       },
@@ -628,7 +720,7 @@
         "tint": "#4a7a3e",
         "score": 36,
         "meter": 4,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.51
       },
@@ -639,7 +731,7 @@
         "tint": "#6e5436",
         "score": 45,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.6
       },
@@ -650,7 +742,7 @@
         "tint": "#8aa86a",
         "score": 61,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -661,7 +753,7 @@
         "tint": "#6e5436",
         "score": 48,
         "meter": 5,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 0.94
       },
@@ -672,7 +764,7 @@
         "tint": "#8aa86a",
         "score": 60,
         "meter": 6,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 1.1
       },
@@ -683,7 +775,7 @@
         "tint": "#4a7a3e",
         "score": 81,
         "meter": 8,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 1.32
       },
@@ -694,7 +786,7 @@
         "tint": "#4a7a3e",
         "score": 32,
         "meter": 3,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.51
       },
@@ -705,7 +797,7 @@
         "tint": "#6e5436",
         "score": 40,
         "meter": 4,
-        "weight": 9,
+        "weight": 26,
         "size": 1.0,
         "slow": 0.6
       },
@@ -716,7 +808,7 @@
         "tint": "#8aa86a",
         "score": 54,
         "meter": 5,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -727,7 +819,7 @@
         "tint": "#4a7a3e",
         "score": 72,
         "meter": 7,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.53
       },
@@ -738,7 +830,7 @@
         "tint": "#6e5436",
         "score": 90,
         "meter": 9,
-        "weight": 9,
+        "weight": 6,
         "size": 1.3,
         "slow": 1.8
       },
@@ -749,7 +841,7 @@
         "tint": "#8aa86a",
         "score": 122,
         "meter": 12,
-        "weight": 4,
+        "weight": 6,
         "size": 1.56,
         "slow": 2.16
       },
@@ -760,7 +852,7 @@
         "tint": "#4a7a3e",
         "score": 144,
         "meter": 13,
-        "weight": 14,
+        "weight": 2,
         "size": 1.36,
         "slow": 2.46
       },
@@ -771,7 +863,7 @@
         "tint": "#6e5436",
         "score": 180,
         "meter": 16,
-        "weight": 9,
+        "weight": 2,
         "size": 1.6,
         "slow": 2.9
       },
@@ -782,12 +874,82 @@
         "tint": "#8aa86a",
         "score": 243,
         "meter": 21,
-        "weight": 4,
+        "weight": 2,
         "size": 1.92,
         "slow": 3.48
+      },
+      {
+        "id": "forest_ancient_oak",
+        "base": "statue",
+        "label": "Ancient oak",
+        "tint": "#3a5a2a",
+        "score": 760,
+        "meter": 8,
+        "weight": 1,
+        "size": 2.1,
+        "slow": 3.6,
+        "trophy": true
+      },
+      {
+        "id": "forest_forest_shrine",
+        "base": "statue",
+        "label": "Forest shrine",
+        "tint": "#6a8a4a",
+        "score": 1250,
+        "meter": 13,
+        "weight": 1,
+        "size": 1.9,
+        "slow": 3.2,
+        "trophy": true
+      },
+      {
+        "id": "forest_deer",
+        "base": "deer",
+        "label": "Wandering deer",
+        "tint": "#9a6a3a",
+        "score": 70,
+        "meter": 3,
+        "weight": 5,
+        "size": 1.0,
+        "slow": 0.8,
+        "move": "graze"
+      },
+      {
+        "id": "forest_fawn",
+        "base": "deer",
+        "label": "Skittish fawn",
+        "tint": "#b88a5a",
+        "score": 60,
+        "meter": 3,
+        "weight": 5,
+        "size": 0.8,
+        "slow": 0.6,
+        "move": "hop"
       }
     ],
     "rocky": [
+      {
+        "id": "rocky_filler1",
+        "base": "crates",
+        "label": "Cairn",
+        "tint": "#7a7268",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "rocky_filler0",
+        "base": "hay",
+        "label": "Loose scree",
+        "tint": "#9a9288",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
       {
         "id": "rocky_sign_0",
         "base": "sign",
@@ -795,7 +957,7 @@
         "tint": "#8a8378",
         "score": 32,
         "meter": 3,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.51
       },
@@ -806,7 +968,7 @@
         "tint": "#6e6358",
         "score": 40,
         "meter": 4,
-        "weight": 9,
+        "weight": 26,
         "size": 1.0,
         "slow": 0.6
       },
@@ -817,7 +979,7 @@
         "tint": "#a8a098",
         "score": 54,
         "meter": 5,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -828,7 +990,7 @@
         "tint": "#6e6358",
         "score": 48,
         "meter": 5,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 0.94
       },
@@ -839,7 +1001,7 @@
         "tint": "#a8a098",
         "score": 60,
         "meter": 6,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 1.1
       },
@@ -850,7 +1012,7 @@
         "tint": "#8a8378",
         "score": 81,
         "meter": 8,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 1.32
       },
@@ -861,7 +1023,7 @@
         "tint": "#8a8378",
         "score": 144,
         "meter": 13,
-        "weight": 14,
+        "weight": 2,
         "size": 1.36,
         "slow": 2.46
       },
@@ -872,7 +1034,7 @@
         "tint": "#6e6358",
         "score": 180,
         "meter": 16,
-        "weight": 9,
+        "weight": 2,
         "size": 1.6,
         "slow": 2.9
       },
@@ -883,7 +1045,7 @@
         "tint": "#a8a098",
         "score": 243,
         "meter": 21,
-        "weight": 4,
+        "weight": 2,
         "size": 1.92,
         "slow": 3.48
       },
@@ -894,7 +1056,7 @@
         "tint": "#6e6358",
         "score": 136,
         "meter": 12,
-        "weight": 14,
+        "weight": 6,
         "size": 1.27,
         "slow": 2.38
       },
@@ -905,7 +1067,7 @@
         "tint": "#a8a098",
         "score": 170,
         "meter": 15,
-        "weight": 9,
+        "weight": 2,
         "size": 1.5,
         "slow": 2.8
       },
@@ -916,7 +1078,7 @@
         "tint": "#8a8378",
         "score": 230,
         "meter": 20,
-        "weight": 4,
+        "weight": 2,
         "size": 1.8,
         "slow": 3.36
       },
@@ -927,7 +1089,7 @@
         "tint": "#6e6358",
         "score": 120,
         "meter": 11,
-        "weight": 14,
+        "weight": 6,
         "size": 1.19,
         "slow": 2.21
       },
@@ -938,7 +1100,7 @@
         "tint": "#a8a098",
         "score": 150,
         "meter": 14,
-        "weight": 9,
+        "weight": 2,
         "size": 1.4,
         "slow": 2.6
       },
@@ -949,7 +1111,7 @@
         "tint": "#8a8378",
         "score": 202,
         "meter": 18,
-        "weight": 4,
+        "weight": 2,
         "size": 1.68,
         "slow": 3.12
       },
@@ -960,7 +1122,7 @@
         "tint": "#8a8378",
         "score": 36,
         "meter": 4,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.59
       },
@@ -971,7 +1133,7 @@
         "tint": "#6e6358",
         "score": 45,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.7
       },
@@ -982,7 +1144,7 @@
         "tint": "#a8a098",
         "score": 61,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.84
       },
@@ -993,7 +1155,7 @@
         "tint": "#8a8378",
         "score": 72,
         "meter": 7,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.53
       },
@@ -1004,7 +1166,7 @@
         "tint": "#6e6358",
         "score": 90,
         "meter": 9,
-        "weight": 9,
+        "weight": 6,
         "size": 1.3,
         "slow": 1.8
       },
@@ -1015,7 +1177,7 @@
         "tint": "#a8a098",
         "score": 122,
         "meter": 12,
-        "weight": 4,
+        "weight": 6,
         "size": 1.56,
         "slow": 2.16
       },
@@ -1026,7 +1188,7 @@
         "tint": "#8a8378",
         "score": 60,
         "meter": 6,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 1.87
       },
@@ -1037,7 +1199,7 @@
         "tint": "#6e6358",
         "score": 75,
         "meter": 7,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 2.2
       },
@@ -1048,12 +1210,70 @@
         "tint": "#a8a098",
         "score": 101,
         "meter": 9,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 2.64
+      },
+      {
+        "id": "rocky_stone_giant",
+        "base": "boar",
+        "label": "Stone giant",
+        "tint": "#8a8278",
+        "score": 900,
+        "meter": 10,
+        "weight": 1,
+        "size": 2.2,
+        "slow": 3.8,
+        "trophy": true
+      },
+      {
+        "id": "rocky_ore_vein",
+        "base": "statue",
+        "label": "Glittering ore vein",
+        "tint": "#c8b86a",
+        "score": 1400,
+        "meter": 15,
+        "weight": 1,
+        "size": 1.7,
+        "slow": 2.8,
+        "trophy": true
+      },
+      {
+        "id": "rocky_goat",
+        "base": "sheep",
+        "label": "Mountain goat",
+        "tint": "#c8c0b0",
+        "score": 75,
+        "meter": 4,
+        "weight": 5,
+        "size": 1.0,
+        "slow": 0.9,
+        "move": "graze"
       }
     ],
     "desert": [
+      {
+        "id": "desert_filler1",
+        "base": "crates",
+        "label": "Cactus bud",
+        "tint": "#5a8a3a",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "desert_filler0",
+        "base": "hay",
+        "label": "Tumbleweed",
+        "tint": "#c8a858",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
       {
         "id": "desert_barrel_0",
         "base": "barrel",
@@ -1061,7 +1281,7 @@
         "tint": "#d8b878",
         "score": 36,
         "meter": 4,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.59
       },
@@ -1072,7 +1292,7 @@
         "tint": "#c89858",
         "score": 45,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.7
       },
@@ -1083,7 +1303,7 @@
         "tint": "#e8d0a0",
         "score": 61,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.84
       },
@@ -1094,7 +1314,7 @@
         "tint": "#c89858",
         "score": 48,
         "meter": 5,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 0.94
       },
@@ -1105,7 +1325,7 @@
         "tint": "#e8d0a0",
         "score": 60,
         "meter": 6,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 1.1
       },
@@ -1116,7 +1336,7 @@
         "tint": "#d8b878",
         "score": 81,
         "meter": 8,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 1.32
       },
@@ -1127,7 +1347,7 @@
         "tint": "#d8b878",
         "score": 32,
         "meter": 3,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.51
       },
@@ -1138,7 +1358,7 @@
         "tint": "#c89858",
         "score": 40,
         "meter": 4,
-        "weight": 9,
+        "weight": 26,
         "size": 1.0,
         "slow": 0.6
       },
@@ -1149,7 +1369,7 @@
         "tint": "#e8d0a0",
         "score": 54,
         "meter": 5,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -1160,7 +1380,7 @@
         "tint": "#d8b878",
         "score": 28,
         "meter": 3,
-        "weight": 14,
+        "weight": 26,
         "size": 0.94,
         "slow": 0.42
       },
@@ -1171,7 +1391,7 @@
         "tint": "#c89858",
         "score": 35,
         "meter": 4,
-        "weight": 9,
+        "weight": 26,
         "size": 1.1,
         "slow": 0.5
       },
@@ -1182,7 +1402,7 @@
         "tint": "#e8d0a0",
         "score": 47,
         "meter": 5,
-        "weight": 4,
+        "weight": 6,
         "size": 1.32,
         "slow": 0.6
       },
@@ -1193,7 +1413,7 @@
         "tint": "#d8b878",
         "score": 72,
         "meter": 7,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.53
       },
@@ -1204,7 +1424,7 @@
         "tint": "#c89858",
         "score": 90,
         "meter": 9,
-        "weight": 9,
+        "weight": 6,
         "size": 1.3,
         "slow": 1.8
       },
@@ -1215,7 +1435,7 @@
         "tint": "#e8d0a0",
         "score": 122,
         "meter": 12,
-        "weight": 4,
+        "weight": 6,
         "size": 1.56,
         "slow": 2.16
       },
@@ -1226,7 +1446,7 @@
         "tint": "#c89858",
         "score": 136,
         "meter": 12,
-        "weight": 14,
+        "weight": 6,
         "size": 1.27,
         "slow": 2.38
       },
@@ -1237,7 +1457,7 @@
         "tint": "#e8d0a0",
         "score": 170,
         "meter": 15,
-        "weight": 9,
+        "weight": 2,
         "size": 1.5,
         "slow": 2.8
       },
@@ -1248,7 +1468,7 @@
         "tint": "#d8b878",
         "score": 230,
         "meter": 20,
-        "weight": 4,
+        "weight": 2,
         "size": 1.8,
         "slow": 3.36
       },
@@ -1259,7 +1479,7 @@
         "tint": "#e8d0a0",
         "score": 68,
         "meter": 6,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.36
       },
@@ -1270,7 +1490,7 @@
         "tint": "#d8b878",
         "score": 85,
         "meter": 8,
-        "weight": 9,
+        "weight": 6,
         "size": 1.3,
         "slow": 1.6
       },
@@ -1281,7 +1501,7 @@
         "tint": "#c89858",
         "score": 115,
         "meter": 10,
-        "weight": 4,
+        "weight": 6,
         "size": 1.56,
         "slow": 1.92
       },
@@ -1292,7 +1512,7 @@
         "tint": "#d8b878",
         "score": 60,
         "meter": 6,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 1.87
       },
@@ -1303,7 +1523,7 @@
         "tint": "#c89858",
         "score": 75,
         "meter": 7,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 2.2
       },
@@ -1314,12 +1534,70 @@
         "tint": "#e8d0a0",
         "score": 101,
         "meter": 9,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 2.64
+      },
+      {
+        "id": "desert_sand_sphinx",
+        "base": "deer",
+        "label": "Sand sphinx",
+        "tint": "#d8b878",
+        "score": 980,
+        "meter": 10,
+        "weight": 1,
+        "size": 2.2,
+        "slow": 3.6,
+        "trophy": true
+      },
+      {
+        "id": "desert_desert_limo",
+        "base": "statue",
+        "label": "Abandoned limousine",
+        "tint": "#e8c84a",
+        "score": 1600,
+        "meter": 17,
+        "weight": 0.5,
+        "size": 2.1,
+        "slow": 3.4,
+        "trophy": true
+      },
+      {
+        "id": "desert_camel",
+        "base": "deer",
+        "label": "Lone camel",
+        "tint": "#d8b878",
+        "score": 95,
+        "meter": 5,
+        "weight": 3,
+        "size": 1.2,
+        "slow": 1.1,
+        "move": "graze"
       }
     ],
     "snow": [
+      {
+        "id": "snow_filler1",
+        "base": "crates",
+        "label": "Ice shard",
+        "tint": "#bfe2ff",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "snow_filler0",
+        "base": "hay",
+        "label": "Snow mound",
+        "tint": "#eef6ff",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
       {
         "id": "snow_snowman_0",
         "base": "snowman",
@@ -1327,7 +1605,7 @@
         "tint": "#a8c8e0",
         "score": 32,
         "meter": 3,
-        "weight": 14,
+        "weight": 26,
         "size": 0.94,
         "slow": 0.42
       },
@@ -1338,7 +1616,7 @@
         "tint": "#dfe8f0",
         "score": 40,
         "meter": 4,
-        "weight": 9,
+        "weight": 26,
         "size": 1.1,
         "slow": 0.5
       },
@@ -1349,7 +1627,7 @@
         "tint": "#bfe2ff",
         "score": 54,
         "meter": 5,
-        "weight": 4,
+        "weight": 6,
         "size": 1.32,
         "slow": 0.6
       },
@@ -1360,7 +1638,7 @@
         "tint": "#bfe2ff",
         "score": 40,
         "meter": 4,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.85
       },
@@ -1371,7 +1649,7 @@
         "tint": "#a8c8e0",
         "score": 50,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 1.0
       },
@@ -1382,7 +1660,7 @@
         "tint": "#dfe8f0",
         "score": 68,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 1.2
       },
@@ -1393,7 +1671,7 @@
         "tint": "#dfe8f0",
         "score": 44,
         "meter": 4,
-        "weight": 14,
+        "weight": 6,
         "size": 1.19,
         "slow": 1.36
       },
@@ -1404,7 +1682,7 @@
         "tint": "#bfe2ff",
         "score": 55,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.4,
         "slow": 1.6
       },
@@ -1415,7 +1693,7 @@
         "tint": "#a8c8e0",
         "score": 74,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.68,
         "slow": 1.92
       },
@@ -1426,7 +1704,7 @@
         "tint": "#bfe2ff",
         "score": 96,
         "meter": 10,
-        "weight": 14,
+        "weight": 6,
         "size": 1.44,
         "slow": 2.89
       },
@@ -1437,7 +1715,7 @@
         "tint": "#a8c8e0",
         "score": 120,
         "meter": 12,
-        "weight": 9,
+        "weight": 6,
         "size": 1.7,
         "slow": 3.4
       },
@@ -1448,7 +1726,7 @@
         "tint": "#dfe8f0",
         "score": 162,
         "meter": 16,
-        "weight": 4,
+        "weight": 2,
         "size": 2.04,
         "slow": 4.08
       },
@@ -1459,7 +1737,7 @@
         "tint": "#dfe8f0",
         "score": 36,
         "meter": 4,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.51
       },
@@ -1470,7 +1748,7 @@
         "tint": "#bfe2ff",
         "score": 45,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.6
       },
@@ -1481,7 +1759,7 @@
         "tint": "#a8c8e0",
         "score": 61,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -1492,7 +1770,7 @@
         "tint": "#dfe8f0",
         "score": 32,
         "meter": 3,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.51
       },
@@ -1503,7 +1781,7 @@
         "tint": "#bfe2ff",
         "score": 40,
         "meter": 4,
-        "weight": 9,
+        "weight": 26,
         "size": 1.0,
         "slow": 0.6
       },
@@ -1514,7 +1792,7 @@
         "tint": "#a8c8e0",
         "score": 54,
         "meter": 5,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -1525,7 +1803,7 @@
         "tint": "#bfe2ff",
         "score": 48,
         "meter": 5,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 0.94
       },
@@ -1536,7 +1814,7 @@
         "tint": "#a8c8e0",
         "score": 60,
         "meter": 6,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 1.1
       },
@@ -1547,7 +1825,7 @@
         "tint": "#dfe8f0",
         "score": 81,
         "meter": 8,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 1.32
       },
@@ -1558,7 +1836,7 @@
         "tint": "#dfe8f0",
         "score": 60,
         "meter": 6,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 1.87
       },
@@ -1569,7 +1847,7 @@
         "tint": "#bfe2ff",
         "score": 75,
         "meter": 7,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 2.2
       },
@@ -1580,12 +1858,82 @@
         "tint": "#a8c8e0",
         "score": 101,
         "meter": 9,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 2.64
+      },
+      {
+        "id": "snow_yeti",
+        "base": "boar",
+        "label": "Yeti",
+        "tint": "#dfeef8",
+        "score": 1200,
+        "meter": 13,
+        "weight": 1,
+        "size": 2.0,
+        "slow": 3.4,
+        "trophy": true
+      },
+      {
+        "id": "snow_frozen_mammoth",
+        "base": "boar",
+        "label": "Frozen mammoth",
+        "tint": "#b8c8d8",
+        "score": 1800,
+        "meter": 20,
+        "weight": 0.5,
+        "size": 2.4,
+        "slow": 4.0,
+        "trophy": true
+      },
+      {
+        "id": "snow_penguin",
+        "base": "penguin",
+        "label": "Waddling penguin",
+        "tint": "#2a2c34",
+        "score": 55,
+        "meter": 3,
+        "weight": 5,
+        "size": 0.9,
+        "slow": 0.6,
+        "move": "hop"
+      },
+      {
+        "id": "snow_snowhare",
+        "base": "penguin",
+        "label": "Snow hare",
+        "tint": "#eef2f6",
+        "score": 50,
+        "meter": 3,
+        "weight": 5,
+        "size": 0.7,
+        "slow": 0.5,
+        "move": "hop"
       }
     ],
     "swamp": [
+      {
+        "id": "swamp_filler1",
+        "base": "crates",
+        "label": "Lily pad",
+        "tint": "#3a6a4a",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "swamp_filler0",
+        "base": "hay",
+        "label": "Reed bunch",
+        "tint": "#5a7a3a",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
       {
         "id": "swamp_hut_0",
         "base": "hut",
@@ -1593,7 +1941,7 @@
         "tint": "#6a7848",
         "score": 108,
         "meter": 10,
-        "weight": 14,
+        "weight": 6,
         "size": 1.44,
         "slow": 2.89
       },
@@ -1604,7 +1952,7 @@
         "tint": "#8a9868",
         "score": 134,
         "meter": 12,
-        "weight": 9,
+        "weight": 6,
         "size": 1.7,
         "slow": 3.4
       },
@@ -1615,7 +1963,7 @@
         "tint": "#4a5a3a",
         "score": 181,
         "meter": 16,
-        "weight": 4,
+        "weight": 2,
         "size": 2.04,
         "slow": 4.08
       },
@@ -1626,7 +1974,7 @@
         "tint": "#4a5a3a",
         "score": 67,
         "meter": 6,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 1.87
       },
@@ -1637,7 +1985,7 @@
         "tint": "#6a7848",
         "score": 84,
         "meter": 7,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 2.2
       },
@@ -1648,7 +1996,7 @@
         "tint": "#8a9868",
         "score": 113,
         "meter": 9,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 2.64
       },
@@ -1659,7 +2007,7 @@
         "tint": "#4a5a3a",
         "score": 81,
         "meter": 7,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.53
       },
@@ -1670,7 +2018,7 @@
         "tint": "#6a7848",
         "score": 101,
         "meter": 9,
-        "weight": 9,
+        "weight": 6,
         "size": 1.3,
         "slow": 1.8
       },
@@ -1681,7 +2029,7 @@
         "tint": "#8a9868",
         "score": 136,
         "meter": 12,
-        "weight": 4,
+        "weight": 6,
         "size": 1.56,
         "slow": 2.16
       },
@@ -1692,7 +2040,7 @@
         "tint": "#8a9868",
         "score": 49,
         "meter": 4,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 0.77
       },
@@ -1703,7 +2051,7 @@
         "tint": "#4a5a3a",
         "score": 62,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.9
       },
@@ -1714,7 +2062,7 @@
         "tint": "#6a7848",
         "score": 83,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 1.08
       },
@@ -1725,7 +2073,7 @@
         "tint": "#4a5a3a",
         "score": 49,
         "meter": 4,
-        "weight": 14,
+        "weight": 6,
         "size": 1.19,
         "slow": 1.36
       },
@@ -1736,7 +2084,7 @@
         "tint": "#6a7848",
         "score": 62,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.4,
         "slow": 1.6
       },
@@ -1747,7 +2095,7 @@
         "tint": "#8a9868",
         "score": 83,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.68,
         "slow": 1.92
       },
@@ -1758,7 +2106,7 @@
         "tint": "#4a5a3a",
         "score": 22,
         "meter": 2,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.42
       },
@@ -1769,7 +2117,7 @@
         "tint": "#6a7848",
         "score": 28,
         "meter": 3,
-        "weight": 9,
+        "weight": 26,
         "size": 1.0,
         "slow": 0.5
       },
@@ -1780,7 +2128,7 @@
         "tint": "#8a9868",
         "score": 38,
         "meter": 4,
-        "weight": 4,
+        "weight": 26,
         "size": 1.2,
         "slow": 0.6
       },
@@ -1791,7 +2139,7 @@
         "tint": "#4a5a3a",
         "score": 40,
         "meter": 4,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.59
       },
@@ -1802,7 +2150,7 @@
         "tint": "#6a7848",
         "score": 50,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.7
       },
@@ -1813,7 +2161,7 @@
         "tint": "#8a9868",
         "score": 68,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.84
       },
@@ -1824,7 +2172,7 @@
         "tint": "#4a5a3a",
         "score": 161,
         "meter": 13,
-        "weight": 14,
+        "weight": 2,
         "size": 1.36,
         "slow": 2.46
       },
@@ -1835,7 +2183,7 @@
         "tint": "#6a7848",
         "score": 202,
         "meter": 16,
-        "weight": 9,
+        "weight": 2,
         "size": 1.6,
         "slow": 2.9
       },
@@ -1846,12 +2194,70 @@
         "tint": "#8a9868",
         "score": 272,
         "meter": 21,
-        "weight": 4,
+        "weight": 2,
         "size": 1.92,
         "slow": 3.48
+      },
+      {
+        "id": "swamp_bog_beast",
+        "base": "boar",
+        "label": "Bog beast",
+        "tint": "#4a6a3a",
+        "score": 1050,
+        "meter": 11,
+        "weight": 1,
+        "size": 2.1,
+        "slow": 3.6,
+        "trophy": true
+      },
+      {
+        "id": "swamp_sunken_idol",
+        "base": "statue",
+        "label": "Sunken idol",
+        "tint": "#7a8868",
+        "score": 1500,
+        "meter": 16,
+        "weight": 1,
+        "size": 1.8,
+        "slow": 3.0,
+        "trophy": true
+      },
+      {
+        "id": "swamp_boar",
+        "base": "boar",
+        "label": "Bog boar",
+        "tint": "#4a3a30",
+        "score": 80,
+        "meter": 4,
+        "weight": 5,
+        "size": 1.1,
+        "slow": 1.0,
+        "move": "graze"
       }
     ],
     "canyon": [
+      {
+        "id": "canyon_filler1",
+        "base": "crates",
+        "label": "Red shrub",
+        "tint": "#a85838",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "canyon_filler0",
+        "base": "hay",
+        "label": "Dust pile",
+        "tint": "#c89878",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
       {
         "id": "canyon_crates_0",
         "base": "crates",
@@ -1859,7 +2265,7 @@
         "tint": "#c98858",
         "score": 54,
         "meter": 5,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 0.94
       },
@@ -1870,7 +2276,7 @@
         "tint": "#a85838",
         "score": 67,
         "meter": 6,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 1.1
       },
@@ -1881,7 +2287,7 @@
         "tint": "#b86a4a",
         "score": 91,
         "meter": 8,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 1.32
       },
@@ -1892,7 +2298,7 @@
         "tint": "#b86a4a",
         "score": 40,
         "meter": 4,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.59
       },
@@ -1903,7 +2309,7 @@
         "tint": "#c98858",
         "score": 50,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.7
       },
@@ -1914,7 +2320,7 @@
         "tint": "#a85838",
         "score": 68,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.84
       },
@@ -1925,7 +2331,7 @@
         "tint": "#b86a4a",
         "score": 81,
         "meter": 7,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.53
       },
@@ -1936,7 +2342,7 @@
         "tint": "#c98858",
         "score": 101,
         "meter": 9,
-        "weight": 9,
+        "weight": 6,
         "size": 1.3,
         "slow": 1.8
       },
@@ -1947,7 +2353,7 @@
         "tint": "#a85838",
         "score": 136,
         "meter": 12,
-        "weight": 4,
+        "weight": 6,
         "size": 1.56,
         "slow": 2.16
       },
@@ -1958,7 +2364,7 @@
         "tint": "#c98858",
         "score": 116,
         "meter": 10,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.19
       },
@@ -1969,7 +2375,7 @@
         "tint": "#a85838",
         "score": 146,
         "meter": 12,
-        "weight": 9,
+        "weight": 2,
         "size": 1.3,
         "slow": 1.4
       },
@@ -1980,7 +2386,7 @@
         "tint": "#b86a4a",
         "score": 197,
         "meter": 16,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.68
       },
@@ -1991,7 +2397,7 @@
         "tint": "#b86a4a",
         "score": 36,
         "meter": 3,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.51
       },
@@ -2002,7 +2408,7 @@
         "tint": "#c98858",
         "score": 45,
         "meter": 4,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.6
       },
@@ -2013,7 +2419,7 @@
         "tint": "#a85838",
         "score": 60,
         "meter": 5,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -2024,7 +2430,7 @@
         "tint": "#b86a4a",
         "score": 161,
         "meter": 13,
-        "weight": 14,
+        "weight": 2,
         "size": 1.36,
         "slow": 2.46
       },
@@ -2035,7 +2441,7 @@
         "tint": "#c98858",
         "score": 202,
         "meter": 16,
-        "weight": 9,
+        "weight": 2,
         "size": 1.6,
         "slow": 2.9
       },
@@ -2046,7 +2452,7 @@
         "tint": "#a85838",
         "score": 272,
         "meter": 21,
-        "weight": 4,
+        "weight": 2,
         "size": 1.92,
         "slow": 3.48
       },
@@ -2057,7 +2463,7 @@
         "tint": "#c98858",
         "score": 134,
         "meter": 11,
-        "weight": 14,
+        "weight": 6,
         "size": 1.19,
         "slow": 2.21
       },
@@ -2068,7 +2474,7 @@
         "tint": "#a85838",
         "score": 168,
         "meter": 14,
-        "weight": 9,
+        "weight": 2,
         "size": 1.4,
         "slow": 2.6
       },
@@ -2079,7 +2485,7 @@
         "tint": "#b86a4a",
         "score": 227,
         "meter": 18,
-        "weight": 4,
+        "weight": 2,
         "size": 1.68,
         "slow": 3.12
       },
@@ -2090,7 +2496,7 @@
         "tint": "#c98858",
         "score": 152,
         "meter": 12,
-        "weight": 14,
+        "weight": 2,
         "size": 1.27,
         "slow": 2.38
       },
@@ -2101,7 +2507,7 @@
         "tint": "#a85838",
         "score": 190,
         "meter": 15,
-        "weight": 9,
+        "weight": 2,
         "size": 1.5,
         "slow": 2.8
       },
@@ -2112,12 +2518,70 @@
         "tint": "#b86a4a",
         "score": 257,
         "meter": 20,
-        "weight": 4,
+        "weight": 2,
         "size": 1.8,
         "slow": 3.36
+      },
+      {
+        "id": "canyon_rock_arch",
+        "base": "statue",
+        "label": "Toppling arch",
+        "tint": "#b86a4a",
+        "score": 1100,
+        "meter": 12,
+        "weight": 1,
+        "size": 2.3,
+        "slow": 3.8,
+        "trophy": true
+      },
+      {
+        "id": "canyon_gold_wagon",
+        "base": "statue",
+        "label": "Gold wagon",
+        "tint": "#e8b84a",
+        "score": 1700,
+        "meter": 18,
+        "weight": 0.5,
+        "size": 2.0,
+        "slow": 3.4,
+        "trophy": true
+      },
+      {
+        "id": "canyon_roadrunner",
+        "base": "penguin",
+        "label": "Roadrunner",
+        "tint": "#b86a4a",
+        "score": 65,
+        "meter": 3,
+        "weight": 5,
+        "size": 0.8,
+        "slow": 0.6,
+        "move": "hop"
       }
     ],
     "volcanic": [
+      {
+        "id": "volcanic_filler1",
+        "base": "crates",
+        "label": "Ash bush",
+        "tint": "#7a5a4a",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "volcanic_filler0",
+        "base": "hay",
+        "label": "Cinder heap",
+        "tint": "#5a3a2a",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
       {
         "id": "volcanic_brazier_0",
         "base": "brazier",
@@ -2125,7 +2589,7 @@
         "tint": "#ff6a2a",
         "score": 58,
         "meter": 5,
-        "weight": 14,
+        "weight": 6,
         "size": 0.85,
         "slow": 0.68
       },
@@ -2136,7 +2600,7 @@
         "tint": "#5a4038",
         "score": 73,
         "meter": 6,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.8
       },
@@ -2147,7 +2611,7 @@
         "tint": "#3a2a26",
         "score": 98,
         "meter": 8,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.96
       },
@@ -2158,7 +2622,7 @@
         "tint": "#5a4038",
         "score": 161,
         "meter": 13,
-        "weight": 14,
+        "weight": 2,
         "size": 1.36,
         "slow": 2.46
       },
@@ -2169,7 +2633,7 @@
         "tint": "#3a2a26",
         "score": 202,
         "meter": 16,
-        "weight": 9,
+        "weight": 2,
         "size": 1.6,
         "slow": 2.9
       },
@@ -2180,7 +2644,7 @@
         "tint": "#ff6a2a",
         "score": 272,
         "meter": 21,
-        "weight": 4,
+        "weight": 2,
         "size": 1.92,
         "slow": 3.48
       },
@@ -2191,7 +2655,7 @@
         "tint": "#3a2a26",
         "score": 134,
         "meter": 11,
-        "weight": 14,
+        "weight": 6,
         "size": 1.19,
         "slow": 2.21
       },
@@ -2202,7 +2666,7 @@
         "tint": "#ff6a2a",
         "score": 168,
         "meter": 14,
-        "weight": 9,
+        "weight": 2,
         "size": 1.4,
         "slow": 2.6
       },
@@ -2213,7 +2677,7 @@
         "tint": "#5a4038",
         "score": 227,
         "meter": 18,
-        "weight": 4,
+        "weight": 2,
         "size": 1.68,
         "slow": 3.12
       },
@@ -2224,7 +2688,7 @@
         "tint": "#3a2a26",
         "score": 116,
         "meter": 10,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.19
       },
@@ -2235,7 +2699,7 @@
         "tint": "#ff6a2a",
         "score": 146,
         "meter": 12,
-        "weight": 9,
+        "weight": 2,
         "size": 1.3,
         "slow": 1.4
       },
@@ -2246,7 +2710,7 @@
         "tint": "#5a4038",
         "score": 197,
         "meter": 16,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.68
       },
@@ -2257,7 +2721,7 @@
         "tint": "#3a2a26",
         "score": 152,
         "meter": 12,
-        "weight": 14,
+        "weight": 2,
         "size": 1.27,
         "slow": 2.38
       },
@@ -2268,7 +2732,7 @@
         "tint": "#ff6a2a",
         "score": 190,
         "meter": 15,
-        "weight": 9,
+        "weight": 2,
         "size": 1.5,
         "slow": 2.8
       },
@@ -2279,7 +2743,7 @@
         "tint": "#5a4038",
         "score": 257,
         "meter": 20,
-        "weight": 4,
+        "weight": 2,
         "size": 1.8,
         "slow": 3.36
       },
@@ -2290,7 +2754,7 @@
         "tint": "#5a4038",
         "score": 40,
         "meter": 4,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.59
       },
@@ -2301,7 +2765,7 @@
         "tint": "#3a2a26",
         "score": 50,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.7
       },
@@ -2312,7 +2776,7 @@
         "tint": "#ff6a2a",
         "score": 68,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.84
       },
@@ -2323,7 +2787,7 @@
         "tint": "#3a2a26",
         "score": 54,
         "meter": 5,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 0.94
       },
@@ -2334,7 +2798,7 @@
         "tint": "#ff6a2a",
         "score": 67,
         "meter": 6,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 1.1
       },
@@ -2345,7 +2809,7 @@
         "tint": "#5a4038",
         "score": 91,
         "meter": 8,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 1.32
       },
@@ -2356,7 +2820,7 @@
         "tint": "#3a2a26",
         "score": 358,
         "meter": 24,
-        "weight": 14,
+        "weight": 2,
         "size": 1.1,
         "slow": 1.02
       },
@@ -2367,7 +2831,7 @@
         "tint": "#ff6a2a",
         "score": 448,
         "meter": 30,
-        "weight": 9,
+        "weight": 2,
         "size": 1.3,
         "slow": 1.2
       },
@@ -2378,12 +2842,70 @@
         "tint": "#5a4038",
         "score": 605,
         "meter": 39,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.44
+      },
+      {
+        "id": "volcanic_magma_golem",
+        "base": "boar",
+        "label": "Magma golem",
+        "tint": "#ff6a2a",
+        "score": 1400,
+        "meter": 15,
+        "weight": 1,
+        "size": 2.2,
+        "slow": 3.8,
+        "trophy": true
+      },
+      {
+        "id": "volcanic_obsidian_throne",
+        "base": "statue",
+        "label": "Obsidian throne",
+        "tint": "#3a2a26",
+        "score": 2000,
+        "meter": 20,
+        "weight": 0.5,
+        "size": 2.1,
+        "slow": 3.4,
+        "trophy": true
+      },
+      {
+        "id": "volcanic_fire_imp",
+        "base": "critter",
+        "label": "Fire imp",
+        "tint": "#ff6a2a",
+        "score": 110,
+        "meter": 6,
+        "weight": 3,
+        "size": 0.9,
+        "slow": 0.7,
+        "move": "hop"
       }
     ],
     "twilight": [
+      {
+        "id": "twilight_filler1",
+        "base": "crates",
+        "label": "Dusk bloom",
+        "tint": "#9a84c8",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "twilight_filler0",
+        "base": "hay",
+        "label": "Glow moss",
+        "tint": "#7a74a8",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
       {
         "id": "twilight_statue_0",
         "base": "statue",
@@ -2391,7 +2913,7 @@
         "tint": "#7a74a8",
         "score": 134,
         "meter": 11,
-        "weight": 14,
+        "weight": 6,
         "size": 1.19,
         "slow": 2.21
       },
@@ -2402,7 +2924,7 @@
         "tint": "#9a94c8",
         "score": 168,
         "meter": 14,
-        "weight": 9,
+        "weight": 2,
         "size": 1.4,
         "slow": 2.6
       },
@@ -2413,7 +2935,7 @@
         "tint": "#5a5478",
         "score": 227,
         "meter": 18,
-        "weight": 4,
+        "weight": 2,
         "size": 1.68,
         "slow": 3.12
       },
@@ -2424,7 +2946,7 @@
         "tint": "#5a5478",
         "score": 161,
         "meter": 13,
-        "weight": 14,
+        "weight": 2,
         "size": 1.36,
         "slow": 2.46
       },
@@ -2435,7 +2957,7 @@
         "tint": "#7a74a8",
         "score": 202,
         "meter": 16,
-        "weight": 9,
+        "weight": 2,
         "size": 1.6,
         "slow": 2.9
       },
@@ -2446,7 +2968,7 @@
         "tint": "#9a94c8",
         "score": 272,
         "meter": 21,
-        "weight": 4,
+        "weight": 2,
         "size": 1.92,
         "slow": 3.48
       },
@@ -2457,7 +2979,7 @@
         "tint": "#5a5478",
         "score": 40,
         "meter": 4,
-        "weight": 14,
+        "weight": 26,
         "size": 0.85,
         "slow": 0.51
       },
@@ -2468,7 +2990,7 @@
         "tint": "#7a74a8",
         "score": 50,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.6
       },
@@ -2479,7 +3001,7 @@
         "tint": "#9a94c8",
         "score": 68,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -2490,7 +3012,7 @@
         "tint": "#7a74a8",
         "score": 152,
         "meter": 12,
-        "weight": 14,
+        "weight": 2,
         "size": 1.27,
         "slow": 2.38
       },
@@ -2501,7 +3023,7 @@
         "tint": "#9a94c8",
         "score": 190,
         "meter": 15,
-        "weight": 9,
+        "weight": 2,
         "size": 1.5,
         "slow": 2.8
       },
@@ -2512,7 +3034,7 @@
         "tint": "#5a5478",
         "score": 257,
         "meter": 20,
-        "weight": 4,
+        "weight": 2,
         "size": 1.8,
         "slow": 3.36
       },
@@ -2523,7 +3045,7 @@
         "tint": "#7a74a8",
         "score": 116,
         "meter": 10,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.19
       },
@@ -2534,7 +3056,7 @@
         "tint": "#9a94c8",
         "score": 146,
         "meter": 12,
-        "weight": 9,
+        "weight": 2,
         "size": 1.3,
         "slow": 1.4
       },
@@ -2545,7 +3067,7 @@
         "tint": "#5a5478",
         "score": 197,
         "meter": 16,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.68
       },
@@ -2556,7 +3078,7 @@
         "tint": "#5a5478",
         "score": 67,
         "meter": 6,
-        "weight": 14,
+        "weight": 6,
         "size": 1.02,
         "slow": 1.87
       },
@@ -2567,7 +3089,7 @@
         "tint": "#7a74a8",
         "score": 84,
         "meter": 7,
-        "weight": 9,
+        "weight": 6,
         "size": 1.2,
         "slow": 2.2
       },
@@ -2578,7 +3100,7 @@
         "tint": "#9a94c8",
         "score": 113,
         "meter": 9,
-        "weight": 4,
+        "weight": 6,
         "size": 1.44,
         "slow": 2.64
       },
@@ -2589,7 +3111,7 @@
         "tint": "#7a74a8",
         "score": 358,
         "meter": 24,
-        "weight": 14,
+        "weight": 2,
         "size": 1.1,
         "slow": 1.02
       },
@@ -2600,7 +3122,7 @@
         "tint": "#9a94c8",
         "score": 448,
         "meter": 30,
-        "weight": 9,
+        "weight": 2,
         "size": 1.3,
         "slow": 1.2
       },
@@ -2611,7 +3133,7 @@
         "tint": "#5a5478",
         "score": 605,
         "meter": 39,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.44
       },
@@ -2622,7 +3144,7 @@
         "tint": "#9a94c8",
         "score": 99,
         "meter": 8,
-        "weight": 14,
+        "weight": 6,
         "size": 1.19,
         "slow": 2.04
       },
@@ -2633,7 +3155,7 @@
         "tint": "#5a5478",
         "score": 123,
         "meter": 10,
-        "weight": 9,
+        "weight": 6,
         "size": 1.4,
         "slow": 2.4
       },
@@ -2644,12 +3166,70 @@
         "tint": "#7a74a8",
         "score": 166,
         "meter": 13,
-        "weight": 4,
+        "weight": 2,
         "size": 1.68,
         "slow": 2.88
+      },
+      {
+        "id": "twilight_shadow_wraith",
+        "base": "critter",
+        "label": "Shadow colossus",
+        "tint": "#5a5478",
+        "score": 1500,
+        "meter": 16,
+        "weight": 1,
+        "size": 2.2,
+        "slow": 3.6,
+        "trophy": true
+      },
+      {
+        "id": "twilight_moon_altar",
+        "base": "statue",
+        "label": "Moon altar",
+        "tint": "#9a94c8",
+        "score": 2100,
+        "meter": 20,
+        "weight": 0.5,
+        "size": 1.9,
+        "slow": 3.2,
+        "trophy": true
+      },
+      {
+        "id": "twilight_wisp_spirit",
+        "base": "critter",
+        "label": "Dusk wisp",
+        "tint": "#9a7aff",
+        "score": 120,
+        "meter": 6,
+        "weight": 3,
+        "size": 0.9,
+        "slow": 0.7,
+        "move": "hop"
       }
     ],
     "crystal": [
+      {
+        "id": "crystal_filler1",
+        "base": "crates",
+        "label": "Crystal sprout",
+        "tint": "#b8e8f0",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "crystal_filler0",
+        "base": "hay",
+        "label": "Shard cluster",
+        "tint": "#9adbe8",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
       {
         "id": "crystal_iceblock_0",
         "base": "iceblock",
@@ -2657,7 +3237,7 @@
         "tint": "#9adbe8",
         "score": 50,
         "meter": 4,
-        "weight": 14,
+        "weight": 6,
         "size": 0.85,
         "slow": 0.85
       },
@@ -2668,7 +3248,7 @@
         "tint": "#b8e8f0",
         "score": 62,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 1.0
       },
@@ -2679,7 +3259,7 @@
         "tint": "#7ac8d8",
         "score": 84,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 1.2
       },
@@ -2690,7 +3270,7 @@
         "tint": "#9adbe8",
         "score": 150,
         "meter": 11,
-        "weight": 14,
+        "weight": 2,
         "size": 1.19,
         "slow": 2.21
       },
@@ -2701,7 +3281,7 @@
         "tint": "#b8e8f0",
         "score": 188,
         "meter": 14,
-        "weight": 9,
+        "weight": 2,
         "size": 1.4,
         "slow": 2.6
       },
@@ -2712,7 +3292,7 @@
         "tint": "#7ac8d8",
         "score": 253,
         "meter": 18,
-        "weight": 4,
+        "weight": 2,
         "size": 1.68,
         "slow": 3.12
       },
@@ -2723,7 +3303,7 @@
         "tint": "#9adbe8",
         "score": 400,
         "meter": 24,
-        "weight": 14,
+        "weight": 2,
         "size": 1.1,
         "slow": 1.02
       },
@@ -2734,7 +3314,7 @@
         "tint": "#b8e8f0",
         "score": 500,
         "meter": 30,
-        "weight": 9,
+        "weight": 2,
         "size": 1.3,
         "slow": 1.2
       },
@@ -2745,7 +3325,7 @@
         "tint": "#7ac8d8",
         "score": 675,
         "meter": 39,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.44
       },
@@ -2756,7 +3336,7 @@
         "tint": "#b8e8f0",
         "score": 110,
         "meter": 8,
-        "weight": 14,
+        "weight": 6,
         "size": 1.19,
         "slow": 2.04
       },
@@ -2767,7 +3347,7 @@
         "tint": "#7ac8d8",
         "score": 138,
         "meter": 10,
-        "weight": 9,
+        "weight": 6,
         "size": 1.4,
         "slow": 2.4
       },
@@ -2778,7 +3358,7 @@
         "tint": "#9adbe8",
         "score": 186,
         "meter": 13,
-        "weight": 4,
+        "weight": 2,
         "size": 1.68,
         "slow": 2.88
       },
@@ -2789,7 +3369,7 @@
         "tint": "#9adbe8",
         "score": 170,
         "meter": 12,
-        "weight": 14,
+        "weight": 2,
         "size": 1.27,
         "slow": 2.38
       },
@@ -2800,7 +3380,7 @@
         "tint": "#b8e8f0",
         "score": 212,
         "meter": 15,
-        "weight": 9,
+        "weight": 2,
         "size": 1.5,
         "slow": 2.8
       },
@@ -2811,7 +3391,7 @@
         "tint": "#7ac8d8",
         "score": 287,
         "meter": 20,
-        "weight": 4,
+        "weight": 2,
         "size": 1.8,
         "slow": 3.36
       },
@@ -2822,7 +3402,7 @@
         "tint": "#7ac8d8",
         "score": 45,
         "meter": 4,
-        "weight": 14,
+        "weight": 6,
         "size": 0.85,
         "slow": 0.51
       },
@@ -2833,7 +3413,7 @@
         "tint": "#9adbe8",
         "score": 56,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.6
       },
@@ -2844,7 +3424,7 @@
         "tint": "#b8e8f0",
         "score": 76,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -2855,7 +3435,7 @@
         "tint": "#9adbe8",
         "score": 130,
         "meter": 10,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.19
       },
@@ -2866,7 +3446,7 @@
         "tint": "#b8e8f0",
         "score": 162,
         "meter": 12,
-        "weight": 9,
+        "weight": 2,
         "size": 1.3,
         "slow": 1.4
       },
@@ -2877,7 +3457,7 @@
         "tint": "#7ac8d8",
         "score": 219,
         "meter": 16,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.68
       },
@@ -2888,7 +3468,7 @@
         "tint": "#7ac8d8",
         "score": 180,
         "meter": 13,
-        "weight": 14,
+        "weight": 2,
         "size": 1.36,
         "slow": 2.46
       },
@@ -2899,7 +3479,7 @@
         "tint": "#9adbe8",
         "score": 225,
         "meter": 16,
-        "weight": 9,
+        "weight": 2,
         "size": 1.6,
         "slow": 2.9
       },
@@ -2910,12 +3490,70 @@
         "tint": "#b8e8f0",
         "score": 304,
         "meter": 21,
-        "weight": 4,
+        "weight": 2,
         "size": 1.92,
         "slow": 3.48
+      },
+      {
+        "id": "crystal_crystal_titan",
+        "base": "critter",
+        "label": "Crystal titan",
+        "tint": "#7ac8d8",
+        "score": 1700,
+        "meter": 18,
+        "weight": 0.5,
+        "size": 2.3,
+        "slow": 3.8,
+        "trophy": true
+      },
+      {
+        "id": "crystal_geode_core",
+        "base": "statue",
+        "label": "Giant geode",
+        "tint": "#b8e8f0",
+        "score": 2400,
+        "meter": 20,
+        "weight": 0.5,
+        "size": 2.0,
+        "slow": 3.2,
+        "trophy": true
+      },
+      {
+        "id": "crystal_shard_sprite",
+        "base": "critter",
+        "label": "Shard sprite",
+        "tint": "#7ac8d8",
+        "score": 140,
+        "meter": 7,
+        "weight": 3,
+        "size": 0.9,
+        "slow": 0.7,
+        "move": "hop"
       }
     ],
     "golden": [
+      {
+        "id": "golden_filler1",
+        "base": "crates",
+        "label": "Gilded shrub",
+        "tint": "#c8a858",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "golden_filler0",
+        "base": "hay",
+        "label": "Coin pile",
+        "tint": "#e7c34a",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
       {
         "id": "golden_idol_0",
         "base": "idol",
@@ -2923,7 +3561,7 @@
         "tint": "#c8a858",
         "score": 400,
         "meter": 24,
-        "weight": 14,
+        "weight": 2,
         "size": 1.1,
         "slow": 1.02
       },
@@ -2934,7 +3572,7 @@
         "tint": "#ffe9a0",
         "score": 500,
         "meter": 30,
-        "weight": 9,
+        "weight": 2,
         "size": 1.3,
         "slow": 1.2
       },
@@ -2945,7 +3583,7 @@
         "tint": "#e7c34a",
         "score": 675,
         "meter": 39,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.44
       },
@@ -2956,7 +3594,7 @@
         "tint": "#c8a858",
         "score": 150,
         "meter": 11,
-        "weight": 14,
+        "weight": 2,
         "size": 1.19,
         "slow": 2.21
       },
@@ -2967,7 +3605,7 @@
         "tint": "#ffe9a0",
         "score": 188,
         "meter": 14,
-        "weight": 9,
+        "weight": 2,
         "size": 1.4,
         "slow": 2.6
       },
@@ -2978,7 +3616,7 @@
         "tint": "#e7c34a",
         "score": 253,
         "meter": 18,
-        "weight": 4,
+        "weight": 2,
         "size": 1.68,
         "slow": 3.12
       },
@@ -2989,7 +3627,7 @@
         "tint": "#ffe9a0",
         "score": 85,
         "meter": 6,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.36
       },
@@ -3000,7 +3638,7 @@
         "tint": "#e7c34a",
         "score": 106,
         "meter": 8,
-        "weight": 9,
+        "weight": 6,
         "size": 1.3,
         "slow": 1.6
       },
@@ -3011,7 +3649,7 @@
         "tint": "#c8a858",
         "score": 143,
         "meter": 10,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.92
       },
@@ -3022,7 +3660,7 @@
         "tint": "#c8a858",
         "score": 130,
         "meter": 10,
-        "weight": 14,
+        "weight": 6,
         "size": 1.1,
         "slow": 1.19
       },
@@ -3033,7 +3671,7 @@
         "tint": "#ffe9a0",
         "score": 162,
         "meter": 12,
-        "weight": 9,
+        "weight": 2,
         "size": 1.3,
         "slow": 1.4
       },
@@ -3044,7 +3682,7 @@
         "tint": "#e7c34a",
         "score": 219,
         "meter": 16,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.68
       },
@@ -3055,7 +3693,7 @@
         "tint": "#ffe9a0",
         "score": 110,
         "meter": 8,
-        "weight": 14,
+        "weight": 6,
         "size": 1.19,
         "slow": 2.04
       },
@@ -3066,7 +3704,7 @@
         "tint": "#e7c34a",
         "score": 138,
         "meter": 10,
-        "weight": 9,
+        "weight": 6,
         "size": 1.4,
         "slow": 2.4
       },
@@ -3077,7 +3715,7 @@
         "tint": "#c8a858",
         "score": 186,
         "meter": 13,
-        "weight": 4,
+        "weight": 2,
         "size": 1.68,
         "slow": 2.88
       },
@@ -3088,7 +3726,7 @@
         "tint": "#c8a858",
         "score": 170,
         "meter": 12,
-        "weight": 14,
+        "weight": 2,
         "size": 1.27,
         "slow": 2.38
       },
@@ -3099,7 +3737,7 @@
         "tint": "#ffe9a0",
         "score": 212,
         "meter": 15,
-        "weight": 9,
+        "weight": 2,
         "size": 1.5,
         "slow": 2.8
       },
@@ -3110,7 +3748,7 @@
         "tint": "#e7c34a",
         "score": 287,
         "meter": 20,
-        "weight": 4,
+        "weight": 2,
         "size": 1.8,
         "slow": 3.36
       },
@@ -3121,7 +3759,7 @@
         "tint": "#e7c34a",
         "score": 45,
         "meter": 4,
-        "weight": 14,
+        "weight": 6,
         "size": 0.85,
         "slow": 0.51
       },
@@ -3132,7 +3770,7 @@
         "tint": "#c8a858",
         "score": 56,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.6
       },
@@ -3143,7 +3781,7 @@
         "tint": "#ffe9a0",
         "score": 76,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -3154,7 +3792,7 @@
         "tint": "#ffe9a0",
         "score": 65,
         "meter": 5,
-        "weight": 14,
+        "weight": 6,
         "size": 0.85,
         "slow": 0.68
       },
@@ -3165,7 +3803,7 @@
         "tint": "#e7c34a",
         "score": 81,
         "meter": 6,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.8
       },
@@ -3176,12 +3814,70 @@
         "tint": "#c8a858",
         "score": 110,
         "meter": 8,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.96
+      },
+      {
+        "id": "golden_golden_colossus",
+        "base": "statue",
+        "label": "Golden colossus",
+        "tint": "#e7c34a",
+        "score": 2200,
+        "meter": 20,
+        "weight": 0.5,
+        "size": 2.3,
+        "slow": 3.8,
+        "trophy": true
+      },
+      {
+        "id": "golden_treasure_hoard",
+        "base": "statue",
+        "label": "Treasure hoard",
+        "tint": "#ffd23a",
+        "score": 3000,
+        "meter": 20,
+        "weight": 0.5,
+        "size": 2.1,
+        "slow": 3.4,
+        "trophy": true
+      },
+      {
+        "id": "golden_gilded_sprite",
+        "base": "critter",
+        "label": "Gilded sprite",
+        "tint": "#e7c34a",
+        "score": 160,
+        "meter": 8,
+        "weight": 3,
+        "size": 0.9,
+        "slow": 0.8,
+        "move": "hop"
       }
     ],
     "aurora": [
+      {
+        "id": "aurora_filler1",
+        "base": "crates",
+        "label": "Frostbloom",
+        "tint": "#bfe9ff",
+        "score": 18,
+        "meter": 2,
+        "weight": 30,
+        "size": 0.85,
+        "slow": 0.4
+      },
+      {
+        "id": "aurora_filler0",
+        "base": "hay",
+        "label": "Light wisp",
+        "tint": "#a8ffd8",
+        "score": 10,
+        "meter": 2,
+        "weight": 40,
+        "size": 0.7,
+        "slow": 0.3
+      },
       {
         "id": "aurora_idol_0",
         "base": "idol",
@@ -3189,7 +3885,7 @@
         "tint": "#a8ffd8",
         "score": 448,
         "meter": 24,
-        "weight": 14,
+        "weight": 2,
         "size": 1.1,
         "slow": 1.02
       },
@@ -3200,7 +3896,7 @@
         "tint": "#88e8c8",
         "score": 560,
         "meter": 30,
-        "weight": 9,
+        "weight": 2,
         "size": 1.3,
         "slow": 1.2
       },
@@ -3211,7 +3907,7 @@
         "tint": "#68c8b8",
         "score": 756,
         "meter": 39,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.44
       },
@@ -3222,7 +3918,7 @@
         "tint": "#88e8c8",
         "score": 45,
         "meter": 3,
-        "weight": 14,
+        "weight": 6,
         "size": 0.94,
         "slow": 0.42
       },
@@ -3233,7 +3929,7 @@
         "tint": "#68c8b8",
         "score": 56,
         "meter": 4,
-        "weight": 9,
+        "weight": 6,
         "size": 1.1,
         "slow": 0.5
       },
@@ -3244,7 +3940,7 @@
         "tint": "#a8ffd8",
         "score": 76,
         "meter": 5,
-        "weight": 4,
+        "weight": 6,
         "size": 1.32,
         "slow": 0.6
       },
@@ -3255,7 +3951,7 @@
         "tint": "#a8ffd8",
         "score": 168,
         "meter": 11,
-        "weight": 14,
+        "weight": 2,
         "size": 1.19,
         "slow": 2.21
       },
@@ -3266,7 +3962,7 @@
         "tint": "#88e8c8",
         "score": 210,
         "meter": 14,
-        "weight": 9,
+        "weight": 2,
         "size": 1.4,
         "slow": 2.6
       },
@@ -3277,7 +3973,7 @@
         "tint": "#68c8b8",
         "score": 284,
         "meter": 18,
-        "weight": 4,
+        "weight": 2,
         "size": 1.68,
         "slow": 3.12
       },
@@ -3288,7 +3984,7 @@
         "tint": "#88e8c8",
         "score": 123,
         "meter": 8,
-        "weight": 14,
+        "weight": 6,
         "size": 1.19,
         "slow": 2.04
       },
@@ -3299,7 +3995,7 @@
         "tint": "#68c8b8",
         "score": 154,
         "meter": 10,
-        "weight": 9,
+        "weight": 2,
         "size": 1.4,
         "slow": 2.4
       },
@@ -3310,7 +4006,7 @@
         "tint": "#a8ffd8",
         "score": 208,
         "meter": 13,
-        "weight": 4,
+        "weight": 2,
         "size": 1.68,
         "slow": 2.88
       },
@@ -3321,7 +4017,7 @@
         "tint": "#a8ffd8",
         "score": 56,
         "meter": 4,
-        "weight": 14,
+        "weight": 6,
         "size": 0.85,
         "slow": 0.85
       },
@@ -3332,7 +4028,7 @@
         "tint": "#88e8c8",
         "score": 70,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 1.0
       },
@@ -3343,7 +4039,7 @@
         "tint": "#68c8b8",
         "score": 94,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 1.2
       },
@@ -3354,7 +4050,7 @@
         "tint": "#68c8b8",
         "score": 50,
         "meter": 4,
-        "weight": 14,
+        "weight": 6,
         "size": 0.85,
         "slow": 0.51
       },
@@ -3365,7 +4061,7 @@
         "tint": "#a8ffd8",
         "score": 63,
         "meter": 5,
-        "weight": 9,
+        "weight": 6,
         "size": 1.0,
         "slow": 0.6
       },
@@ -3376,7 +4072,7 @@
         "tint": "#88e8c8",
         "score": 85,
         "meter": 6,
-        "weight": 4,
+        "weight": 6,
         "size": 1.2,
         "slow": 0.72
       },
@@ -3387,7 +4083,7 @@
         "tint": "#a8ffd8",
         "score": 190,
         "meter": 12,
-        "weight": 14,
+        "weight": 2,
         "size": 1.27,
         "slow": 2.38
       },
@@ -3398,7 +4094,7 @@
         "tint": "#88e8c8",
         "score": 238,
         "meter": 15,
-        "weight": 9,
+        "weight": 2,
         "size": 1.5,
         "slow": 2.8
       },
@@ -3409,7 +4105,7 @@
         "tint": "#68c8b8",
         "score": 321,
         "meter": 20,
-        "weight": 4,
+        "weight": 2,
         "size": 1.8,
         "slow": 3.36
       },
@@ -3420,7 +4116,7 @@
         "tint": "#a8ffd8",
         "score": 146,
         "meter": 10,
-        "weight": 14,
+        "weight": 2,
         "size": 1.1,
         "slow": 1.19
       },
@@ -3431,7 +4127,7 @@
         "tint": "#88e8c8",
         "score": 182,
         "meter": 12,
-        "weight": 9,
+        "weight": 2,
         "size": 1.3,
         "slow": 1.4
       },
@@ -3442,9 +4138,45 @@
         "tint": "#68c8b8",
         "score": 246,
         "meter": 16,
-        "weight": 4,
+        "weight": 2,
         "size": 1.56,
         "slow": 1.68
+      },
+      {
+        "id": "aurora_aurora_serpent",
+        "base": "critter",
+        "label": "Aurora serpent",
+        "tint": "#68c8b8",
+        "score": 2600,
+        "meter": 20,
+        "weight": 0.5,
+        "size": 2.4,
+        "slow": 3.6,
+        "trophy": true
+      },
+      {
+        "id": "aurora_star_shrine",
+        "base": "statue",
+        "label": "Fallen star",
+        "tint": "#a8ffd8",
+        "score": 3600,
+        "meter": 20,
+        "weight": 0.5,
+        "size": 2.0,
+        "slow": 3.2,
+        "trophy": true
+      },
+      {
+        "id": "aurora_aurora_wisp",
+        "base": "critter",
+        "label": "Aurora wisp",
+        "tint": "#68c8b8",
+        "score": 200,
+        "meter": 11,
+        "weight": 3,
+        "size": 1.0,
+        "slow": 0.8,
+        "move": "hop"
       }
     ]
   }

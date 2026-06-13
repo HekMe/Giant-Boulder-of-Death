@@ -16,7 +16,8 @@
     const raw = localStorage.getItem(AUTH_KEY);
     if (raw) {
       const a = JSON.parse(raw);
-      if (a && a.exp * 1000 > Date.now() + 60_000) auth = a;
+      // keep the session as long as the token itself is still valid (no artificial early expiry)
+      if (a && a.token && a.exp * 1000 > Date.now()) auth = a;
     }
   } catch (e) {}
 
@@ -105,6 +106,7 @@
         localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
         localStorage.setItem("rf_net_user", auth.name);
         if (window.RFNet) window.RFNet.renderMenu();
+        if (window.__rfSyncCloud) window.__rfSyncCloud();
         return true;
       } catch (e) {
         const msg = String(e.message || e);
@@ -218,15 +220,36 @@
 
   /* ----------------------- lobby multiplayer ----------------------- */
   const mp = {
-    async create() {
+    async create(loadout) {
       const code = Array.from({ length: 5 }, () => "ABCDEFGHJKMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 31)]).join("");
       const seed = Math.floor(Math.random() * 1e6);
       await call("create_lobby", [code, seed, Date.now()]);
+      if (loadout) call("set_loadout", [code, JSON.stringify(loadout).slice(0, 1900), Date.now()]).catch(() => {});
       return { code, seed };
     },
-    async join(code) { await call("join_lobby", [String(code).toUpperCase(), Date.now()]); },
+    async join(code, loadout) {
+      await call("join_lobby", [String(code).toUpperCase(), Date.now()]);
+      if (loadout) call("set_loadout", [String(code).toUpperCase(), JSON.stringify(loadout).slice(0, 1900), Date.now()]).catch(() => {});
+    },
     async start(code) { await call("start_lobby", [String(code).toUpperCase()]); },
     async leave() { await call("leave_lobby", []).catch(() => {}); },
+    async loadouts(code) {
+      const rows = await sql("SELECT upgrades FROM mp_loadout WHERE code = " + sqlStr(String(code).toUpperCase()));
+      return rows.map((r) => { try { return JSON.parse(String(r.upgrades)); } catch (e) { return {}; } });
+    },
+    async submitResult(code, dist, score, duration) {
+      await call("submit_mp_result", [String(code).toUpperCase(), Math.max(0, Math.floor(dist)), Math.max(0, Math.floor(score)), Math.max(0, Math.floor(duration)), Date.now()]);
+    },
+    async results(code) {
+      const rows = await sql("SELECT name, dist_m, score, duration_s FROM mp_result WHERE code = " + sqlStr(String(code).toUpperCase()));
+      return rows.map((r) => ({ name: String(r.name), dist: num(r.dist_m), score: num(r.score), dur: num(r.duration_s) }))
+        .sort((a, b) => (b.dist - a.dist) || (b.score - a.score));
+    },
+    async positions(code) {
+      const rows = await sql("SELECT name, dist_m, at_ms FROM mp_pos WHERE code = " + sqlStr(String(code).toUpperCase()));
+      const cut = Date.now() - 12_000;
+      return rows.map((r) => ({ name: String(r.name), dist: num(r.dist_m), at: num(r.at_ms) })).filter((r) => r.at > cut);
+    },
     async state(code) {
       const c = String(code).toUpperCase();
       const lob = await sql("SELECT code, host, seed, state FROM lobby WHERE code = " + sqlStr(c));
@@ -259,7 +282,37 @@
     async fetchGhost(name) {
       const rows = await sql("SELECT data FROM ghost WHERE name = " + sqlStr(name));
       if (!rows.length) return null;
-      try { return JSON.parse(atob(String(rows[0].data))); } catch (e) { return null; }
+      try { return JSON.parse(decodeURIComponent(escape(atob(String(rows[0].data))))); } catch (e) {
+        try { return JSON.parse(atob(String(rows[0].data))); } catch (e2) { return null; }
+      }
+    },
+
+    /* ---- cloud profile (coins/gems/unlocks) ---- */
+    async loadProfile() {
+      if (!auth) return null;
+      try {
+        const rows = await sql("SELECT coins, gems, unlocks, rev FROM profile WHERE name = " + sqlStr(auth.name));
+        if (!rows.length) return null;
+        const r = rows[0];
+        let unlocks = {};
+        try { unlocks = JSON.parse(String(r.unlocks || "{}")); } catch (e) {}
+        return { coins: num(r.coins), gems: num(r.gems), unlocks, rev: num(r.rev) };
+      } catch (e) { console.warn("[net] loadProfile", e); return null; }
+    },
+    async saveProfile(p) {
+      if (!auth) return;
+      try {
+        await call("save_profile", [Math.max(0, Math.floor(p.coins)), Math.max(0, Math.floor(p.gems)),
+          JSON.stringify(p.unlocks || {}).slice(0, 19000), Math.floor(p.rev || 0), Date.now()]);
+      } catch (e) { console.warn("[net] saveProfile", e); }
+    },
+    /* ---- admin-authored game config ---- */
+    async loadConfig() {
+      try {
+        const rows = await sql("SELECT json, rev FROM game_config");
+        if (!rows.length) return null;
+        try { return { cfg: JSON.parse(String(rows[0].json || "{}")), rev: num(rows[0].rev) }; } catch (e) { return null; }
+      } catch (e) { return null; }
     },
 
     renderMenu() {
@@ -275,10 +328,13 @@
       if (!auth) return;
       try {
         await call("submit_run", [Math.max(0, Math.floor(p.score)), Math.max(0, Math.floor(p.dist)), Math.max(0, Math.floor(p.duration))]);
-        if (p.ghost && p.ghost.length > 10) {
-          const data = btoa(JSON.stringify(p.ghost));
-          if (data.length < 240_000)
-            call("save_ghost", [data, Math.floor(p.score), Math.floor(p.dist)]).catch(() => {});
+        const gframes = p.ghost && (Array.isArray(p.ghost) ? p.ghost : p.ghost.frames);
+        if (gframes && gframes.length > 10) {
+          try {
+            const data = btoa(unescape(encodeURIComponent(JSON.stringify(p.ghost))));
+            if (data.length < 240_000) await call("save_ghost", [data, Math.floor(p.score), Math.floor(p.dist)]);
+            else console.warn("[net] ghost too large to upload:", data.length);
+          } catch (e) { console.warn("[net] ghost upload failed", e); }
         }
         const lb = await leaderboards();
         // overall = sum of category ranks (lower is better)
@@ -336,8 +392,9 @@
     window.RFNet.renderMenu();
   }
   finishLogin().catch((e) => console.warn("[net] login finish", e)).finally(() => {
-    if (auth && auth.exp * 1000 < Date.now()) logout();
+    if (auth && auth.exp * 1000 <= Date.now()) { logout(); return; }
     if (auth && !localStorage.getItem("rf_net_user")) ensureRegistered().catch(() => {});
+    else if (auth && window.__rfSyncCloud) setTimeout(() => window.__rfSyncCloud(), 500);
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindUI);
     else bindUI();
   });

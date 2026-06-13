@@ -117,7 +117,52 @@ const app_settings = table(
   }
 );
 
-const spacetimedb = schema({ player, score_entry, ghost, grant, live_pos, lobby, lobby_member, mp_pos, app_settings });
+const mp_loadout = table(
+  { name: 'mp_loadout', public: true },
+  {
+    identity: t.identity().primaryKey(),
+    code: t.string(),
+    upgrades: t.string(), // JSON: { upgradeId: ownedLevel }
+    at_ms: t.u64(),
+  }
+);
+
+const mp_result = table(
+  { name: 'mp_result', public: true },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    code: t.string(),
+    name: t.string(),
+    dist_m: t.u32(),
+    score: t.u64(),
+    duration_s: t.u32(),
+    at_ms: t.u64(),
+  }
+);
+
+const profile = table(
+  { name: 'profile', public: true },
+  {
+    identity: t.identity().primaryKey(),
+    name: t.string(), // mirror of the player name so the client can query by name
+    coins: t.u64(),
+    gems: t.u64(),
+    unlocks: t.string(), // JSON: { skins:[], trails:[], boulders:[], upgrades:{}, goalsDone:[], ency:{...} }
+    rev: t.u64(),        // monotonically increasing; higher wins on conflict
+    at_ms: t.u64(),
+  }
+);
+
+const game_config = table(
+  { name: 'game_config', public: true },
+  {
+    id: t.u32().primaryKey(),
+    json: t.string(), // admin-authored overrides merged over the built-in config
+    rev: t.u64(),
+  }
+);
+
+const spacetimedb = schema({ player, score_entry, ghost, grant, live_pos, lobby, lobby_member, mp_pos, app_settings, mp_loadout, mp_result, profile, game_config });
 export default spacetimedb;
 
 /* ============================== helpers ============================== */
@@ -287,6 +332,12 @@ function dropLobby(ctx: any, code: string) {
   const posIds: any[] = [];
   for (const p of ctx.db.mp_pos.iter()) if (p.code === code) posIds.push(p.identity);
   for (const id of posIds) ctx.db.mp_pos.identity.delete(id);
+  const loIds: any[] = [];
+  for (const lo of ctx.db.mp_loadout.iter()) if (lo.code === code) loIds.push(lo.identity);
+  for (const id of loIds) ctx.db.mp_loadout.identity.delete(id);
+  const resIds: any[] = [];
+  for (const r of ctx.db.mp_result.iter()) if (r.code === code) resIds.push(r.id);
+  for (const id of resIds) ctx.db.mp_result.id.delete(id);
   for (const l of ctx.db.lobby.iter()) if (l.code === code) { ctx.db.lobby.code.delete(code); break; }
 }
 
@@ -301,6 +352,7 @@ function removeMyMemberships(ctx: any) {
   for (const m of ctx.db.lobby_member.iter()) if (idEq(m.identity, ctx.sender)) ids.push(m.id);
   for (const id of ids) ctx.db.lobby_member.id.delete(id);
   for (const p of ctx.db.mp_pos.iter()) if (idEq(p.identity, ctx.sender)) { ctx.db.mp_pos.identity.delete(p.identity); break; }
+  for (const lo of ctx.db.mp_loadout.iter()) if (idEq(lo.identity, ctx.sender)) { ctx.db.mp_loadout.identity.delete(lo.identity); break; }
 }
 
 export const create_lobby = spacetimedb.reducer(
@@ -353,6 +405,34 @@ export const leave_lobby = spacetimedb.reducer({}, (ctx, _args) => {
   removeMyMemberships(ctx);
 });
 
+export const set_loadout = spacetimedb.reducer(
+  { code: t.string(), upgrades: t.string(), at_ms: t.u64() },
+  (ctx, { code, upgrades, at_ms }) => {
+    const me = findPlayer(ctx);
+    if (!me) throw new Error('register first');
+    if (upgrades.length > 2000) throw new Error('loadout too large');
+    const row = { identity: ctx.sender, code: code.toUpperCase().slice(0, 8), upgrades, at_ms };
+    let exists = false;
+    for (const r of ctx.db.mp_loadout.iter()) { if (idEq(r.identity, ctx.sender)) { exists = true; break; } }
+    if (exists) ctx.db.mp_loadout.identity.update(row);
+    else ctx.db.mp_loadout.insert(row);
+  }
+);
+
+export const submit_mp_result = spacetimedb.reducer(
+  { code: t.string(), dist_m: t.u32(), score: t.u64(), duration_s: t.u32(), at_ms: t.u64() },
+  (ctx, { code, dist_m, score, duration_s, at_ms }) => {
+    const me = findPlayer(ctx);
+    if (!me) throw new Error('register first');
+    const c = code.toUpperCase().slice(0, 8);
+    // one result per player per lobby — replace any previous one
+    const old: any[] = [];
+    for (const r of ctx.db.mp_result.iter()) if (r.code === c && r.name === me.name) old.push(r.id);
+    for (const id of old) ctx.db.mp_result.id.delete(id);
+    ctx.db.mp_result.insert({ id: 0n, code: c, name: me.name, dist_m, score, duration_s, at_ms });
+  }
+);
+
 export const update_mp = spacetimedb.reducer(
   { code: t.string(), x: t.f32(), y: t.f32(), z: t.f32(), dist_m: t.u32(), at_ms: t.u64() },
   (ctx, { code, x, y, z, dist_m, at_ms }) => {
@@ -388,6 +468,31 @@ export const admin_delete_scores = spacetimedb.reducer({ target_name: t.string()
   const ids: any[] = [];
   for (const row of ctx.db.score_entry.iter()) if (row.name === target_name) ids.push(row.id);
   for (const id of ids) ctx.db.score_entry.id.delete(id);
+});
+
+export const save_profile = spacetimedb.reducer(
+  { coins: t.u64(), gems: t.u64(), unlocks: t.string(), rev: t.u64(), at_ms: t.u64() },
+  (ctx, { coins, gems, unlocks, rev, at_ms }) => {
+    const me = findPlayer(ctx);
+    if (!me) throw new Error('register first');
+    if (unlocks.length > 20000) throw new Error('profile too large');
+    let existing = null as any;
+    for (const r of ctx.db.profile.iter()) if (idEq(r.identity, ctx.sender)) { existing = r; break; }
+    if (existing && existing.rev > rev) return; // server has a newer revision; ignore stale write
+    const row = { identity: ctx.sender, name: me.name, coins, gems, unlocks, rev, at_ms };
+    if (existing) ctx.db.profile.identity.update(row);
+    else ctx.db.profile.insert(row);
+  }
+);
+
+export const admin_set_config = spacetimedb.reducer({ json: t.string() }, (ctx, { json }) => {
+  requireAdmin(ctx);
+  if (json.length > 60000) throw new Error('config too large');
+  let existing = null as any;
+  for (const r of ctx.db.game_config.iter()) { existing = r; break; }
+  const rev = existing ? existing.rev + 1n : 1n;
+  if (existing) ctx.db.game_config.id.update({ id: 0, json, rev });
+  else ctx.db.game_config.insert({ id: 0, json, rev });
 });
 
 export const admin_ping = spacetimedb.reducer({}, (ctx, _args) => {

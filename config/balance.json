@@ -49,7 +49,8 @@
     "wallSharpness": 5.0,
     "meshExtra": 16,
     "crossAmp": 1.6,
-    "crossFreq": 0.011
+    "crossFreq": 0.011,
+    "gapRimFlatten": 1
   },
   "gaps": {
     "firstGapAt": 220,
@@ -60,7 +61,10 @@
     "widthPer1000m": 3.5,
     "maxWidth": 15,
     "chance": 0.72,
-    "warnDistance": 30
+    "warnDistance": 30,
+    "longChance": 0.22,
+    "longLength": 26,
+    "longWidth": 5.5
   },
   "hazards": {
     "firstHazardAt": 130,
@@ -101,9 +105,9 @@
     }
   },
   "spawning": {
-    "objectsPerChunkBase": 7,
+    "objectsPerChunkBase": 6,
     "objectsPerChunkMax": 14,
-    "objectsRampPer1000m": 3,
+    "objectsRampPer1000m": 1.5,
     "coinsPerChunk": 4,
     "gemChance": 0.045,
     "decorPerChunk": 6,
@@ -140,7 +144,7 @@
     "nearMissBonus": 120,
     "nearMissRadius": 3.4,
     "gapClearBonus": 150,
-    "distancePointsPerMeter": 2
+    "distancePointsPerMeter": 1.4
   },
   "overdrive": {
     "meterMax": 100,

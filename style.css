@@ -174,3 +174,55 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 .remote-name{position:absolute;transform:translate(-50%,-100%);font-size:11px;color:#fff;text-shadow:0 1px 3px #000;background:rgba(20,17,14,.5);padding:1px 7px;border-radius:8px;pointer-events:none}
 .mp-code{font-size:34px;letter-spacing:10px;color:var(--ember);font-weight:bold;text-shadow:0 2px 8px rgba(255,157,69,.4)}
 .mp-input{background:#1d1a17;border:1px solid #3a342e;color:var(--ink);padding:8px 12px;border-radius:8px;font-size:18px;letter-spacing:4px;width:140px;text-align:center;text-transform:uppercase}
+
+/* ===== Rock&Roll HUD overhaul ===== */
+#odBar{position:fixed;left:14px;top:50%;transform:translateY(-50%);width:38px;height:min(46vh,320px);background:rgba(20,17,14,.72);border:1px solid #3a342e;border-radius:20px;z-index:6;display:flex;flex-direction:column;align-items:center;padding:6px 0;box-shadow:0 4px 18px rgba(0,0,0,.4)}
+#odTrack{flex:1;width:14px;border-radius:8px;background:rgba(255,255,255,.07);overflow:hidden;display:flex;flex-direction:column-reverse}
+#odFill{width:100%;background:linear-gradient(180deg,#ffd23a,#ff7a1a);height:0%;transition:height .12s linear;border-radius:8px}
+#odBar.ready #odFill{background:linear-gradient(180deg,#fff0a0,#ffae1a);box-shadow:0 0 12px #ffae1a;animation:odPulse 1s infinite}
+#odBar.active{border-color:#ff7a2a;box-shadow:0 0 22px rgba(255,90,20,.6)}
+#odBar.active #odFill{background:linear-gradient(180deg,#fff,#ff5a14)}
+#odLabel{font-size:10px;color:var(--ink-dim);margin-top:4px;font-weight:bold}
+#odBar.ready #odLabel{color:#ffd23a}
+@keyframes odPulse{50%{opacity:.6}}
+#fxIcons{position:fixed;right:12px;top:84px;z-index:6;display:flex;flex-direction:column;gap:8px}
+.fx-icon{position:relative;width:44px;height:44px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.fx-icon svg{width:44px;height:44px;transform:rotate(-90deg)}
+.fx-icon .bg{fill:rgba(20,17,14,.8);stroke:rgba(255,255,255,.12);stroke-width:2}
+.fx-icon .ring{fill:none;stroke:var(--c);stroke-width:3.5;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.fx-icon .gl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;color:var(--c);text-shadow:0 1px 3px #000}
+.fx-icon.static .bg{stroke:var(--c)}
+.pause-fx{margin:6px 0 12px}
+.pause-fx-h{font-size:11px;letter-spacing:2px;color:var(--ember);text-transform:uppercase;margin-bottom:4px}
+.pause-fx-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px solid #2a241e}
+.menu-grid.compact{grid-template-columns:1fr 1fr;gap:8px}
+.menu-grid.compact .menu-btn{font-size:15px;padding:14px 10px}
+
+/* ===== mobile: shrink the menu so it fits a phone ===== */
+@media (max-width:560px){
+  .start-panel .logo h1,.logo h1{font-size:34px}
+  .panel{padding:14px 12px}
+  .big-btn{padding:14px;font-size:18px}
+  .menu-btn{padding:11px 8px;font-size:13px}
+  .menu-grid.compact{gap:6px}
+  .tag{font-size:13px;margin:6px 0}
+  .cur-row{font-size:16px;gap:8px}
+  .skin-row{gap:6px}
+  .skin{width:40px;height:40px}
+  .controls-hint{font-size:10px}
+  #odBar{width:30px;height:42vh;left:8px}
+  #fxIcons{right:8px;top:72px}
+  .fx-icon,.fx-icon svg{width:38px;height:38px}
+}
+
+/* ===== region-entry banner ===== */
+.region-banner{position:fixed;top:24%;left:50%;transform:translate(-50%,-12px);z-index:7;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;opacity:0;transition:opacity .5s,transform .5s;text-align:center}
+.region-banner.show{opacity:1;transform:translate(-50%,0)}
+.region-banner .rb-rar{font-size:12px;letter-spacing:5px;font-weight:bold;color:#cfe}
+.region-banner .rb-name{font-size:30px;letter-spacing:2px;font-weight:800;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.7)}
+.region-banner.rar-common .rb-rar{color:#b8c4cc}
+.region-banner.rar-rare .rb-rar{color:#7ac8ff;text-shadow:0 0 12px rgba(122,200,255,.6)}
+.region-banner.rar-epic .rb-rar{color:#d89aff;text-shadow:0 0 14px rgba(216,154,255,.7)}
+.region-banner.rar-legendary .rb-rar{color:#ffd23a;text-shadow:0 0 16px rgba(255,210,58,.8)}
+.region-banner.rar-epic .rb-name,.region-banner.rar-legendary .rb-name{animation:rbGlow 1.6s ease-in-out infinite}
+@keyframes rbGlow{50%{text-shadow:0 2px 24px rgba(255,255,255,.5)}}
